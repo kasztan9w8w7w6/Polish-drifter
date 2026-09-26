@@ -11,8 +11,8 @@ const STEER_DEADZONE = 0.12;
 const PAD_ACTIONS = { 3: 'reset', 2: 'camera', 9: 'gui', 12: 'lights', 8: 'mission' }; // 12 d-pad up, 8 Back
 // Actions match the physical key (e.code) and, as a fallback, the character (e.key) – some remote
 // desktops / virtual keyboards send an empty `code`.
-const KEY_ACTIONS = { KeyR: 'reset', KeyC: 'camera', KeyG: 'gui', KeyF: 'debug', KeyL: 'lights', KeyN: 'mission', Enter: 'confirm' };
-const CHAR_ACTIONS = { r: 'reset', c: 'camera', g: 'gui', f: 'debug', l: 'lights', n: 'mission', enter: 'confirm' };
+const KEY_ACTIONS = { KeyR: 'reset', KeyC: 'camera', KeyG: 'gui', KeyF: 'debug', KeyL: 'lights', KeyN: 'mission', Enter: 'confirm', KeyP: 'pause', Escape: 'pause' };
+const CHAR_ACTIONS = { r: 'reset', c: 'camera', g: 'gui', f: 'debug', l: 'lights', n: 'mission', enter: 'confirm', p: 'pause' };
 
 // Move `value` towards `target` at `up` units/s when pushing further out, `down` when returning or reversing
 export function rampValue(value, target, dt, up, down) {
@@ -39,6 +39,8 @@ export function createInput(actions = {}) {
   const ramp = (value, target, dt, up, down) => rampValue(value, target, dt, up, down);
   let padButtons = [];
   let padConnected = false;
+  const sources = []; // more controls read every frame (touch.js), merged like the pad
+  let enabled = true;
 
   function readPad() {
     const pad = [...(navigator.getGamepads?.() ?? [])].find((p) => p?.connected);
@@ -61,21 +63,33 @@ export function createInput(actions = {}) {
     get gamepadConnected() {
       return padConnected;
     },
+    // Another control source: read(dt) → { throttle, brake, steer, handbrake }
+    addSource(read) {
+      sources.push(read);
+    },
+    // Paused: everything reads as released (keys held while the app went away don't stick)
+    set enabled(on) {
+      enabled = on;
+      if (!on) down.clear();
+    },
     read(dt) {
       keys.throttle = ramp(keys.throttle, any('KeyW', 'ArrowUp', 'w') ? 1 : 0, dt, KEY_RAMP.pedalUp, KEY_RAMP.pedalDown);
       keys.brake = ramp(keys.brake, any('KeyS', 'ArrowDown', 's') ? 1 : 0, dt, KEY_RAMP.pedalUp, KEY_RAMP.pedalDown);
       keys.steer = ramp(keys.steer, (any('KeyA', 'ArrowLeft', 'a') ? 1 : 0) - (any('KeyD', 'ArrowRight', 'd') ? 1 : 0), dt, KEY_RAMP.steerUp, KEY_RAMP.steerDown);
       keys.handbrake = any('Space', ' ') ? 1 : 0; // handbrake stays instant – it's a yank, not a pedal
       const pad = readPad();
-      if (!pad) return { ...keys };
+      const all = [pad, ...sources.map((r) => r(dt))].filter(Boolean);
+      if (!enabled) return { throttle: 0, brake: 0, steer: 0, handbrake: 0 };
       // Whichever device gives the bigger value wins, so both can be used at once
       const pick = (a, b) => (Math.abs(a) >= Math.abs(b) ? a : b);
-      return {
-        throttle: Math.max(keys.throttle, pad.throttle),
-        brake: Math.max(keys.brake, pad.brake),
-        steer: pick(keys.steer, pad.steer),
-        handbrake: Math.max(keys.handbrake, pad.handbrake),
-      };
+      const out = { ...keys };
+      for (const o of all) {
+        out.throttle = Math.max(out.throttle, o.throttle);
+        out.brake = Math.max(out.brake, o.brake);
+        out.steer = pick(out.steer, o.steer);
+        out.handbrake = Math.max(out.handbrake, o.handbrake);
+      }
+      return out;
     },
   };
 }

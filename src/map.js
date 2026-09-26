@@ -166,6 +166,10 @@ export async function createMap(scene, physics, map) {
       const k = charging ? 0.75 + 0.25 * Math.sin(time * 9) : 0.45 + 0.2 * Math.sin(time * 2.2);
       pad.children.forEach((m) => (m.material.opacity = k * m.userData.alpha));
     },
+    // Performance (touch devices): only every n-th street lamp keeps its light (the bulbs still glow)
+    setLampShare(n) {
+      spots.forEach((s, i) => (s.visible = i % n === 0));
+    },
     applyLights() {
       for (const s of spots) {
         s.intensity = lights.lamp;

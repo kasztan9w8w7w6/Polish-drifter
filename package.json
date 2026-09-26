@@ -16,6 +16,7 @@
     "@fontsource/silkscreen": "^5.3.0",
     "howler": "^2.2.4",
     "lil-gui": "^0.21.0",
+    "nipplejs": "^1.0.4",
     "three": "^0.186.1"
   },
   "devDependencies": {

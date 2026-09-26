@@ -11,6 +11,7 @@ Wszystkie zewnętrzne elementy gry: biblioteki, assety, dźwięki, fonty. Każdy
 | [@fontsource/silkscreen](https://fontsource.org/fonts/silkscreen) (font Silkscreen, Jason Kottke) | pikselowa czcionka HUD | OFL-1.1 |
 | [@dimforge/rapier3d-compat](https://rapier.rs) | fizyka, kolizje, raycast, debug render | Apache-2.0 |
 | [lil-gui](https://lil-gui.georgealways.com) | panel tuningu | MIT |
+| [nipplejs](https://github.com/yoannmoinet/nipplejs) | joystick dotykowy (sterowanie mobilne) | MIT |
 | [Vite](https://vite.dev) | dev server i build | MIT |
 | [glTF-Transform](https://gltf-transform.dev) (`@gltf-transform/core`, `functions`) | konwersja modeli (`scripts/convert-assets.mjs`, dev) | MIT |
 | [TypeScript](https://www.typescriptlang.org), [@types/three](https://www.npmjs.com/package/@types/three) | sprawdzanie typów (dev) | Apache-2.0 / MIT |

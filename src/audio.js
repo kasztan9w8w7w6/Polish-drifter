@@ -50,6 +50,10 @@ export function createAudio() {
       skid.rate(skidRate, skidId);
       impactCooldown -= dt;
     },
+    // Paused (app in the background): silence everything
+    mute(on) {
+      Howler.mute(on);
+    },
     // Low-battery warning: a short square-wave beep (Web Audio through Howler's context, no sound file)
     beep() {
       const ctx = Howler.ctx;

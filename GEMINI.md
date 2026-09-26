@@ -18,19 +18,8 @@ gracz ucieka przed „promieniowaniem 5G”.
 
 ## Warstwy (roadmapa)
 
-| Wersja | Zakres | Stan |
-|---|---|---|
-| v0.1 | jazda | zrobione |
-| v0.1.5 | Rapier + model opon (RaycastVehicle) | zastąpione przez v0.2a |
-| v0.2a | fizyka arcade: kula Kenneya + drift na wierzchu, nowa kamera | zrobione |
-| v0.2b | noc + PS1 + assety + dźwięk + HUD | zrobione |
-| v0.2c | poprawki jazdy: płynny kąt, power oversteer w Pro, bez odbić, bez utykania | zrobione |
-| v0.2d | kamera Diorama + pixel-art (toon, obrysy, mgła radialna) | zrobione |
-| v0.2e | Polonez (koła na kościach) + osiedle z City Kit / Car Kit | zrobione |
-| v0.3a | profile aut (JSON), kontra (wizualna; w Pro prawdziwa) | zrobione |
-| v0.3b | ręczna mapa osiedla w pliku danych, kolizje z geometrii | zrobione |
-| v0.3c | bateria, sklep = punkt zapisu, narrator, misja 1 „Paczka” | zrobione |
-| v0.4 | MVP | następne |
+Tabela wersji jest w [`ROADMAP.md`](ROADMAP.md) (tam dopisuj nowe). Teraz: v0.3d – sterowanie mobilne w wersji testowej;
+dopracowanie sterowania mobilnego w v0.15; następne: v0.4 MVP.
 
 ## Zasady pracy
 
@@ -68,7 +57,11 @@ src/marker.js   – znacznik celu misji: słup światła nad celem + strzałka n
 src/occlusion.js – obiekty zasłaniające auto robią się półprzezroczyste
 src/audio.js    – Howler.js: silnik (pitch z obrotów), pisk opon (z kąta), uderzenia
 src/gearbox.js  – wirtualne biegi/obroty dla HUD i dźwięku (fizyka nie ma biegów)
-src/input.js    – klawiatura (płynna rampa) + pad (Gamepad API, standard mapping)
+src/input.js    – klawiatura (płynna rampa) + pad (Gamepad API, standard mapping) + dodatkowe źródła (dotyk), wyłączenie na pauzę
+src/touchstate.js – dotyk bez DOM (testy w Node): isTouchDevice (po możliwościach, nie user-agencie; ?touch=1/0 wymusza),
+                  stan przycisków dla kilku palców, rampy jak klawiatura
+src/touch.js    – warstwa dotykowa (tylko na urządzeniach dotykowych): joystick nipplejs / przyciski ←→, gaz, hamulec, ręczny,
+                  pełny ekran + screen.orientation.lock; w main.js: niższa jakość, FPS w panelu, pauza w tle, plansza „Obróć telefon”
 src/drift.js    – punktacja driftu
 src/effects.js  – dym i ślady opon
 src/main.js     – scena nocna (mgła radialna), HUD (w tym bateria), lil-gui (G), debug kolizji (F), klej bateria/misja/narrator, pętla

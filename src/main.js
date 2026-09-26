@@ -25,6 +25,8 @@ import { createNarrator, narratorSettings } from './narrator.js';
 import { createMission, formatTime } from './mission.js';
 import { createMarkers } from './marker.js';
 import paczka from './missions/paczka.json';
+import { isTouchDevice } from './touchstate.js';
+import { createTouchControls, touchSettings } from './touch.js';
 
 // ---------- Renderer / scene: night on the estate ----------
 installRadialFog(); // before any material compiles
@@ -303,7 +305,10 @@ function updateDebugLines() {
 // ---------- Input / camera ----------
 const rig = createCameraRig(chaseCam, dioCam, scene.fog);
 
-const input = createInput({
+const TOUCH = isTouchDevice(window); // by capabilities (coarse pointer / touch without hover), not by user agent
+document.body.classList.toggle('touch', TOUCH);
+const actions = {
+  pause: () => setPaused(!paused),
   reset: () => {
     car.reset();
     rig.reset();
@@ -318,8 +323,46 @@ const input = createInput({
   },
   mission: () => startMission(),
   confirm: () => (hudBat.summary.hidden = true),
+};
+const input = createInput(actions);
+const touchControls = TOUCH ? createTouchControls({ actions }) : null;
+if (touchControls) input.addSource(touchControls.read);
+
+// ---------- Pause (app in the background, P / Esc, ❚❚ on touch) and the portrait board ----------
+let paused = false;
+const pauseBox = $('pause');
+function setPaused(on) {
+  paused = on;
+  input.enabled = !on;
+  touchControls?.releaseAll();
+  audio.mute(on);
+  pauseBox.hidden = !on;
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) setPaused(true);
+  else if (!TOUCH) setPaused(false); // desktop: back where it was; a phone waits for a tap (get your fingers ready)
 });
-if (new URLSearchParams(location.search).has('debug')) window.agro = { survival, mission, narrator, car }; // for testing from the console
+pauseBox.addEventListener('pointerdown', () => setPaused(false));
+const portrait = matchMedia('(orientation: portrait)');
+portrait.addEventListener?.('change', () => touchControls?.releaseAll());
+
+// ---------- Performance: lower settings on touch devices, FPS counter in the panel ----------
+const perf = { quality: TOUCH ? 'niska' : 'wysoka', fps: 0 };
+function applyQuality() {
+  const low = perf.quality === 'niska';
+  pixelArt.pixelSize = low ? 5 : 4; // bigger game pixels: fewer to render
+  applyPixel();
+  bloom.enabled = !low;
+  district.setLampShare(low ? 2 : 1); // half the street-lamp lights
+  gui.controllersRecursive().forEach((c) => c.updateDisplay());
+}
+applyQuality();
+const perfFolder = gui.addFolder('Wydajność');
+perfFolder.add(perf, 'fps').name('FPS').listen().disable();
+perfFolder.add(perf, 'quality', ['wysoka', 'niska']).name('jakość').onChange(applyQuality);
+if (touchControls) perfFolder.add(touchSettings, 'steering', ['joystick', 'przyciski']).name('skręt (dotyk)').onChange(() => touchControls.applySettings());
+let fpsFrames = 0, fpsTime = 0;
+if (new URLSearchParams(location.search).has('debug')) window.agro = { survival, mission, narrator, car, perf: () => perf, paused: () => paused }; // for testing from the console
 startMission(spawnArg?.length === 3); // (?spawn=… keeps the car where it asked for)
 // ?bat=5 – start with that much battery (testing the flicker / running flat)
 const batArg = Number(new URLSearchParams(location.search).get('bat'));
@@ -333,6 +376,17 @@ let lastSpins = 0;
 function tick(time) {
   timer.update(time);
   const dt = Math.min(timer.getDelta(), 0.1);
+  fpsFrames++;
+  if ((fpsTime += timer.getDelta()) >= 0.5) {
+    perf.fps = Math.round(fpsFrames / fpsTime);
+    fpsFrames = fpsTime = 0;
+  }
+  // Paused, or a phone held upright (the "turn the phone" board is showing): the world stands still
+  if (paused || (TOUCH && portrait.matches)) {
+    composer.render();
+    requestAnimationFrame(tick);
+    return;
+  }
   const controls = input.read(dt);
   if (!survival.engineOn) {
     // Battery flat: no engine (no throttle, no reverse), the car just rolls to a stop; brakes and steering still work

@@ -24,6 +24,7 @@ Zasada projektu: **składamy gotowe klocki zamiast pisać własne**.
 | Model jazdy i kamera | [Kenney Starter Kit Racing](https://github.com/KenneyNL/Starter-Kit-Racing) (MIT) | auto jako toczona kula + model podążający za nią, kamera z opóźnieniem (przeniesione z GDScript do TypeScript) |
 | Tuning | [lil-gui](https://lil-gui.georgealways.com) | suwaki, presety, eksport/import JSON (klawisz **G**) |
 | Pad | Gamepad API przeglądarki | analogowy gaz, hamulec i skręt |
+| Dotyk | [nipplejs](https://github.com/yoannmoinet/nipplejs) | joystick skrętu na telefonie |
 | Ostrzeżenie baterii | Web Audio (przez kontekst Howlera) | krótki pisk generowany w kodzie, bez pliku |
 | Testy | `node:test` (wbudowany w Node ≥ 22.18, czyta TypeScript) | scenariusze jazdy bez przeglądarki |
 | Typy | [TypeScript](https://www.typescriptlang.org) | `vehicle.ts`, `camera.ts`, `tuning.ts`; sprawdzanie `npm run typecheck` |
@@ -54,10 +55,27 @@ npm run build    # statyczny build do dist/
 | Długie / krótkie światła | L | krzyżak w górę |
 | Misja od nowa | N | Back |
 | Zamknij podsumowanie misji | Enter | — |
+| Pauza | P / Esc | — |
 
 Po R, C i automatycznym wypchnięciu z przeszkody na środku ekranu pojawia się krótki komunikat.
 Dźwięk startuje po pierwszym klawiszu/kliknięciu (wymóg przeglądarek). Parametr `?spawn=x,z,kąt` w adresie ustawia auto w innym miejscu,
 `?bat=5` startuje z 5% baterii (do sprawdzenia migania i gaśnięcia).
+
+## Telefon i tablet (wersja testowa)
+
+Na urządzeniu dotykowym (wykrywanym po możliwościach ekranu, nie po nazwie przeglądarki) pojawia się sterowanie dotykowe.
+Na komputerze nic się nie zmienia; `?touch=1` w adresie włącza je do testów, `?touch=0` wyłącza.
+
+- **Lewa połowa ekranu:** joystick skrętu pojawia się tam, gdzie położysz kciuk (tylko w bok, proporcjonalnie).
+  W panelu (G → „Wydajność”) można zamiast niego wybrać przyciski ◀ ▶, które narastają jak klawisze.
+- **Prawa strona:** GAZ, HAMULEC / wsteczny i RĘCZNY. Działa kilka palców naraz (gaz + ręczny + skręt).
+- **U dołu:** pełny ekran (⛶; na Androidzie gra próbuje też zablokować poziom), pauza, reset, kamera, panel.
+- **W pionie** zasłania grę plansza „Obróć telefon” (iPhone nie pozwala stronie zablokować orientacji).
+- **Wydajność:** na dotyku jakość jest od razu niska (większy piksel, bez bloomu, co druga latarnia bez światła). Licznik FPS
+  i przełącznik jakości są w panelu, w folderze „Wydajność”.
+- **Pauza:** gra staje, gdy aplikacja przejdzie w tło; na telefonie wracasz dotknięciem, na komputerze sama rusza po powrocie. P / Esc też pauzuje.
+
+Roadmapa (dopracowanie sterowania mobilnego w v0.15): [`ROADMAP.md`](ROADMAP.md).
 
 ## Jak jeździć driftem (preset „Łatwy”)
 
