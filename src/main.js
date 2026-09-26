@@ -1,6 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
-import CannonDebugger from 'cannon-es-debugger';
 import GUI from 'lil-gui';
 import { Sky } from 'three/addons/objects/Sky.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -8,7 +6,10 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-import { createCar, tuning } from './car.js';
+import { initPhysics, createPhysics } from './physics.js';
+import { createVehicle } from './vehicle.js';
+import { tuning, presets, applyPreset, DEFAULT_PRESET } from './tuning.js';
+import { createCarView } from './car.js';
 import { createTrack } from './track.js';
 import { createSkidMarks, createSmoke } from './effects.js';
 import { createInput } from './input.js';
@@ -21,24 +22,25 @@ renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.6;
+renderer.toneMappingExposure = 0.5;
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0xb8c4d0, 120, 400);
 const camera = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.1, 2000);
 
-// Sky shader from three/addons, low sun for a golden-hour look
+// Sky shader from three/addons. Sun at 25° elevation with a small halo, so it doesn't glare into the chase camera.
 const sky = new Sky();
 sky.scale.setScalar(10000);
 scene.add(sky);
-const sunDir = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(78), THREE.MathUtils.degToRad(200));
+const sunDir = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(65), THREE.MathUtils.degToRad(200));
 sky.material.uniforms.turbidity.value = 6;
 sky.material.uniforms.rayleigh.value = 1.5;
+sky.material.uniforms.mieCoefficient.value = 0.002; // smaller, dimmer sun halo
 sky.material.uniforms.sunPosition.value.copy(sunDir);
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(sky).texture;
-scene.environmentIntensity = 0.35; // the HDR sky is very bright
+scene.environmentIntensity = 0.25; // the HDR sky is very bright
 
 scene.add(new THREE.HemisphereLight(0xbfd4ff, 0x404030, 0.6));
 const sun = new THREE.DirectionalLight(0xffe2b8, 2);
@@ -56,26 +58,17 @@ composer.addPass(bloom);
 composer.addPass(new OutputPass());
 
 // ---------- Physics ----------
-const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
-world.broadphase = new CANNON.SAPBroadphase(world);
-world.allowSleep = true;
-const groundMat = new CANNON.Material('ground');
-const carMat = new CANNON.Material('car');
-const propMat = new CANNON.Material('prop');
-world.addContactMaterial(new CANNON.ContactMaterial(groundMat, carMat, { friction: 0.05, restitution: 0 }));
-world.addContactMaterial(new CANNON.ContactMaterial(carMat, propMat, { friction: 0.2, restitution: 0.2 }));
-world.addContactMaterial(new CANNON.ContactMaterial(groundMat, propMat, { friction: 0.6, restitution: 0.1 }));
-
-const track = createTrack(scene, world, groundMat, propMat);
-const car = createCar(scene, world, carMat);
+await initPhysics();
+const physics = createPhysics();
+const track = createTrack(scene, physics);
+const car = createVehicle(physics, { spawn: { x: 0, y: 1.2, z: 0 } });
+const carView = createCarView(scene);
 const skids = createSkidMarks(scene);
 const smoke = createSmoke(scene);
 
-let physicsDebug = null;
-
 // ---------- HUD / scoring ----------
 const $ = (id) => document.getElementById(id);
-const hud = { speed: $('speed'), drift: $('drift'), points: $('drift-points'), combo: $('drift-combo'), score: $('score'), best: $('best') };
+const hud = { telemetry: $('telemetry'), speed: $('speed'), drift: $('drift'), points: $('drift-points'), combo: $('drift-combo'), score: $('score'), best: $('best') };
 let hudFlashTimer = 0;
 const scorer = createDriftScorer((event, s) => {
   hud.score.textContent = s.total.toLocaleString('pl-PL');
@@ -91,10 +84,90 @@ const scorer = createDriftScorer((event, s) => {
 });
 hud.best.textContent = scorer.state.best.toLocaleString('pl-PL');
 
-car.chassisBody.addEventListener('collide', (e) => {
-  if (e.body === track.groundBody) return;
-  if (Math.abs(e.contact.getImpactVelocityAlongNormal()) > 4) scorer.crash();
+const CRASH_FORCE = 300000; // N – chassis contact force counted as a crash (~15 km/h into a wall; measured in Node)
+
+// ---------- Tuning panel (lil-gui, key G / pad Start) ----------
+const gui = new GUI({ title: 'Tuning (G)' });
+const panel = { preset: DEFAULT_PRESET, export: exportTuning, import: () => showJson('', true) };
+gui.add(panel, 'preset', Object.keys(presets)).name('Preset').onChange((name) => {
+  applyPreset(name);
+  car.applyChassisParams();
+  gui.controllersRecursive().forEach((c) => c.updateDisplay());
 });
+gui.add(panel, 'export').name('Eksport ustawień (JSON)');
+gui.add(panel, 'import').name('Wczytaj JSON');
+const RANGES = { mass: [500, 2500], driftAngleMin: [0, 40], driftAngleMax: [20, 90], counterSteerAssist: [0, 1], speedKeep: [0, 1], driftSteerAuthority: [0, 1], yawInertiaScale: [0.3, 2] };
+const groups = {
+  'Silnik i hamulce': ['engineForce', 'maxSpeed', 'reverseForce', 'brakeForce', 'handbrakeBrake'],
+  Kierownica: ['steerMaxLow', 'steerMaxHigh', 'steerFadeSpeed', 'steerRate', 'steerReturnRate'],
+  Przyczepność: ['frontGrip', 'rearGrip', 'frontSideStiffness', 'rearSideStiffness', 'rearGripDrift', 'rearSideStiffnessDrift', 'gripBlendIn', 'gripBlendOut'],
+  'Wejście w drift': ['handbrakeLoss', 'powerOversteer', 'driftSustain', 'handbrakeKick'],
+  Asysty: ['counterSteerAssist', 'counterSteerLimit', 'driftSteerAuthority', 'driftAngleMin', 'driftAngleMax', 'driftAngleControl', 'driftAngleDamping', 'angleHold', 'speedKeep', 'uprightAssist'],
+  Podwozie: ['mass', 'comHeight', 'yawInertiaScale', 'suspensionStiffness', 'suspensionCompression', 'suspensionRelaxation', 'suspensionRestLength', 'maxSuspensionTravel'],
+};
+for (const [title, keys] of Object.entries(groups)) {
+  const folder = gui.addFolder(title).close();
+  for (const key of keys) {
+    const v = presets[DEFAULT_PRESET][key];
+    const [min, max] = RANGES[key] ?? (v < 0 ? [v * 3, 0] : [0, Math.max(v * 3, 1)]);
+    const c = folder.add(tuning, key, min, max);
+    if (title === 'Podwozie') c.onFinishChange(() => car.applyChassisParams());
+  }
+}
+const debugFolder = gui.addFolder('Grafika').close();
+debugFolder.add(bloom, 'strength', 0, 2, 0.01).name('bloom');
+gui.hide();
+
+function exportTuning() {
+  const json = JSON.stringify({ preset: panel.preset, ...tuning }, null, 2);
+  navigator.clipboard?.writeText(json).catch(() => {});
+  console.log(json);
+  showJson(json, false);
+}
+
+// Small overlay with a textarea: shows exported JSON, or takes pasted JSON to load
+function showJson(text, editable) {
+  document.getElementById('json-box')?.remove();
+  const box = document.createElement('div');
+  box.id = 'json-box';
+  box.innerHTML = `<p>${editable ? 'Wklej JSON z ustawieniami:' : 'Skopiowano do schowka (jeśli przeglądarka pozwoliła). Możesz też zaznaczyć tekst:'}</p>
+    <textarea spellcheck="false"></textarea><div><button data-a="ok">${editable ? 'Wczytaj' : 'Zamknij'}</button>${editable ? '<button data-a="close">Anuluj</button>' : ''}</div>`;
+  const area = box.querySelector('textarea');
+  area.value = text;
+  box.addEventListener('click', (e) => {
+    const a = e.target.dataset?.a;
+    if (a === 'ok' && editable) {
+      try {
+        const data = JSON.parse(area.value);
+        for (const k of Object.keys(tuning)) if (typeof data[k] === 'number') tuning[k] = data[k];
+        car.applyChassisParams();
+        gui.controllersRecursive().forEach((c) => c.updateDisplay());
+      } catch (err) {
+        area.value = `Błędny JSON: ${err.message}\n\n${area.value}`;
+        return;
+      }
+    }
+    if (a) box.remove();
+  });
+  document.body.appendChild(box);
+  area.focus();
+  area.select();
+}
+
+// ---------- Physics debug view (Rapier's debugRender, key F) ----------
+const debugLines = new THREE.LineSegments(
+  new THREE.BufferGeometry(),
+  new THREE.LineBasicMaterial({ vertexColors: true, depthTest: false, transparent: true }),
+);
+debugLines.frustumCulled = false;
+debugLines.renderOrder = 999;
+debugLines.visible = false;
+scene.add(debugLines);
+function updateDebugLines() {
+  const { vertices, colors } = physics.debugLines();
+  debugLines.geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+  debugLines.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 4));
+}
 
 // ---------- Input / camera modes ----------
 const cameraModes = [
@@ -104,34 +177,11 @@ const cameraModes = [
 ];
 let camMode = 0;
 
-const gui = new GUI({ title: 'Tuning' });
-gui.add(tuning, 'engineForce', 500, 6000, 50);
-gui.add(tuning, 'brakeForce', 5, 150, 1);
-gui.add(tuning, 'maxSteer', 0.2, 1, 0.01);
-gui.add(tuning, 'steerSpeed', 1, 10, 0.1);
-gui.add(tuning, 'frontGrip', 0.5, 6, 0.05);
-gui.add(tuning, 'rearGrip', 0.3, 6, 0.05);
-gui.add(tuning, 'handbrakeGrip', 0.1, 3, 0.05);
-gui.add(tuning, 'handbrakeForce', 0, 150, 1);
-gui.add(bloom, 'strength', 0, 2, 0.01).name('bloom');
-gui.hide();
-
 const input = createInput({
-  KeyR: () => car.reset(),
-  KeyC: () => (camMode = (camMode + 1) % cameraModes.length),
-  KeyG: () => gui.show(gui._hidden),
-  KeyF: () => {
-    if (!physicsDebug) {
-      const meshes = [];
-      physicsDebug = CannonDebugger(scene, world, { color: 0x00ff00, onInit: (_b, mesh) => meshes.push(mesh) });
-      physicsDebug.meshes = meshes;
-      physicsDebug.visible = true;
-    } else {
-      // cannon-es-debugger has no dispose(); just toggle its meshes
-      physicsDebug.visible = !physicsDebug.visible;
-      for (const m of physicsDebug.meshes) m.visible = physicsDebug.visible;
-    }
-  },
+  reset: () => car.reset(),
+  camera: () => (camMode = (camMode + 1) % cameraModes.length),
+  gui: () => gui.show(gui._hidden),
+  debug: () => (debugLines.visible = !debugLines.visible),
 });
 
 // ---------- Loop ----------
@@ -144,23 +194,24 @@ const lookSmoothed = new THREE.Vector3();
 function tick(time) {
   timer.update(time);
   const dt = Math.min(timer.getDelta(), 0.1);
-  const controls = input.read();
-  car.applyInput(controls, dt);
-  world.fixedStep(1 / 60, dt);
-  car.sync();
+  const controls = input.read(dt);
+  physics.step(dt, (h) => car.update(controls, h), () => car.afterStep());
+  const state = car.read();
+  carView.sync(state);
   track.sync();
-  if (physicsDebug?.visible) physicsDebug.update();
+  if (debugLines.visible) updateDebugLines();
 
-  // Auto-reset if flipped or fell off
-  const up = tmp.set(0, 1, 0).applyQuaternion(car.chassisMesh.quaternion);
-  if (car.chassisBody.position.y < -5 || (up.y < 0.1 && car.chassisBody.velocity.length() < 1)) car.reset();
+  // Auto-reset if it somehow ends up on its side / roof, or falls off the world
+  const up = tmp.set(0, 1, 0).applyQuaternion(state.quaternion);
+  if (state.position.y < -5 || (up.y < 0.3 && state.speed < 1)) car.reset();
 
   // Drift scoring
-  const fwd = new THREE.Vector3(1, 0, 0).applyQuaternion(car.chassisMesh.quaternion);
-  const v = car.chassisBody.velocity;
-  const grounded = car.vehicle.wheelInfos.some((w) => w.isInContact);
-  scorer.update(dt, fwd, v, grounded);
-  hud.speed.innerHTML = `${Math.round(Math.hypot(v.x, v.z) * 3.6)} <small>km/h</small>`;
+  const fwd = new THREE.Vector3(1, 0, 0).applyQuaternion(state.quaternion);
+  const v = state.velocity;
+  if (state.impact > CRASH_FORCE) scorer.crash();
+  scorer.update(dt, fwd, v, state.grounded);
+  hud.speed.innerHTML = `${Math.round(state.speed * 3.6)} <small>km/h</small>`;
+  hud.telemetry.textContent = `kąt ${Math.round(Math.abs(state.slipAngle))}° · ${panel.preset}${input.gamepadConnected ? ' · pad' : ''}`;
   if (hudFlashTimer > 0 && (hudFlashTimer -= dt) <= 0) {
     hud.points.textContent = '';
     hud.combo.textContent = '';
@@ -168,12 +219,10 @@ function tick(time) {
   }
 
   // Tyre smoke + skid marks when wheels slide
-  car.vehicle.wheelInfos.forEach((w, i) => {
-    const sliding = w.isInContact && (w.skidInfo < 0.7 || (car.isRear(i) && controls.handbrake)) && v.length() > 3;
-    if (sliding) {
-      const p = tmp.copy(w.raycastResult.hitPointWorld);
-      skids.add(i, p.clone());
-      if (car.isRear(i) && Math.random() < 0.6) smoke.emit(p, Math.min(1, v.length() / 15));
+  state.wheels.forEach((w, i) => {
+    if (w.sliding) {
+      skids.add(i, w.point.clone());
+      if (w.rear && Math.random() < 0.6) smoke.emit(w.point, Math.min(1, state.speed / 15));
     } else skids.lift(i);
   });
   smoke.update(dt);
@@ -183,16 +232,16 @@ function tick(time) {
   // Use yaw only, so the camera doesn't roll with the body
   const yaw = Math.atan2(-fwd.z, fwd.x);
   const yawQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-  camTarget.copy(mode.offset).applyQuaternion(yawQ).add(car.chassisMesh.position);
-  lookTarget.copy(mode.look).applyQuaternion(yawQ).add(car.chassisMesh.position);
+  camTarget.copy(mode.offset).applyQuaternion(yawQ).add(state.position);
+  lookTarget.copy(mode.look).applyQuaternion(yawQ).add(state.position);
   const k = 1 - Math.exp(-mode.lerp * dt);
   camera.position.lerp(camTarget, k);
   lookSmoothed.lerp(lookTarget, k);
   camera.lookAt(lookSmoothed);
 
   // Keep the shadow frustum around the car
-  sun.position.copy(car.chassisMesh.position).addScaledVector(sunDir, 80);
-  sun.target.position.copy(car.chassisMesh.position);
+  sun.position.copy(state.position).addScaledVector(sunDir, 80);
+  sun.target.position.copy(state.position);
 
   composer.render();
   requestAnimationFrame(tick);

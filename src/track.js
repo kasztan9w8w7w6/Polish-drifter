@@ -1,19 +1,13 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 
 // "Plac manewrowy": a big asphalt lot fenced by concrete barriers, with cones and tyre stacks.
 const SIZE = 160;
 
-export function createTrack(scene, world, groundMaterial, propMaterial) {
+export function createTrack(scene, physics) {
   const dynamic = []; // { body, mesh } pairs synced each frame
 
   // Ground
-  // A thick static box rather than a rotated CANNON.Plane: the plane's AABB is computed
-  // wrong after rotation, so vehicle raycasts miss it on half of the map.
-  const groundBody = new CANNON.Body({ mass: 0, material: groundMaterial });
-  groundBody.addShape(new CANNON.Box(new CANNON.Vec3(SIZE * 1.5, 1, SIZE * 1.5)));
-  groundBody.position.set(0, -1, 0);
-  world.addBody(groundBody);
+  physics.addStaticBox({ x: 0, y: -1, z: 0 }, { x: SIZE * 1.5, y: 1, z: SIZE * 1.5 }, { friction: 0.8 });
 
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(SIZE * 3, SIZE * 3),
@@ -27,10 +21,7 @@ export function createTrack(scene, world, groundMaterial, propMaterial) {
   const concrete = new THREE.MeshStandardMaterial({ color: 0x9a9a95, roughness: 0.9 });
   const half = SIZE / 2;
   const wall = (x, z, lx, lz) => {
-    const body = new CANNON.Body({ mass: 0, material: propMaterial });
-    body.addShape(new CANNON.Box(new CANNON.Vec3(lx / 2, 0.6, lz / 2)));
-    body.position.set(x, 0.6, z);
-    world.addBody(body);
+    physics.addStaticBox({ x, y: 0.6, z }, { x: lx / 2, y: 0.6, z: lz / 2 });
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(lx, 1.2, lz), concrete);
     mesh.position.set(x, 0.6, z);
     mesh.castShadow = mesh.receiveShadow = true;
@@ -46,11 +37,7 @@ export function createTrack(scene, world, groundMaterial, propMaterial) {
   coneGeo.translate(0, 0.35, 0);
   const coneMat = new THREE.MeshStandardMaterial({ color: 0xff5a00, roughness: 0.6 });
   const addCone = (x, z) => {
-    const body = new CANNON.Body({ mass: 3, material: propMaterial });
-    body.addShape(new CANNON.Cylinder(0.05, 0.25, 0.7, 8), new CANNON.Vec3(0, 0.35, 0));
-    body.position.set(x, 0, z);
-    body.allowSleep = true;
-    world.addBody(body);
+    const body = physics.addDynamicCone({ x, y: 0, z }, 0.25, 0.7, 3);
     const mesh = new THREE.Mesh(coneGeo, coneMat);
     mesh.castShadow = true;
     scene.add(mesh);
@@ -67,10 +54,7 @@ export function createTrack(scene, world, groundMaterial, propMaterial) {
   tyreGeo.rotateX(Math.PI / 2);
   const tyreMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.95 });
   for (const [x, z] of [[0, 50], [50, 0], [-50, -10], [30, -50], [-40, 55]]) {
-    const body = new CANNON.Body({ mass: 0, material: propMaterial });
-    body.addShape(new CANNON.Cylinder(0.65, 0.65, 1.6, 12), new CANNON.Vec3(0, 0.8, 0));
-    body.position.set(x, 0, z);
-    world.addBody(body);
+    physics.addStaticCylinder({ x, y: 0, z }, 0.65, 1.6);
     for (let k = 0; k < 4; k++) {
       const m = new THREE.Mesh(tyreGeo, tyreMat);
       m.position.set(x, 0.2 + k * 0.4, z);
@@ -93,11 +77,10 @@ export function createTrack(scene, world, groundMaterial, propMaterial) {
   }
 
   return {
-    groundBody,
     sync() {
       for (const { body, mesh } of dynamic) {
-        mesh.position.copy(body.position);
-        mesh.quaternion.copy(body.quaternion);
+        mesh.position.copy(body.position());
+        mesh.quaternion.copy(body.quaternion());
       }
     },
   };

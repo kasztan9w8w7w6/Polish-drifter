@@ -1,115 +1,27 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 
-// Live-tunable parameters (exposed in lil-gui).
-export const tuning = {
-  engineForce: 2600,
-  brakeForce: 80,
-  maxSteer: 0.6,
-  steerSpeed: 4, // rad/s the wheels turn towards the target
-  frontGrip: 3.2,
-  rearGrip: 2.2,
-  handbrakeGrip: 0.7,
-  handbrakeForce: 40,
-};
+// Visual side of the car only. Physics lives in vehicle.js; this module just mirrors its state.
+const WHEEL_RADIUS = 0.3;
 
-// cannon-es RaycastVehicle defaults: forward = +X, up = +Y, right(axle) = +Z.
-const WHEELS = [
-  { x: 1.3, z: 0.85, front: true },
-  { x: 1.3, z: -0.85, front: true },
-  { x: -1.3, z: 0.85, front: false },
-  { x: -1.3, z: -0.85, front: false },
-];
-const WHEEL_RADIUS = 0.36;
-
-export function createCar(scene, world, material) {
-  const chassisBody = new CANNON.Body({ mass: 1100, material });
-  chassisBody.addShape(new CANNON.Box(new CANNON.Vec3(2.1, 0.35, 0.9)), new CANNON.Vec3(0, 0.1, 0));
-  chassisBody.addShape(new CANNON.Box(new CANNON.Vec3(1.1, 0.3, 0.8)), new CANNON.Vec3(-0.3, 0.7, 0));
-  chassisBody.angularDamping = 0.4;
-
-  const vehicle = new CANNON.RaycastVehicle({ chassisBody });
-  for (const w of WHEELS) {
-    vehicle.addWheel({
-      radius: WHEEL_RADIUS,
-      directionLocal: new CANNON.Vec3(0, -1, 0),
-      axleLocal: new CANNON.Vec3(0, 0, 1),
-      chassisConnectionPointLocal: new CANNON.Vec3(w.x, -0.05, w.z),
-      suspensionStiffness: 35,
-      suspensionRestLength: 0.35,
-      maxSuspensionTravel: 0.3,
-      maxSuspensionForce: 1e5,
-      dampingRelaxation: 2.3,
-      dampingCompression: 4.4,
-      frictionSlip: w.front ? tuning.frontGrip : tuning.rearGrip,
-      rollInfluence: 0.02,
-      useCustomSlidingRotationalSpeed: true,
-      customSlidingRotationalSpeed: -30,
-    });
-  }
-  vehicle.addToWorld(world);
-
+export function createCarView(scene, wheelCount = 4) {
   const chassisMesh = buildChassisMesh();
   scene.add(chassisMesh);
-  const wheelMeshes = vehicle.wheelInfos.map(() => {
+  const wheelMeshes = Array.from({ length: wheelCount }, () => {
     const m = buildWheelMesh();
     scene.add(m);
     return m;
   });
 
-  const spawn = { position: new CANNON.Vec3(0, 1.5, 0), quaternion: new CANNON.Quaternion() };
-  let steer = 0;
-
-  function reset() {
-    chassisBody.position.copy(spawn.position);
-    chassisBody.quaternion.copy(spawn.quaternion);
-    chassisBody.velocity.setZero();
-    chassisBody.angularVelocity.setZero();
-  }
-  reset();
-
-  function applyInput(input, dt) {
-    // Speed along the car's forward axis decides whether S brakes or reverses.
-    const fwd = chassisBody.quaternion.vmult(new CANNON.Vec3(1, 0, 0));
-    const fwdSpeed = fwd.dot(chassisBody.velocity);
-
-    let engine = 0;
-    let brake = 0;
-    if (input.throttle) engine = tuning.engineForce;
-    if (input.brake) {
-      if (fwdSpeed > 1) brake = tuning.brakeForce;
-      else engine = -tuning.engineForce * 0.5;
-    }
-
-    const target = (input.steer || 0) * tuning.maxSteer;
-    steer += THREE.MathUtils.clamp(target - steer, -tuning.steerSpeed * dt, tuning.steerSpeed * dt);
-
-    for (let i = 0; i < 4; i++) {
-      const front = WHEELS[i].front;
-      vehicle.setSteeringValue(front ? steer : 0, i);
-      vehicle.applyEngineForce(front ? 0 : engine, i); // RWD, obviously
-      vehicle.setBrake(brake + (!front && input.handbrake ? tuning.handbrakeForce : 0), i);
-      vehicle.wheelInfos[i].frictionSlip = front
-        ? tuning.frontGrip
-        : input.handbrake ? tuning.handbrakeGrip : tuning.rearGrip;
-    }
+  function sync(state) {
+    chassisMesh.position.copy(state.position);
+    chassisMesh.quaternion.copy(state.quaternion);
+    state.wheels.forEach((w, i) => {
+      wheelMeshes[i].position.copy(w.position);
+      wheelMeshes[i].quaternion.copy(w.quaternion);
+    });
   }
 
-  function sync() {
-    chassisMesh.position.copy(chassisBody.position);
-    chassisMesh.quaternion.copy(chassisBody.quaternion);
-    for (let i = 0; i < 4; i++) {
-      // updateWheelTransform() clears isInContact as a side effect; keep the value from the last step
-      const contact = vehicle.wheelInfos[i].isInContact;
-      vehicle.updateWheelTransform(i);
-      vehicle.wheelInfos[i].isInContact = contact;
-      const t = vehicle.wheelInfos[i].worldTransform;
-      wheelMeshes[i].position.copy(t.position);
-      wheelMeshes[i].quaternion.copy(t.quaternion);
-    }
-  }
-
-  return { vehicle, chassisBody, chassisMesh, wheelMeshes, applyInput, sync, reset, isRear: (i) => !WHEELS[i].front };
+  return { chassisMesh, wheelMeshes, sync };
 }
 
 // Boxy 80s Polish sedan silhouette built from primitives (placeholder for a GLTF model).
@@ -128,13 +40,13 @@ function buildChassisMesh() {
     g.add(m);
     return m;
   };
-  add(new THREE.BoxGeometry(4.2, 0.35, 1.8), white, 0, -0.05, 0); // lower half white
-  add(new THREE.BoxGeometry(4.2, 0.35, 1.8), paint, 0, 0.3, 0); // upper half red
-  add(new THREE.BoxGeometry(2.2, 0.55, 1.6), paint, -0.3, 0.72, 0);
-  add(new THREE.BoxGeometry(2.25, 0.4, 1.62), glass, -0.3, 0.72, 0);
+  add(new THREE.BoxGeometry(4.3, 0.32, 1.68), white, 0, -0.14, 0); // lower half white
+  add(new THREE.BoxGeometry(4.3, 0.32, 1.68), paint, 0, 0.18, 0); // upper half red
+  add(new THREE.BoxGeometry(2.1, 0.5, 1.54), paint, -0.3, 0.58, 0);
+  add(new THREE.BoxGeometry(2.15, 0.36, 1.56), glass, -0.3, 0.58, 0);
   for (const z of [0.6, -0.6]) {
-    add(new THREE.BoxGeometry(0.05, 0.18, 0.4), lamp, 2.11, 0.25, z);
-    add(new THREE.BoxGeometry(0.05, 0.16, 0.45), tail, -2.11, 0.3, z);
+    add(new THREE.BoxGeometry(0.05, 0.18, 0.4), lamp, 2.16, 0.14, z);
+    add(new THREE.BoxGeometry(0.05, 0.16, 0.45), tail, -2.16, 0.18, z);
   }
   return g;
 }
