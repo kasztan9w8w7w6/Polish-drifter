@@ -1,16 +1,24 @@
 // Survival loop (pure logic, no three.js / DOM – tested in Node): the battery, the shop as a safe place, running flat.
 //
-// Battery 0–100 %: drains slowly while the engine runs (more with speed and on high beams) and charges ONLY in a drift,
-// in proportion to angle × speed – the same thing the drift points count (drift.js). The headlights follow it.
+// Battery 0–100 %: drains while the engine runs (more with speed and on high beams: without drifting it is flat after
+// 60–90 s) and charges ONLY in a proper drift – above chargeMinAngle and chargeMinSpeed, in proportion to angle × speed,
+// faster the longer the drift stays clean (streak). A hit breaks the streak and stops charging for hitCooldown.
+// Design target: to get anywhere you need 2–3 good drifts every ~30 s. The headlights follow the battery.
 // At 0 % the engine dies: the car rolls to a stop, the screen goes dark and the game restarts from the last save point.
 // Stopping on the glowing pad in front of the shop charges it to 100 % and makes that the save point.
 
 export const batterySettings = {
   start: 100, // % at a new game (a mission can set its own)
-  drainIdle: 0.12, // %/s with the engine running
-  drainDrive: 0.5, // %/s more at top speed (in proportion to speed)
-  drainHighBeam: 0.4, // %/s more with the high beams on
-  chargeRate: 0.01, // %/s per (degree × m/s) of drift: 30° at 54 km/h ≈ 4.5 %/s
+  drainIdle: 0.6, // %/s with the engine running
+  drainDrive: 1.3, // %/s more at top speed (in proportion to speed): 54 km/h ≈ 1.25 %/s in all → flat after ~80 s
+  drainHighBeam: 0.6, // %/s more with the high beams on
+  chargeMinAngle: 20, // ° a drift has to be at least this deep to charge…
+  chargeMinSpeed: 9, // …and this fast (m/s ≈ 32 km/h)
+  chargeRate: 0.006, // %/s per (degree × m/s) of drift: 30° at 54 km/h ≈ 2.7 %/s at the start of a drift…
+  streakTime: 3, // …growing over this many seconds of clean drifting…
+  streakBonus: 1.5, // …up to (1 + this) × as fast (30° at 54 km/h ≈ 6.8 %/s)
+  hitSpeed: 3, // m/s into an obstacle that counts as a hit: the streak is lost…
+  hitCooldown: 2, // …and no charging for this many seconds
   shopCharge: 35, // %/s on the shop pad
   low: 20, // % below this the headlights flicker
   warn: 10, // % below this a warning beeps
@@ -19,9 +27,7 @@ export const batterySettings = {
   respawnMin: 30, // % at least after a restart (so it doesn't run flat again straight away)
 };
 
-// Drift that counts (same thresholds as drift.js): angle between nose and velocity 12–100°, above 6 m/s, on the ground
-const MIN_SPEED = 6;
-const MIN_ANGLE = 12;
+const STREAK_GRACE = 0.4; // s out of a good drift (e.g. a quick flick through zero) before the streak is lost
 
 export function createSurvival({ settings = batterySettings, pad = null, save = { x: 0, z: 0, heading: 0 }, level = settings.start } = {}) {
   const s = settings;
@@ -34,18 +40,27 @@ export function createSurvival({ settings = batterySettings, pad = null, save = 
     save: { ...save, level }, // where and with how much battery a restart puts you
     deaths: 0,
     warn: false, // beeping
+    driftCharge: 0, // %/s coming from the drift right now (HUD charge lamp)
+    streak: 0, // s of clean good drifting
+    cooldown: 0, // s left without charging after a hit
   };
   let savedThisVisit = false;
+  let grace = 0;
 
   const inPad = (x, z) => pad && Math.abs(x - pad.x) <= pad.w / 2 && Math.abs(z - pad.z) <= pad.d / 2;
 
-  // Drift charge rate (%/s) for an angle (degrees) and speed (m/s)
-  function driftCharge(angle, speed, grounded = true) {
+  // Is this a drift that charges? (angle between nose and velocity, degrees; speed m/s)
+  const good = (angle, speed, grounded = true) => {
     const a = Math.abs(angle);
-    return grounded && speed > MIN_SPEED && a > MIN_ANGLE && a < 100 ? s.chargeRate * a * speed : 0;
+    return grounded && speed > s.chargeMinSpeed && a >= s.chargeMinAngle && a < 100;
+  };
+  // Drift charge rate (%/s) for an angle, speed and clean-streak length (s)
+  function driftCharge(angle, speed, grounded = true, streak = 0) {
+    if (!good(angle, speed, grounded)) return 0;
+    return s.chargeRate * Math.abs(angle) * speed * (1 + s.streakBonus * Math.min(1, streak / s.streakTime));
   }
 
-  // car: { x, z, heading, speed (m/s), topSpeed (m/s), angle (deg, nose vs velocity), grounded, highBeam }
+  // car: { x, z, heading, speed (m/s), topSpeed (m/s), angle (deg, nose vs velocity), grounded, highBeam, crash (m/s) }
   // Returns a list of events: 'low' / 'warn' (crossing the thresholds downwards), 'dead', 'dark', 'respawn',
   // 'shop' (stopped on the pad), 'saved', 'full'.
   function update(dt, car) {
@@ -56,6 +71,8 @@ export function createSurvival({ settings = batterySettings, pad = null, save = 
       state.onPad = !!inPad(car.x, car.z);
       state.charging = state.onPad && car.speed < 1;
       if (state.charging) {
+        state.driftCharge = 0;
+        state.streak = 0;
         if (!savedThisVisit) events.push('shop');
         state.level = Math.min(100, state.level + s.shopCharge * dt);
         if (state.level >= 100 && !savedThisVisit) {
@@ -66,7 +83,20 @@ export function createSurvival({ settings = batterySettings, pad = null, save = 
       } else {
         if (!state.onPad) savedThisVisit = false;
         const drain = s.drainIdle + s.drainDrive * Math.min(1, car.speed / (car.topSpeed || 30)) + (car.highBeam ? s.drainHighBeam : 0);
-        const charge = driftCharge(car.angle, car.speed, car.grounded ?? true);
+        // Clean-drift streak: grows in a good drift, lost after a short break or on a hit
+        state.cooldown = Math.max(0, state.cooldown - dt);
+        if ((car.crash ?? 0) > s.hitSpeed) {
+          if (state.streak > 0 || state.driftCharge > 0) events.push('hit');
+          state.streak = 0;
+          state.cooldown = s.hitCooldown;
+        }
+        const ok = good(car.angle, car.speed, car.grounded ?? true) && state.cooldown <= 0;
+        if (ok) {
+          state.streak += dt;
+          grace = 0;
+        } else if ((grace += dt) > STREAK_GRACE) state.streak = 0;
+        const charge = ok ? driftCharge(car.angle, car.speed, car.grounded ?? true, state.streak) : 0;
+        state.driftCharge = charge;
         state.level = Math.max(0, Math.min(100, state.level + (charge - drain) * dt));
       }
       if (before >= s.low && state.level < s.low) events.push('low');
@@ -93,6 +123,7 @@ export function createSurvival({ settings = batterySettings, pad = null, save = 
     state.phase = 'drive';
     state.phaseTime = 0;
     state.level = Math.max(state.save.level, s.respawnMin);
+    state.streak = state.cooldown = state.driftCharge = 0;
     savedThisVisit = false;
   }
 

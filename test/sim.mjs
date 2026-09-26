@@ -1,11 +1,12 @@
 // Headless driving harness shared by the tests (no browser, no rendering).
 import { initPhysics, createPhysics } from '../src/physics.js';
 import { createVehicle } from '../src/vehicle.ts';
-import { presets, DEFAULT_PRESET } from '../src/tuning.ts';
+import { presets } from '../src/tuning.ts';
 import { applyCar } from '../src/cars.js';
 import polonez from '../src/cars/polonez.json' with { type: 'json' };
 
-export async function createSim({ preset = DEFAULT_PRESET, car: profile = polonez, walls = false, ramps = false, bumps = false, obstacles = false } = {}) {
+// (preset: the older scenario tests describe the assisted Łatwy model; Normalny/Pro tests pass their preset)
+export async function createSim({ preset = 'Łatwy', car: profile = polonez, walls = false, ramps = false, bumps = false, obstacles = false } = {}) {
   await initPhysics();
   const physics = createPhysics();
   physics.addStaticBox({ x: 0, y: -1, z: 0 }, { x: 5000, y: 1, z: 5000 }, { friction: 0.8 });

@@ -35,6 +35,7 @@ const BODY_Y = 0.2 + 20; // box centre above the ground (bottom 0.2 m above it)
 const GROUP_BALL = (0x0001 << 16) | (0xfffd & ~OBSTACLE_GROUP);
 const GROUP_CHASSIS = (0x0002 << 16) | 0xfffd;
 
+const CATCH_ANGLE = 4 * (Math.PI / 180); // Pro/Normalny: a slide this small with no throttle or steering into it is caught
 const SPIN_RATE = 5; // rad/s the body keeps rotating after a spin-out (Pro)
 const SPIN_DRAG = 1.6; // 1/s speed lost while spinning
 const CRASH_BRAKE = 4; // 1/s – how fast the bounce after a hit dies out while the engine is cut (crashStun)
@@ -92,6 +93,7 @@ export function createVehicle(
   let sharpTimer = 0;
   let hold = 1; // 0..1 how much of the base drift angle is still held (see self-aligning below)
   let noThrottleTimer = 0;
+  let recentThrottle = 0; // highest throttle of the last liftWindow seconds (for lift-off oversteer)
   let grounded = false;
   let impact = 0;
   let prevForwardSpeed = 0;
@@ -178,7 +180,13 @@ export function createVehicle(
     // Power oversteer: hard steering + throttle at speed, held for `sharpTime`
     sharpTimer = Math.abs(steer) > t.sharpSteer && throttle > t.sharpThrottle && speed > t.sharpSpeed ? sharpTimer + h : 0;
     noThrottleTimer = throttle < 0.2 && inp.handbrake < 0.5 ? noThrottleTimer + h : 0;
-    if (!drifting && moving && speed > t.driftMinSpeed && ((inp.handbrake > 0.5 && Math.abs(steer) > 0.3) || sharpTimer > t.sharpTime)) {
+    // Lift-off oversteer: the throttle snapped shut (weight onto the front) while turning hard in a fast corner
+    const liftOff = recentThrottle - throttle > t.liftDrop && Math.abs(steer) > t.liftSteer && speed > t.liftSpeed;
+    recentThrottle = Math.max(throttle, recentThrottle - h / Math.max(t.liftWindow, 0.01));
+    // Entries (ordinary steering never slides): handbrake + steering above driftMinSpeed, lift-off in a fast corner,
+    // or power oversteer (full throttle + hard steering, held, above sharpSpeed)
+    const handbrakeEntry = inp.handbrake > 0.5 && Math.abs(steer) > t.handbrakeSteer && speed > t.driftMinSpeed;
+    if (!drifting && spinTimer <= 0 && moving && (handbrakeEntry || liftOff || (sharpTimer > t.sharpTime && speed > t.driftMinSpeed))) {
       drifting = true;
       driftSide = Math.sign(steer);
     } else if (drifting && (!moving || speed < t.driftMinSpeed * 0.6 || noThrottleTimer > t.driftExitDelay)) {
@@ -226,14 +234,15 @@ export function createVehicle(
       // Counter-steer holds or reduces it, letting go of it lets the slide grow, steering into the slide deepens it
       // – past proSpinAngle the car spins out.
       const speedScale = MathUtils.lerp(t.driftAngleLowSpeed, 1, MathUtils.clamp((speed - t.driftMinSpeed) / t.driftMinSpeed, 0, 1));
-      const grow = (t.proGrow + throttle * t.proGrowThrottle + inp.handbrake * t.proGrowHandbrake) * speedScale;
+      // (below proThrottleNeutral the throttle takes angle away: too little gas and the car straightens itself)
+      const grow = (t.proGrow + (throttle - t.proThrottleNeutral) * t.proGrowThrottle + inp.handbrake * t.proGrowHandbrake) * speedScale;
       const u = steer * driftSide; // + into the slide, − counter-steer
       angle += driftSide * (grow + u * (u > 0 ? t.proSteerInto : t.proSteer)) * DEG * h;
-      if (angle * driftSide <= 0) {
-        if (-steer * driftSide > t.transitionSteer) {
+      if (angle * driftSide <= 0 || (Math.abs(angle) < CATCH_ANGLE && u <= 0.2 && throttle < t.proThrottleNeutral + 0.1)) {
+        if (angle * driftSide <= 0 && -steer * driftSide > t.transitionSteer) {
           driftSide = -driftSide; // flicked through zero with a big counter-steer: now sliding the other way
         } else {
-          angle = 0; // caught it: grip again
+          // caught it: grip again (nearly straight, not pushing it any more); the rest straightens at straightenRate
           drifting = false;
         }
       } else if (Math.abs(angle) > t.proSpinAngle * DEG) {
@@ -294,7 +303,10 @@ export function createVehicle(
       }
       // Side grip: sideways sliding and sideways rolling die out, so the sphere follows the line of travel
       const lat = v.x * axX + v.z * axZ;
-      const k = 1 - Math.exp(-t.sideGrip * h);
+      // Momentum: the grip that pulls the velocity onto the line of travel weakens with speed and in a drift, so a fast
+      // car carries on outwards (overshooting a corner is possible). Łatwy: the same grip everywhere.
+      const grip = MathUtils.lerp(MathUtils.lerp(t.sideGrip, t.sideGripHigh, MathUtils.clamp(speed / topSpeed, 0, 1)), t.driftSideGrip, driftBlend);
+      const k = 1 - Math.exp(-grip * h);
       let vx = v.x - axX * lat * k, vy = v.y, vz = v.z - axZ * lat * k;
       // Landing / bump damping: near the ground, velocity AWAY from the surface below (a bounce, or a kick from
       // the edge of a bump) dies out fast. Velocity along the surface (driving up a ramp) is untouched.
@@ -580,7 +592,7 @@ export function createVehicle(
     body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     body.setAngvel({ x: 0, y: 0, z: 0 }, true);
     travel = yaw;
-    angle = turnRate = engine = driftBlend = sharpTimer = noThrottleTimer = accel = prevForwardSpeed = stuckTimer = crashTimer = spinTimer = 0;
+    angle = turnRate = engine = driftBlend = sharpTimer = noThrottleTimer = recentThrottle = accel = prevForwardSpeed = stuckTimer = crashTimer = spinTimer = 0;
     drifting = false;
     driftSide = 0;
     hold = 1;

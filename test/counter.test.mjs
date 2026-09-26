@@ -103,20 +103,23 @@ test('Pro: skręt w zakręt pogłębia drift aż do obrotu; w Łatwym obrotu nie
   assert.ok(pro.upY > 0.95, 'bez dachowania');
 });
 
-test('Pro na klawiaturze: drift da się trzymać stukaniem kontry przez 4 s', async (t) => {
-  const { rampValue, KEY_RAMP } = await import('../src/input.js');
-  const sim = await simAt(60, { preset: 'Pro' });
-  enterLeft(sim);
-  const v = { steer: 1 };
-  const angles = [];
-  // Player: counter-steer key (right) while the angle is above ~30°, release below
-  sim.run(4, (s) => {
-    const want = Math.abs(s.driftAngle) > 30 ? -1 : 0;
-    v.steer = rampValue(v.steer, want * Math.sign(s.driftAngle || 1), 1 / 60, KEY_RAMP.steerUp, KEY_RAMP.steerDown);
-    return { throttle: 1, steer: v.steer };
-  }, (x, s) => angles.push(s.drifting ? Math.abs(s.driftAngle) : 0));
-  const h = angles.slice(60);
-  t.diagnostic(`kąt ${fmt(Math.min(...h))}–${fmt(Math.max(...h))}°, średnio ${fmt(h.reduce((a, b) => a + b, 0) / h.length)}°, obroty ${sim.car.state.spins}, prędkość ${fmt(kmh(sim.car.state), 0)} km/h`);
-  assert.equal(sim.car.state.spins, 0);
-  assert.ok(Math.min(...h) > 12 && Math.max(...h) < 60);
-});
+for (const preset of ['Normalny', 'Pro']) {
+  test(`${preset} na klawiaturze: drift da się trzymać stukaniem kontry i gazu przez 4 s`, async (t) => {
+    const { rampValue, KEY_RAMP } = await import('../src/input.js');
+    const sim = await simAt(60, { preset });
+    enterLeft(sim);
+    const v = { steer: 1, throttle: 1 };
+    const angles = [];
+    // Player: counter-steer key while the angle is above ~26°, lift off the gas above ~36°
+    sim.run(4, (s) => {
+      const a = Math.abs(s.driftAngle);
+      v.steer = rampValue(v.steer, (a > 26 ? -1 : 0) * Math.sign(s.driftAngle || 1), 1 / 60, KEY_RAMP.steerUp, KEY_RAMP.steerDown);
+      v.throttle = rampValue(v.throttle, a > 36 ? 0 : 1, 1 / 60, KEY_RAMP.pedalUp, KEY_RAMP.pedalDown);
+      return { throttle: v.throttle, steer: v.steer };
+    }, (x, s) => angles.push(s.drifting ? Math.abs(s.driftAngle) : 0));
+    const h = angles.slice(60);
+    t.diagnostic(`kąt ${fmt(Math.min(...h))}–${fmt(Math.max(...h))}°, średnio ${fmt(h.reduce((a, b) => a + b, 0) / h.length)}°, obroty ${sim.car.state.spins}, prędkość ${fmt(kmh(sim.car.state), 0)} km/h`);
+    assert.equal(sim.car.state.spins, 0);
+    assert.ok(Math.min(...h) > 10 && Math.max(...h) < 60);
+  });
+}

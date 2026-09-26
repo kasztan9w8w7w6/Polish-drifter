@@ -178,15 +178,15 @@ gui.add(panel, 'export').name('Eksport ustawień (JSON)');
 gui.add(panel, 'import').name('Wczytaj JSON');
 const RANGES = {
   mass: [300, 3000], gravityScale: [0.5, 3], sharpSteer: [0.5, 1.01], sharpThrottle: [0, 1], transitionSteer: [0.3, 1.01], driftAngleLowSpeed: [0.2, 1],
-  driftAngleMax: [20, 60], realCounter: [0, 1], counterSteerVisual: [0, 1.5], proSpinAngle: [45, 120], dioPitch: [20, 80], dioYaw: [-180, 180], dioYawFollow: [0, 2], driftSpeedLoss: [0, 0.5], fovBase: [40, 90], fovFast: [40, 110], shakeSpeed: [0, 1],
+  driftAngleMax: [20, 60], realCounter: [0, 1], handbrakeSteer: [0, 1], liftSpeed: [5, 40], liftSteer: [0, 1], liftDrop: [0, 1], liftWindow: [0.05, 1], proThrottleNeutral: [0, 1], sideGripHigh: [1, 30], driftSideGrip: [1, 30], counterSteerVisual: [0, 1.5], proSpinAngle: [45, 120], dioPitch: [20, 80], dioYaw: [-180, 180], dioYawFollow: [0, 2], driftSpeedLoss: [0, 0.5], fovBase: [40, 90], fovFast: [40, 110], shakeSpeed: [0, 1],
 };
 const groups = {
   'Kula (Kenney)': ['mass', 'gravityScale', 'angularDamping', 'coastDamping', 'linearDamping'],
-  'Silnik i hamulce': ['power', 'throttleResponse', 'reversePower', 'brakePower', 'handbrakeDrag', 'sideGrip'],
+  'Silnik i hamulce': ['power', 'throttleResponse', 'reversePower', 'brakePower', 'handbrakeDrag', 'sideGrip', 'sideGripHigh', 'driftSideGrip'],
   Kierownica: ['steerRate', 'steerRateHigh', 'steerFullSpeed', 'turnSmoothing'],
-  'Wejście w drift': ['driftMinSpeed', 'sharpSteer', 'sharpThrottle', 'sharpSpeed', 'sharpTime', 'driftExitDelay', 'transitionSteer'],
+  'Wejście w drift': ['driftMinSpeed', 'handbrakeSteer', 'liftSpeed', 'liftSteer', 'liftDrop', 'liftWindow', 'sharpSteer', 'sharpThrottle', 'sharpSpeed', 'sharpTime', 'driftExitDelay', 'transitionSteer'],
   'Kąt driftu': ['driftAngleBase', 'driftAngleSteer', 'driftAngleThrottle', 'driftAngleHandbrake', 'selfAlign', 'driftAngleLowSpeed', 'driftAngleMax', 'driftAngleRate', 'straightenRate', 'driftTurnRate', 'driftTurnSteer', 'driftSpeedLoss'],
-  'Kontra (Pro: prawdziwa)': ['counterSteerVisual', 'realCounter', 'proGrow', 'proGrowThrottle', 'proGrowHandbrake', 'proSteer', 'proSteerInto', 'proSpinAngle', 'proSpinTime'],
+  'Kontra (Pro: prawdziwa)': ['counterSteerVisual', 'realCounter', 'proGrow', 'proGrowThrottle', 'proThrottleNeutral', 'proGrowHandbrake', 'proSteer', 'proSteerInto', 'proSpinAngle', 'proSpinTime'],
   'Wygląd jazdy i kontakt': ['bodyRoll', 'bodyPitch', 'suspension', 'landingDamping', 'unstuckTime', 'crashMinSpeed', 'crashRebound', 'crashStun'],
   'Kamera Diorama': ['dioPitch', 'dioYaw', 'dioYawFollow', 'dioZoom', 'dioZoomFast', 'dioLead', 'dioFollow', 'shakeSpeed', 'shakeImpact'],
   'Kamera Za autem': ['camDistance', 'camDistanceFast', 'camHeight', 'camFollow', 'camYawFollow', 'camLead', 'fovBase', 'fovFast'],
@@ -238,7 +238,13 @@ const bat = gui.addFolder('Bateria i misja').close();
 bat.add(batterySettings, 'drainIdle', 0, 1, 0.01).name('rozładowanie: silnik (%/s)');
 bat.add(batterySettings, 'drainDrive', 0, 3, 0.05).name('rozładowanie: jazda, maks. (%/s)');
 bat.add(batterySettings, 'drainHighBeam', 0, 3, 0.05).name('rozładowanie: długie (%/s)');
+bat.add(batterySettings, 'chargeMinAngle', 0, 60, 1).name('ładowanie: min. kąt (°)');
+bat.add(batterySettings, 'chargeMinSpeed', 0, 25, 0.5).name('ładowanie: min. prędkość (m/s)');
 bat.add(batterySettings, 'chargeRate', 0, 0.05, 0.001).name('ładowanie driftem (%/s na °·m/s)');
+bat.add(batterySettings, 'streakTime', 0.5, 10, 0.1).name('seria: czas do pełnej premii (s)');
+bat.add(batterySettings, 'streakBonus', 0, 5, 0.1).name('seria: premia (×)');
+bat.add(batterySettings, 'hitSpeed', 0, 15, 0.5).name('uderzenie od (m/s)');
+bat.add(batterySettings, 'hitCooldown', 0, 10, 0.1).name('po uderzeniu bez ładowania (s)');
 bat.add(batterySettings, 'shopCharge', 1, 100, 1).name('ładowanie w sklepie (%/s)');
 bat.add(batterySettings, 'low', 0, 50, 1).name('miganie świateł poniżej (%)');
 bat.add(batterySettings, 'warn', 0, 50, 1).name('ostrzeżenie poniżej (%)');
@@ -422,9 +428,10 @@ function tick(time) {
   const topSpeed = tuning.power / tuning.angularDamping;
   const heading = headingOf(state.quaternion);
   const drifted = scorer.state.drifting ? scorer.state.angle : 0;
-  for (const e of survival.update(dt, { x: state.position.x, z: state.position.z, heading, speed: state.speed, topSpeed, angle: drifted, grounded: state.grounded, highBeam: lightsState.high })) {
+  for (const e of survival.update(dt, { x: state.position.x, z: state.position.z, heading, speed: state.speed, topSpeed, angle: drifted, grounded: state.grounded, highBeam: lightsState.high, crash: state.crash })) {
     handleMission(mission.notify(e));
     if (e === 'saved') toast('Żappka: bateria 100%, zapisano');
+    if (e === 'hit') toast('Uderzenie – seria ładowania przerwana');
     if (e === 'dead') scorer.crash();
     if (e === 'respawn') {
       placeCar(survival.state.save);

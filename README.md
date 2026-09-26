@@ -77,27 +77,21 @@ Na komputerze nic się nie zmienia; `?touch=1` w adresie włącza je do testów,
 
 Roadmapa (dopracowanie sterowania mobilnego w v0.15): [`ROADMAP.md`](ROADMAP.md).
 
-## Jak jeździć driftem (preset „Łatwy”)
+## Jak jeździć driftem (preset „Normalny”, domyślny)
 
-1. **Wejście** (od ~30 km/h):
-   - skręć i wciśnij **ręczny** (Spacja),
-   - albo od ~47 km/h skręć mocno **z gazem** (power oversteer).
-2. Trzymaj **gaz**: podtrzymuje drift; drift traci mało prędkości.
-3. Kąt zmienia się płynnie, bez skoków:
-   - im dłużej trzymasz skręt w stronę zakrętu, tym głębszy kąt (do ~42°);
-   - lekki skręt w zakręt trzyma drift (~20°);
-   - puszczony skręt = auto samo się delikatnie prostuje w ~2 s, jak wracająca kierownica;
-   - lekka kontra zmniejsza kąt szybciej.
+Normalna jazda trzyma przyczepność: zwykły zakręt, nawet pełny skręt z gazem, nie wywoła poślizgu. Poślizg zaczyna się dopiero od:
+- **ręcznego** (Spacja) ze skrętem od ~40 km/h,
+- **odpuszczenia gazu** w szybkim zakręcie od ~54 km/h (masa przechodzi na przód, tył ucieka),
+- **pełnego gazu z pełnym skrętem** od ~61 km/h.
 
-   Na klawiaturze skręt narasta przez ~0,4 s. Pad działa proporcjonalnie do wychylenia gałki. Kąt ma twardy limit, bączka nie da się zrobić.
-4. **Przekładka:** mocna, przytrzymana kontra przeprowadza auto płynnie przez zero na drugą stronę.
-5. **Wyjście:** puść gaz, a auto samo płynnie się wyprostuje.
+W poślizgu nic nie trzyma kąta za ciebie:
+- gaz wypycha tył dalej, **kontra** (skręt przeciwny do zakrętu) zmniejsza kąt; drift trzymasz kontrą i gazem jednocześnie;
+- za mało gazu – auto się prostuje i łapie przyczepność; skręt w zakręt albo puszczona kontra – kąt rośnie aż do **obrotu** (powyżej 65°);
+- za mocna kontra przy wyjściu **zarzuca w drugą stronę**; wyjście z wyczuciem: odpuść gaz i lekko kontruj;
+- auto ma **pęd**: w szybkim zakręcie i w drifcie wynosi je na zewnątrz, więc da się przestrzelić zakręt.
 
-**Mapa:** osiedle jest ręcznie ułożone w `src/maps/osiedle.json`. Plik to lista obiektów (model, pozycja, obrót, rozmiar, kolizja,
-materiał), latarni, dziur w drodze, parkingów i punktów misji. Żeby coś przestawić, zmień liczby w pliku i odśwież stronę.
-Układ: pętla ulic dookoła osiedla, 3 bloki, duży parking do driftu na środku (pachołki, opony), rząd 12 garaży od północy,
-sklep „Żappka 24h” z parkingiem, paczkomat przy Bloku 1, zaparkowane auta, latarnie wzdłuż ulic i 7 dziur w drodze (tylko wizualnie).
-Kolizja każdego obiektu to obrys jego geometrii na wysokości karoserii, więc drzewo zderza się pniem, a latarnia słupem.
+Presety (G → Preset, później w menu Ustawienia): **Normalny** (domyślny), **Pro** (wyższe progi, tył ucieka szybciej, obrót od 55°)
+i **Łatwy** – dawna jazda z asystą (kąt trzyma się sam, bez bączków), jako opcja dostępności.
 
 **Uderzenia:** przeszkody zderzają się z karoserią auta (prostokąt 4,3 × 1,7 m) i mają kolizję dokładnie taką, jak wyglądają.
 Przejazd tuż obok lampy nic nie robi, a zahaczenie jej rogiem to uderzenie. Po uderzeniu auto zatrzymuje się na przeszkodzie
@@ -105,13 +99,6 @@ i lekko odbija, zależnie od materiału: od drzewa najsłabiej, potem beton, met
 a od opon i plastikowych barierek najmocniej. Silnik przez chwilę nie pcha w przeszkodę; cofanie działa od razu.
 Suwaki: `crashRebound`, `crashStun`, `crashMinSpeed` w „Wygląd jazdy i kontakt”.
 Awaryjne wypchnięcie zostało tylko na wypadek zakleszczenia (np. auto wstawione w szparę węższą od siebie).
-
-Presety w panelu (G):
-- **Łatwy:** domyślny.
-- **Pro:** drift gazem wchodzi dopiero od ~61 km/h, przy pełnym gazie i dłużej trzymanym skręcie. **Prawdziwa kontra:** w drifcie
-  tył sam chce wyjść dalej (bardziej z gazem). Kontra trzyma kąt (przy pełnym gazie ok. 45% skrętu), mocniejsza kontra go zmniejsza
-  aż do złapania przyczepności, puszczenie kontry go zwiększa, a skręt w zakręt pogłębia drift aż do obrotu (powyżej 75°).
-  Po obrocie auto wytraca prędkość i można odjechać.
 
 W obu presetach przednie koła w drifcie same pokazują kontrę (skręcone przeciwnie do zakrętu, o tyle, ile wynosi kąt driftu).
 
@@ -129,8 +116,10 @@ Przycisk **Eksport ustawień (JSON)** kopiuje wszystkie parametry do schowka (i 
 
 ## Bateria, Żappka i misja 1
 
-- **Bateria** (pasek nad licznikiem) powoli się rozładowuje w jeździe: ok. 22% na minutę przy 54 km/h, dwa razy szybciej na długich
-  światłach (L). Ładuje się **tylko w drifcie**, tym szybciej, im większy kąt i prędkość (np. 40° przy 54 km/h ≈ +5,6% na sekundę).
+- **Bateria** szybko się rozładowuje: bez driftu auto gaśnie po ok. 80 s jazdy przy 54 km/h (64 s przy 80 km/h, szybciej na długich, L).
+  Ładuje ją **tylko porządny drift**: co najmniej 20° i 32 km/h, tym szybciej, im większy kąt i prędkość i im dłużej drift jest czysty
+  (30° przy 54 km/h: +2% w pierwszej sekundzie, +5,5% w czwartej). Uderzenie przerywa serię i na 2 s blokuje ładowanie.
+  W praktyce: co ok. 30 s potrzebujesz 2–3 dobrych driftów.
 - **Reflektory** słabną razem z baterią; poniżej 20% migoczą, poniżej 10% pasek miga i słychać pisk.
 - **0%:** silnik gaśnie, auto się toczy, ekran ciemnieje, komunikat, restart z ostatniego punktu zapisu (z co najmniej 30% baterii).
 - **Żappka 24h:** zatrzymaj się na świecącym zielonym polu przed wejściem. Bateria ładuje się do 100% (ok. 2 s) i tu zapisuje się punkt odrodzenia.

@@ -2,7 +2,7 @@
   "_help": "Misja: kroki po kolei. type: reach (point z mapy, stop: true = trzeba stanąć), battery (min %), wait (time s). goal = tekst celu na HUD, say = narrator na początku kroku, done = na końcu. hints: teksty na zdarzenia gry (low, warn, dead, respawn, shop), once = tylko raz.",
   "id": "paczka",
   "title": "Paczka",
-  "start": { "point": "spawn", "battery": 30 },
+  "start": { "point": "spawn", "battery": 60 },
   "intro": [
     "Osiedle Kosmonautów. Trzecia w nocy. Mgła gęsta jak żurek u teściowej.",
     "Nad blokami buczy maszt. Sąsiad z parteru mówi, że to 5G. Sąsiad z parteru wie wszystko.",

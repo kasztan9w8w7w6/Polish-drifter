@@ -16,7 +16,9 @@ const base = {
   reversePower: 0.5, // fraction of power when reversing (Kenney: target_speed / 2)
   brakePower: 35, // spin removed per second on the brake
   handbrakeDrag: 6, // spin removed per second on the handbrake
-  sideGrip: 20, // 1/s – how fast sideways sliding dies out (keeps the sphere on the line of travel)
+  sideGrip: 20, // 1/s – how fast sideways sliding dies out (keeps the sphere on the line of travel)…
+  sideGripHigh: 20, // …the same at top speed (lower = the car carries on outwards in fast corners: momentum)
+  driftSideGrip: 20, // …and in a drift (lower = the car slides on along its old line, overshooting is possible)
 
   // Steering (Kenney: target_angular = -input.x * 4, smoothed by lerp(…, delta * 4))
   steerRate: 2.2, // rad/s of turn at low speed
@@ -25,7 +27,14 @@ const base = {
   turnSmoothing: 5, // 1/s
 
   // Drift on top (arcade: the body rotates away from the line of travel, no tyre model)
-  driftMinSpeed: 8, // m/s ≈ 29 km/h
+  driftMinSpeed: 8, // m/s ≈ 29 km/h – below this no drift starts (handbrake entry)
+  handbrakeSteer: 0.3, // handbrake entry: |steer| above this
+  // Lift-off oversteer: the throttle snapped shut (by liftDrop within liftWindow s) while steering above liftSteer
+  // above liftSpeed (weight transfer onto the front wheels)
+  liftSpeed: 999, // m/s (999 = off)
+  liftSteer: 0.6,
+  liftDrop: 0.6,
+  liftWindow: 0.35,
   sharpSteer: 0.85, // power oversteer: |steer| above this…
   sharpThrottle: 0.5, // …with at least this much throttle…
   sharpSpeed: 13, // …above this speed (m/s ≈ 47 km/h)…
@@ -49,7 +58,8 @@ const base = {
   // Real counter-steer (preset Pro: realCounter = 1). The drift angle grows on its own, steering changes the growth:
   realCounter: 0, // 0 = the angle follows a target (Łatwy), 1 = held and regulated by counter-steer, can spin out
   proGrow: 10, // °/s the angle grows with neutral steering and no throttle
-  proGrowThrottle: 30, // °/s more at full throttle
+  proGrowThrottle: 30, // °/s more at full throttle…
+  proThrottleNeutral: 0, // …counted from this throttle: below it the throttle takes angle away (too little gas: it straightens)
   proGrowHandbrake: 20, // °/s more on the handbrake
   proSteer: 90, // °/s the angle drops per full counter-steer lock
   proSteerInto: 40, // °/s the angle grows per full lock into the slide (too much → spin)
@@ -92,29 +102,67 @@ const base = {
 
 export type Tuning = typeof base;
 
-export const presets: Record<string, Tuning> = {
-  Łatwy: { ...base },
-  Pro: {
-    ...base,
-    // Power oversteer works, but needs more speed, full throttle and a longer, sharper input
-    sharpSteer: 0.95,
-    sharpThrottle: 0.9,
-    sharpSpeed: 17,
-    sharpTime: 0.35,
-    driftAngleBase: 10,
-    driftAngleSteer: 32,
-    driftAngleThrottle: 12,
-    driftAngleRate: 2.6,
-    driftTurnSteer: 0.8,
-    driftExitDelay: 0.15,
-    driftSpeedLoss: 0.15,
-    transitionSteer: 0.7,
-    steerRate: 2.6,
-    realCounter: 1,
-  },
+// Normalny (default, demanding): ordinary steering keeps grip; a slide needs the handbrake at speed, a lift-off in a
+// fast corner or full throttle with hard steering at higher speed. In the slide nothing holds the angle for you:
+// counter-steer and throttle do (real counter-steer model), neglect it and the car spins, and the car has momentum.
+const normal: Tuning = {
+  ...base,
+  driftMinSpeed: 11, // ≈ 40 km/h
+  handbrakeSteer: 0.5,
+  liftSpeed: 15, // ≈ 54 km/h
+  liftSteer: 0.6,
+  liftDrop: 0.6,
+  liftWindow: 0.35,
+  sharpSteer: 0.9,
+  sharpThrottle: 0.9,
+  sharpSpeed: 17, // ≈ 61 km/h
+  sharpTime: 0.3,
+  realCounter: 1,
+  proGrow: 4,
+  proGrowThrottle: 45,
+  proThrottleNeutral: 0.45,
+  proGrowHandbrake: 25,
+  proSteer: 80,
+  proSteerInto: 45,
+  proSpinAngle: 65,
+  proSpinTime: 1.4,
+  transitionSteer: 0.55,
+  driftExitDelay: 1.2, // the angle dynamics end the drift (caught / spun), not a timer
+  driftSpeedLoss: 0.12,
+  driftTurnSteer: 0.6,
+  sideGripHigh: 12,
+  driftSideGrip: 5,
+  steerRateHigh: 1.0,
+  turnSmoothing: 4,
 };
 
-export const DEFAULT_PRESET = 'Łatwy';
+export const presets: Record<string, Tuning> = {
+  Łatwy: { ...base }, // accessibility: the assisted drift of v0.2–v0.3
+  Normalny: normal,
+  // Pro: harder still – higher entry thresholds, the tail comes round faster, spins earlier, less grip
+  Pro: {
+    ...normal,
+    driftMinSpeed: 12,
+    handbrakeSteer: 0.6,
+    liftSpeed: 16,
+    sharpSteer: 0.95,
+    sharpThrottle: 0.95,
+    sharpSpeed: 19,
+    sharpTime: 0.4,
+    proGrow: 8,
+    proGrowThrottle: 55,
+    proThrottleNeutral: 0.5,
+    proSteer: 75,
+    proSteerInto: 55,
+    proSpinAngle: 55,
+    proSpinTime: 1.6,
+    transitionSteer: 0.45,
+    driftSpeedLoss: 0.15,
+    sideGripHigh: 9,
+    driftSideGrip: 3.5,
+  },
+};
+export const DEFAULT_PRESET = 'Normalny';
 export const tuning: Tuning = { ...presets[DEFAULT_PRESET] };
 
 export function applyPreset(name: string): Tuning {

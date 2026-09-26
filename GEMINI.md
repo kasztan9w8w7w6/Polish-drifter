@@ -37,7 +37,7 @@ src/vehicle.ts  – auto arcade (port Kenney Starter Kit Racing, vehicle.gd): to
                   Wejście: { throttle, brake, steer (+ = lewo), handbrake } 0..1 / -1..1
                   Wyjście: vehicle.state { position, quaternion, velocity, speed, slipAngle, driftAngle, drifting,
                   bodyRoll, bodyPitch, wheels[] }
-src/tuning.ts   – wszystkie parametry jazdy i kamery + presety „Łatwy” (domyślny), „Pro”
+src/tuning.ts   – wszystkie parametry jazdy i kamery + presety „Normalny” (domyślny, wymagający), „Pro”, „Łatwy” (dostępność)
 src/cars/*.json – profile aut (realne dane + wartości arcade, przełożenia, paleta lakierów, model); nowe auto = nowy plik
 src/cars.js     – applyCar (masa, moc z prędkości maks., napęd → tuning), gearsOf (biegi i obroty dla gearbox.js)
 src/camera.ts   – kamera „Diorama” (orto 3/4, przyciągana do siatki pikseli) i „Za autem” (port view.gd), klawisz C
@@ -75,8 +75,9 @@ Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości n
 
 ## Bateria i misje (skrót)
 
-- Bateria 0–100%: `drainIdle` + `drainDrive` × prędkość/maks. + `drainHighBeam` (długie, klawisz L) %/s; ładowanie tylko w drifcie:
-  `chargeRate` × kąt (°) × prędkość (m/s), te same progi co punkty (drift.js: ≥ 12°, ≥ 6 m/s). Wszystko w `batterySettings` (lil-gui).
+- Bateria 0–100%: `drainIdle` + `drainDrive` × prędkość/maks. + `drainHighBeam` (długie, klawisz L) %/s (bez driftu 60–90 s);
+  ładowanie tylko w porządnym drifcie (≥ `chargeMinAngle`, ≥ `chargeMinSpeed`): `chargeRate` × kąt × prędkość × (1 + `streakBonus` ×
+  seria/`streakTime`); uderzenie > `hitSpeed` zeruje serię i blokuje ładowanie na `hitCooldown`. Wszystko w `batterySettings` (lil-gui).
 - Reflektory: jasność 0,25–1 i zasięg 0,35–1 z baterią; poniżej `low` (20%) migoczą, poniżej `warn` (10%) piszczy ostrzeżenie.
 - 0%: silnik gaśnie (bez gazu i wstecznego), auto się toczy, `dyingTime` ciemnienie, `darkTime` komunikat, restart z punktu zapisu
   (bateria co najmniej `respawnMin`). Misja nie cofa się.
@@ -91,9 +92,15 @@ Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości n
   `sideGrip` wygasza ruch w bok, więc kula trzyma się toru.
 - **Model auta** to osobny obiekt: pozycja kuli − promień, obrót = kurs, nachylenie do normalnej z raycastu w dół (lerp 0,2). Nie może dachować.
 - **Dwa kąty:** `travel` (tor ruchu) i kurs maski = `travel + angle`. W przyczepności `angle` = 0.
-- **Drift:**
-  - wejście: ręczny + skręt powyżej `driftMinSpeed` albo gaz w ostrym zakręcie (power oversteer:
-    `sharpSteer`, `sharpThrottle`, `sharpSpeed`, `sharpTime`; w Pro trudniej);
+- **Presety (v0.4a):** Normalny (domyślny) i Pro używają modelu prawdziwej kontry (`realCounter` = 1, niżej); Łatwy to model
+  z asystą opisany w punkcie „Drift” (kąt goni cel). Stare testy scenariuszy jadą na Łatwym (test/sim.mjs), nowe na Normalnym.
+- **Wejście w poślizg** (zwykły skręt nigdy nie ślizga): ręczny + |skręt| > `handbrakeSteer` powyżej `driftMinSpeed`;
+  odpuszczenie gazu (spadek > `liftDrop` w `liftWindow` s) przy |skręcie| > `liftSteer` powyżej `liftSpeed`;
+  pełny gaz z mocnym skrętem (`sharpSteer`, `sharpThrottle`, `sharpSpeed`, `sharpTime`).
+- **Pęd:** przyczepność boczna kuli `sideGrip` maleje do `sideGripHigh` przy prędkości maks. i do `driftSideGrip` w drifcie,
+  więc szybkie auto wynosi na zewnątrz łuku.
+- **Drift (Łatwy):**
+  - wejście: jak wyżej (w Łatwym `liftSpeed` = 999, czyli wyłączone);
   - kąt docelowy to funkcja ciągła: `strona·(driftAngleBase + gaz·driftAngleThrottle + ręczny·driftAngleHandbrake) + skręt·driftAngleSteer`,
     razy skala prędkości (`driftAngleLowSpeed`), z twardym limitem `driftAngleMax` (bez bączków);
     kąt dochodzi do celu z `driftAngleRate` (trzymanie skrętu dłużej = głębszy kąt);
@@ -103,7 +110,8 @@ Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości n
   - tor zakręca z `driftTurnRate` proporcjonalnie do kąta;
   - wyjście: brak gazu dłużej niż `driftExitDelay`; auto prostuje się z `straightenRate`.
 - **Kontra:** w drifcie przednie koła same pokazują kontrę (`counterSteerVisual` × kąt driftu), niezależnie od wejścia.
-  Pro (`realCounter` = 1): kąt nie goni celu, tylko sam rośnie (`proGrow` + gaz `proGrowThrottle` + ręczny `proGrowHandbrake`);
+  Normalny/Pro (`realCounter` = 1): kąt nie goni celu, tylko sam rośnie (`proGrow` + (gaz − `proThrottleNeutral`) · `proGrowThrottle`
+  + ręczny `proGrowHandbrake`; za mało gazu = kąt maleje i auto łapie przyczepność poniżej 4°);
   kontra go zmniejsza (`proSteer` °/s na pełny skręt), skręt w zakręt pogłębia (`proSteerInto`), powyżej `proSpinAngle`
   obrót (`proSpinTime`: bez gazu, auto wytraca prędkość, potem odjeżdża w stronę, w którą patrzy). Łatwy: bez zmian.
 - **Kontakt:** kula ma restitution 0; prędkość „od podłoża” jest tłumiona (`landingDamping`), model podąża za wysokością

@@ -1,6 +1,6 @@
 # Roadmapa – Agro Drifter
 
-Wersje po kolei. Szczegóły modułów: [`CLAUDE.md`](CLAUDE.md).
+Wersje po kolei. Szczegóły modułów: [`CLAUDE.md`](CLAUDE.md), zmiany w każdej wersji: [`CHANGELOG.md`](CHANGELOG.md).
 
 | Wersja | Zakres | Stan |
 |---|---|---|
@@ -15,6 +15,9 @@ Wersje po kolei. Szczegóły modułów: [`CLAUDE.md`](CLAUDE.md).
 | v0.3b | ręczna mapa osiedla w pliku danych, kolizje z geometrii | zrobione |
 | v0.3c | bateria, sklep = punkt zapisu, narrator, misja 1 „Paczka” | zrobione |
 | v0.3d | sterowanie mobilne – **wersja testowa** (dotyk: joystick nipplejs + przyciski, pełny ekran/poziom, niższa jakość, FPS, pauza w tle) | zrobione |
+| v0.4a | trudniejsza jazda (preset Normalny, pęd, obrót, zarzucenie) i bateria (60–90 s bez driftu, seria czystego driftu) | zrobione |
+| v0.4b | kamera niżej i w bok, piksele wg rozdzielczości, zegary z bloku wschodniego, menu (główne, garaż, ustawienia, pauza) | w toku |
+| v0.4c | logiczne osiedle z wielkiej płyty (plan w docs/mapa.md) | w toku |
 | v0.4 | MVP | następne |
 | v0.15 | dopracowanie sterowania mobilnego (po testach na telefonach) | planowane |
 
