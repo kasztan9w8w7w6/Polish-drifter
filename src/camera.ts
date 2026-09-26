@@ -150,8 +150,9 @@ export function createCameraRig(chase: PerspectiveCamera, dio: OrthographicCamer
       return MODES[mode];
     },
     // impact in N from vehicle.state.impact
-    hit(impact: number) {
-      trauma = Math.min(1, trauma + (impact / 1.5e6) * t.shakeImpact);
+    // speed (m/s) into the obstacle, vehicle.state.crash
+    hit(speed: number) {
+      trauma = Math.min(1, trauma + (speed / 20) * t.shakeImpact);
     },
     nextMode() {
       mode = (mode + 1) % MODES.length;

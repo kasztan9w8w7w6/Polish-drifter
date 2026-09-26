@@ -10,7 +10,7 @@ export async function createSim({ preset = DEFAULT_PRESET, walls = false, ramps 
   if (walls) {
     // A 40 m square pen of concrete barriers around the origin
     for (const [x, z, hx, hz] of [[0, 20, 20, 0.5], [0, -20, 20, 0.5], [20, 0, 0.5, 20], [-20, 0, 0.5, 20]]) {
-      physics.addStaticBox({ x, y: 0.6, z }, { x: hx, y: 0.6, z: hz });
+      physics.addStaticBox({ x, y: 0.6, z }, { x: hx, y: 0.6, z: hz }, { surface: 'concrete' });
     }
   }
   if (ramps) {
@@ -24,16 +24,16 @@ export async function createSim({ preset = DEFAULT_PRESET, walls = false, ramps 
     for (let i = 0; i < 30; i++) physics.addStaticBox({ x: 20 + i * 4, y: 0, z: 0 }, { x: 0.4, y: 0.15, z: 6 });
   }
   if (obstacles) {
-    // Things to crash into, padded like in the game (track.js/district.js add BALL_RADIUS around them):
-    // tyre stacks, lamp posts, a narrow gap between two boxes, a low kerb block and a corner
-    const PAD = 1;
-    for (const [x, z] of [[8, 5], [-8, -6], [5, -10], [-12, 8]]) physics.addStaticCylinder({ x, y: 0, z }, 0.65 + PAD, 1.6);
-    for (const [x, z] of [[0, 12], [12, -2], [-4, -14]]) physics.addStaticCylinder({ x, y: 0, z }, 0.16 + PAD, 7);
-    physics.addStaticBox({ x: -14, y: 1.4, z: -2 }, { x: 1 + PAD, y: 1.4, z: 3 + PAD });
-    physics.addStaticBox({ x: -14, y: 1.4, z: 7.9 }, { x: 1 + PAD, y: 1.4, z: 3 + PAD }); // 1.9 m gap < ball diameter
-    physics.addStaticBox({ x: 14, y: 0.6, z: 10 }, { x: 3 + PAD, y: 0.6, z: 0.5 + PAD });
-    physics.addStaticBox({ x: 16, y: 1.5, z: -14 }, { x: 0.5 + PAD, y: 1.5, z: 4 + PAD });
-    physics.addStaticBox({ x: 12, y: 1.5, z: -17.5 }, { x: 4 + PAD, y: 1.5, z: 0.5 + PAD });
+    // Things to crash into, as big as they look (like in the game): tyre stacks, lamp posts, a gap between two
+    // boxes narrower than the car, a low kerb block and a corner
+    const o = { surface: 'concrete' };
+    for (const [x, z] of [[8, 5], [-8, -6], [5, -10], [-12, 8]]) physics.addStaticCylinder({ x, y: 0, z }, 0.65, 1.6, { surface: 'tyres' });
+    for (const [x, z] of [[0, 12], [12, -2], [-4, -14]]) physics.addStaticCylinder({ x, y: 0, z }, 0.16, 7);
+    physics.addStaticBox({ x: -14, y: 1.4, z: -2 }, { x: 1, y: 1.4, z: 3 }, o);
+    physics.addStaticBox({ x: -14, y: 1.4, z: 5.4 }, { x: 1, y: 1.4, z: 3 }, o); // 1.4 m gap < car width
+    physics.addStaticBox({ x: 14, y: 0.6, z: 10 }, { x: 3, y: 0.6, z: 0.5 }, o);
+    physics.addStaticBox({ x: 16, y: 1.5, z: -14 }, { x: 0.5, y: 1.5, z: 4 }, o);
+    physics.addStaticBox({ x: 12, y: 1.5, z: -17.5 }, { x: 4, y: 1.5, z: 0.5 }, o);
   }
   const tuning = { ...presets[preset] };
   const car = createVehicle(physics, { tuning });

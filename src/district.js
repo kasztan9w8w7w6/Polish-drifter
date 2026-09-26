@@ -1,15 +1,13 @@
 import * as THREE from 'three';
 import { loadGltf } from './gltf.js';
-import { BALL_RADIUS } from './vehicle.ts';
 
 // The housing estate around and inside the lot, built from Kenney kits (CC0, see CREDITS.md):
 //   City Kit Roads (streets, lamps, dumpsters, road works), City Kit Commercial (blocks, pavilions, the shop),
 //   City Kit Suburban (trees, fences), Car Kit (parked cars), Starter Kit City Builder (garages).
 // The lot is 160 × 160 m, walls at ±80 (track.js). Inside: a street loop at ±60 with lamps, parked cars,
 // garages (north), pavilions (south) and the all-night shop "Żappka 24h" (east). Outside: blocks of flats.
-// Static obstacles get a collision shell BALL_RADIUS thicker than they look (same as track.js).
+// Static obstacles collide exactly as big as they look (the car's body box hits them, vehicle.ts).
 const KENNEY = `${import.meta.env.BASE_URL}assets/kenney/`;
-const PAD = BALL_RADIUS;
 const LOOP = 60; // street loop centre line (m from the middle)
 const TILE = 10; // m per road tile
 
@@ -29,8 +27,9 @@ export async function createDistrict(scene, physics) {
 
   // Place a model standing on the ground at (x, z), turned by `yaw` (its local +Z then points along
   // (sin yaw, cos yaw)). Size: `scale` (uniform), or `fit: [w, h, d]` (stretch to a footprint and height),
-  // or `length` (uniform, longest side). `collide`: add a static box collider around it.
-  async function put(path, x, z, { yaw = 0, scale, fit, length, y = 0, collide = false, occlude = collide, tint } = {}) {
+  // or `length` (uniform, longest side). `collide`: add a static box collider around it, hit like `surface`
+  // (physics.js SURFACES: how hard the car bounces off it).
+  async function put(path, x, z, { yaw = 0, scale, fit, length, y = 0, collide = false, occlude = collide, tint, surface = 'concrete' } = {}) {
     const src = await load(path);
     if (!src) return null;
     if (tint && !src.userData.tinted) {
@@ -52,7 +51,7 @@ export async function createDistrict(scene, physics) {
     holder.rotation.y = yaw;
     scene.add(holder);
     if (collide) {
-      physics.addStaticBox({ x, y: size.y / 2 + y, z }, { x: size.x / 2 + PAD, y: size.y / 2, z: size.z / 2 + PAD }, { rotation: yawQuat(yaw) });
+      physics.addStaticBox({ x, y: size.y / 2 + y, z }, { x: size.x / 2, y: size.y / 2, z: size.z / 2 }, { rotation: yawQuat(yaw), surface });
     }
     if (occlude) occluders.push(holder);
     return holder;
@@ -74,9 +73,9 @@ export async function createDistrict(scene, physics) {
 
   // --- Garages along the north wall (doors facing the lot) + two dumpsters and a fence ---
   for (let i = 0; i < 12; i++) add('city/building-garage', -44 + i * 8, -73, { fit: [7.6, 2.8, 6], collide: true });
-  add('roads/dumpster', -54, -71, { scale: 6, yaw: Math.PI / 2, collide: true });
-  add('roads/dumpster', -58, -71, { scale: 6, yaw: Math.PI / 2, collide: true });
-  for (const x of [52, 60, 68]) add('suburban/fence-1x3', x, -76, { length: 8, collide: true });
+  add('roads/dumpster', -54, -71, { scale: 6, yaw: Math.PI / 2, collide: true, surface: 'metal' });
+  add('roads/dumpster', -58, -71, { scale: 6, yaw: Math.PI / 2, collide: true, surface: 'metal' });
+  for (const x of [52, 60, 68]) add('suburban/fence-1x3', x, -76, { length: 8, collide: true, surface: 'metal' });
 
   // --- Pavilions / small shops along the south wall, facing the lot ---
   const pav = ['commercial/building-a', 'commercial/building-b', 'commercial/building-c', 'commercial/building-d', 'commercial/building-a'];
@@ -92,22 +91,22 @@ export async function createDistrict(scene, physics) {
   const shopLight = new THREE.PointLight(0x7cffb0, 12, 20, 1);
   shopLight.position.set(62.5, 3, 26);
   scene.add(shopLight);
-  add('roads/dumpster', 70, 38, { scale: 6, yaw: -Math.PI / 2, collide: true });
+  add('roads/dumpster', 70, 38, { scale: 6, yaw: -Math.PI / 2, collide: true, surface: 'metal' });
 
   // --- Parked cars (Car Kit; local +Z = front) ---
   const cars = ['cars/sedan', 'cars/hatchback-sports', 'cars/suv', 'cars/sedan', 'cars/van'];
-  cars.forEach((c, i) => add(c, -44 + i * 3.4, 46, { length: c.endsWith('van') ? 4.8 : 4.3, yaw: 0, collide: true })); // perpendicular row
-  add('cars/van', -20, -67.5, { length: 4.8, yaw: Math.PI / 2, collide: true }); // parallel by the garages
-  add('cars/delivery', 18, -67.5, { length: 5.2, yaw: -Math.PI / 2, collide: true });
-  add('cars/taxi', 63, 14, { length: 4.3, yaw: 0, collide: true }); // waiting by the shop
+  cars.forEach((c, i) => add(c, -44 + i * 3.4, 46, { length: c.endsWith('van') ? 4.8 : 4.3, yaw: 0, collide: true, surface: 'car' })); // perpendicular row
+  add('cars/van', -20, -67.5, { length: 4.8, yaw: Math.PI / 2, collide: true, surface: 'car' }); // parallel by the garages
+  add('cars/delivery', 18, -67.5, { length: 5.2, yaw: -Math.PI / 2, collide: true, surface: 'car' });
+  add('cars/taxi', 63, 14, { length: 4.3, yaw: 0, collide: true, surface: 'car' }); // waiting by the shop
 
   // --- Road works around a pothole in the middle (knock-proof barriers) ---
-  for (const [x, z, yaw] of [[18, 8, 0], [22, 8, 0], [16, 10, Math.PI / 2], [24, 10, Math.PI / 2]]) add('roads/construction-barrier', x, z, { length: 2, yaw, collide: true });
+  for (const [x, z, yaw] of [[18, 8, 0], [22, 8, 0], [16, 10, Math.PI / 2], [24, 10, Math.PI / 2]]) add('roads/construction-barrier', x, z, { length: 2, yaw, collide: true, surface: 'tyres' });
   add('roads/construction-cone', 20, 12, { length: 0.8 });
-  add('roads/road-sign-warning', 14, 6, { scale: 8, yaw: Math.PI / 4, collide: true });
+  add('roads/road-sign-warning', 14, 6, { scale: 8, yaw: Math.PI / 4, collide: true, surface: 'metal' });
 
   // --- Trees in the lot corners, blocks of flats and poles outside the walls ---
-  for (const [x, z] of [[-72, -72], [72, 70], [-72, 72]]) add('suburban/tree-large', x, z, { scale: 10, collide: true });
+  for (const [x, z] of [[-72, -72], [72, 70], [-72, 72]]) add('suburban/tree-large', x, z, { scale: 10, collide: true, surface: 'tree' });
   for (const [x, z] of [[-88, 20], [86, -30], [-90, -50], [30, 90], [-30, -92], [92, 60]]) add(Math.random() < 0.5 ? 'suburban/tree-large' : 'suburban/tree-small', x, z, { scale: 10 });
   const blocks = ['commercial/building-skyscraper-a', 'commercial/building-f', 'commercial/building-skyscraper-b', 'commercial/building-j', 'commercial/building-skyscraper-d', 'commercial/building-k', 'commercial/building-skyscraper-e', 'commercial/building-l', 'commercial/building-n'];
   for (let i = 0; i < 16; i++) {
@@ -125,7 +124,7 @@ export async function createDistrict(scene, physics) {
   const LAMP_H = 7;
   function lamp(x, z, yaw, double = false) {
     add(double ? 'roads/light-square-double' : 'roads/light-square', x, z, { fit: undefined, scale: LAMP_H / 0.6, yaw, occlude: true });
-    physics.addStaticCylinder({ x, y: 0, z }, 0.2 + PAD, LAMP_H);
+    physics.addStaticCylinder({ x, y: 0, z }, 0.3, LAMP_H); // the square pole is ~0.6 m across at this scale
     for (const side of double ? [-1, 1] : [-1]) {
       const reach = 2.2; // arm length at this scale
       const hx = x + Math.sin(yaw) * side * reach, hz = z + Math.cos(yaw) * side * reach;

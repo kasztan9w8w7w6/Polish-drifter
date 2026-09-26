@@ -4,6 +4,20 @@ import RAPIER from '@dimforge/rapier3d-compat';
 // never to Rapier directly, so the physics library can be swapped again if needed.
 export const FIXED_DT = 1 / 60;
 
+// What the car does when it hits a static obstacle (vehicle.ts): `rebound` = fraction of the impact speed it
+// bounces back with, `scrape` = how much speed along the surface a glancing hit takes away (× how head-on it was).
+// Obstacles are in their own collision group: the car's sphere rolls past them, its body box hits them (vehicle.ts).
+export const OBSTACLE_GROUP = 0x0004;
+const OBSTACLE_GROUPS = (OBSTACLE_GROUP << 16) | 0xffff;
+
+export const SURFACES = {
+  concrete: { rebound: 0.12, scrape: 0.5 }, // walls, blocks, garages, pavilions
+  metal: { rebound: 0.15, scrape: 0.4 }, // lamp posts, poles, signs, dumpsters, fences
+  car: { rebound: 0.22, scrape: 0.35 }, // parked cars
+  tyres: { rebound: 0.35, scrape: 0.25 }, // tyre stacks, plastic road-works barriers
+  tree: { rebound: 0.08, scrape: 0.6 },
+};
+
 let ready = null;
 export function initPhysics() {
   ready ??= RAPIER.init();
@@ -15,6 +29,7 @@ export function createPhysics() {
   world.timestep = FIXED_DT;
   const events = new RAPIER.EventQueue(true);
   let accumulator = 0;
+  const surfaces = new Map(); // collider handle → SURFACES key (static obstacles)
 
   function makeBody(desc, colliderDesc, pos, rot) {
     desc.setTranslation(pos.x, pos.y, pos.z);
@@ -32,6 +47,7 @@ export function createPhysics() {
     RAPIER,
     world,
     events,
+    surfaces,
 
     // Fixed-step loop; beforeStep(h) runs before every sub-step, afterStep(h) after it.
     step(dt, beforeStep, afterStep, maxSubSteps = 5) {
@@ -44,22 +60,27 @@ export function createPhysics() {
       }
     },
 
-    // Static box, `half` = half extents, optional `rotation` quaternion {x,y,z,w}. Returns the collider handle.
-    addStaticBox(pos, half, { friction = 0.5, restitution = 0.1, rotation } = {}) {
+    // Static box, `half` = half extents, optional `rotation` quaternion {x,y,z,w}. With `surface` (SURFACES key)
+    // it is an obstacle, sized as it looks: the car's body box hits it. Without: ground, ramps. Returns the handle.
+    addStaticBox(pos, half, { friction = 0.5, restitution = 0.1, rotation, surface } = {}) {
       const desc = RAPIER.ColliderDesc.cuboid(half.x, half.y, half.z)
         .setTranslation(pos.x, pos.y, pos.z)
         .setFriction(friction)
         .setRestitution(restitution);
       if (rotation) desc.setRotation(rotation);
+      if (surface) desc.setCollisionGroups(OBSTACLE_GROUPS);
       const c = world.createCollider(desc);
+      if (surface) surfaces.set(c.handle, surface);
       return c.handle;
     },
 
-    // Static vertical cylinder standing on `pos` (pos.y = bottom).
-    addStaticCylinder(pos, radius, height) {
-      world.createCollider(
-        RAPIER.ColliderDesc.cylinder(height / 2, radius).setTranslation(pos.x, pos.y + height / 2, pos.z),
+    // Static vertical cylinder standing on `pos` (pos.y = bottom), always an obstacle.
+    addStaticCylinder(pos, radius, height, { surface = 'metal' } = {}) {
+      const c = world.createCollider(
+        RAPIER.ColliderDesc.cylinder(height / 2, radius).setTranslation(pos.x, pos.y + height / 2, pos.z).setCollisionGroups(OBSTACLE_GROUPS),
       );
+      surfaces.set(c.handle, surface);
+      return c.handle;
     },
 
     // Dynamic cone standing on `pos` (pos.y = bottom) – traffic cones.

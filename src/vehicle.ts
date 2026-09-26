@@ -1,5 +1,5 @@
 import { Quaternion, Vector3, MathUtils } from 'three';
-import type { createPhysics } from './physics.js';
+import { SURFACES, OBSTACLE_GROUP, type createPhysics } from './physics.js';
 import { tuning as globalTuning, type Tuning } from './tuning.ts';
 
 // Arcade car ported from Kenney's Starter Kit Racing (scripts/vehicle.gd, MIT):
@@ -25,10 +25,17 @@ const WHEELS = [
   { x: -1.14, z: 0.68, front: false },
 ];
 const CHASSIS_HALF = { x: 2.15, y: 0.45, z: 0.9 };
-// Collision groups: (membership << 16) | filter. The sphere and the kinematic chassis box ignore each other.
-const GROUP_BALL = (0x0001 << 16) | 0xfffd;
+// The body box that hits obstacles: the Polonez's footprint (4.3 × 1.7 m). It is made very tall so the push-out is
+// always sideways (a flat box inside a wall could be "resolved" downwards through the ground); every obstacle stands
+// on the ground anyway.
+const BODY_HALF = { x: 2.15, y: 20, z: 0.85 };
+const BODY_Y = 0.2 + 20; // box centre above the ground (bottom 0.2 m above it)
+// Collision groups: (membership << 16) | filter. The sphere and the kinematic chassis box ignore each other,
+// and the sphere ignores obstacles (group 4, physics.js) – the body box handles those (see collide()).
+const GROUP_BALL = (0x0001 << 16) | (0xfffd & ~OBSTACLE_GROUP);
 const GROUP_CHASSIS = (0x0002 << 16) | 0xfffd;
 
+const CRASH_BRAKE = 4; // 1/s – how fast the bounce after a hit dies out while the engine is cut (crashStun)
 const Y = new Vector3(0, 1, 0);
 const DEG = Math.PI / 180;
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -40,13 +47,14 @@ export function createVehicle(
 ) {
   const { RAPIER, world } = physics;
   const t = tuning;
+  const EXCLUDE_BODIES = RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC | RAPIER.QueryFilterFlags.EXCLUDE_KINEMATIC;
 
   // Physics sphere (Kenney: RigidBody3D, SphereShape3D, friction 5 "rough", CCD on)
   const body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setCanSleep(false).setCcdEnabled(true));
   const ball = world.createCollider(
     RAPIER.ColliderDesc.ball(BALL_RADIUS)
       .setFriction(5)
-      .setFrictionCombineRule(RAPIER.CoefficientCombineRule.Max)
+      .setFrictionCombineRule(RAPIER.CoefficientCombineRule.Min)
       .setRestitution(0) // no bouncing on landings and bumps…
       .setRestitutionCombineRule(RAPIER.CoefficientCombineRule.Min) // …whatever the other collider says
       .setCollisionGroups(GROUP_BALL)
@@ -90,6 +98,12 @@ export function createVehicle(
   let visY = 0; // smoothed sphere height for the model (light visual suspension)
   let stuckTimer = 0;
   let unstuckCount = 0;
+  let crashTimer = 0; // s left without engine power towards the obstacle after a hit
+  let crashSide = 1; // +1 the obstacle was hit with the front, −1 with the rear
+  let crashSpeed = 0; // m/s into the obstacle of the last hit (reported once in read())
+  let crashSurface = '';
+  const preV = { x: 0, y: 0, z: 0 }; // sphere velocity going into the physics step
+  const preP = { x: 0, y: 0, z: 0 }; // and its position
   let lastInput: Controls = { throttle: 0, brake: 0, steer: 0, handbrake: 0 };
 
   const modelQ = new Quaternion();
@@ -117,6 +131,8 @@ export function createVehicle(
     bodyPitch: 0, // visual pitch (rad), + = nose up
     grounded: false,
     impact: 0,
+    crash: 0, // m/s into an obstacle, on the frame of a hit (0 otherwise)
+    crashSurface: '', // physics.js SURFACES key of what was hit
     unstuck: 0, // how many times the car was pushed out of an obstacle
     wheels: WHEELS.map((w) => ({
       rear: !w.front,
@@ -130,7 +146,7 @@ export function createVehicle(
 
   function castGround(p: { x: number; y: number; z: number }) {
     ray.origin = { x: p.x, y: p.y, z: p.z };
-    const hit = world.castRayAndGetNormal(ray, BALL_RADIUS + 0.4, true, RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC | RAPIER.QueryFilterFlags.EXCLUDE_KINEMATIC);
+    const hit = world.castRayAndGetNormal(ray, BALL_RADIUS + 0.4, true, EXCLUDE_BODIES, undefined, undefined, undefined, (c) => !isObstacle(c));
     if (hit) normal.set(hit.normal.x, hit.normal.y, hit.normal.z);
     return !!hit;
   }
@@ -213,12 +229,22 @@ export function createVehicle(
     let side = w.x * dX + w.z * dZ; // rolling sideways
     let throttleTarget = throttle;
     if (inp.brake > 0) throttleTarget = forwardSpeed > 0.5 ? 0 : -inp.brake * t.reversePower;
+    crashTimer = Math.max(0, crashTimer - h);
+    if (crashTimer > 0 && throttleTarget * crashSide > 0) throttleTarget = 0; // just hit it: stop and bounce off first (backing away works)
     engine = approach(engine, throttleTarget, t.throttleResponse, h);
     body.setAngularDamping(Math.abs(throttleTarget) > 0.05 ? t.angularDamping : t.coastDamping);
+    const backingOff = throttleTarget * crashSide < 0;
+    if (crashTimer > 0 && !backingOff) spin *= Math.exp(-CRASH_BRAKE * h); // after a hit the wheels brake: the bounce dies out
     spin += engine * t.power * (1 - t.driftSpeedLoss * driftBlend) * h;
     if (inp.brake > 0 && forwardSpeed > 0.5) spin = Math.max(0, spin - inp.brake * t.brakePower * h);
     if (inp.handbrake > 0) spin -= Math.sign(spin) * Math.min(Math.abs(spin), inp.handbrake * t.handbrakeDrag * h);
     if (grounded) {
+      if (crashTimer > 0 && !backingOff) {
+        const k = Math.exp(-CRASH_BRAKE * h);
+        body.setLinvel({ x: v.x * k, y: v.y, z: v.z * k }, true);
+        v.x *= k;
+        v.z *= k;
+      }
       // Side grip: sideways sliding and sideways rolling die out, so the sphere follows the line of travel
       const lat = v.x * axX + v.z * axZ;
       const k = 1 - Math.exp(-t.sideGrip * h);
@@ -238,15 +264,24 @@ export function createVehicle(
       side *= 1 - k;
     }
     body.setAngvel({ x: axX * spin + dX * side, y: w.y * Math.exp(-10 * h), z: axZ * spin + dZ * side }, true);
+    const vNow = body.linvel();
+    preV.x = vNow.x;
+    preV.y = vNow.y;
+    preV.z = vNow.z;
+    preP.x = p.x;
+    preP.y = p.y;
+    preP.z = p.z;
 
     // Longitudinal acceleration for the visual pitch
     accel = approach(accel, (forwardSpeed - prevForwardSpeed) / h, 8, h);
     prevForwardSpeed = forwardSpeed;
     wheelSpin += (forwardSpeed / WHEEL_RADIUS) * h;
 
-    // Stuck (e.g. wedged on an edge after a crash): pedal pressed but no movement for `unstuckTime` → push out
+    // Really wedged (sphere off the ground or perched on an edge, e.g. in a gap narrower than itself): pedal
+    // pressed but no movement for `unstuckTime` → push out. Just leaning on a wall is not wedged: reverse away.
     const pushing = Math.max(input.throttle, input.brake) > 0.5;
-    stuckTimer = pushing && speed < 0.6 ? stuckTimer + h : 0;
+    const wedged = !grounded || normal.y < 0.8 || penetrating;
+    stuckTimer = pushing && speed < 0.6 && wedged ? stuckTimer + h : 0;
     if (stuckTimer > t.unstuckTime) {
       stuckTimer = 0;
       unstick(input.brake > input.throttle ? 1 : -1);
@@ -283,7 +318,11 @@ export function createVehicle(
   const probe = new RAPIER.Ball(BALL_RADIUS + 0.05);
   const noRot = { x: 0, y: 0, z: 0, w: 1 };
   function isFree(x: number, y: number, z: number) {
-    return !world.intersectionWithShape({ x, y, z }, noRot, probe, RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC | RAPIER.QueryFilterFlags.EXCLUDE_KINEMATIC);
+    bodyQ.setFromAxisAngle(Y, travel + angle);
+    return (
+      !world.intersectionWithShape({ x, y, z }, noRot, probe, EXCLUDE_BODIES, undefined, undefined, undefined, (c) => !isObstacle(c)) &&
+      !world.intersectionWithShape({ x, y: y - BALL_RADIUS + BODY_Y, z }, bodyQ, bodyShape, undefined, undefined, undefined, undefined, isObstacle)
+    );
   }
   function unstick(dir: number) {
     const p = body.translation();
@@ -313,6 +352,123 @@ export function createVehicle(
     physics.events.drainContactForceEvents((e: { collider1(): number; collider2(): number; totalForceMagnitude(): number }) => {
       if (e.collider1() === ball.handle || e.collider2() === ball.handle) impact = Math.max(impact, e.totalForceMagnitude());
     });
+    collide();
+  }
+
+  // Obstacles (buildings, lamps, cars, walls – physics.js `surface` colliders) are hit by the car's real body, a box
+  // of the Polonez's size, not by the sphere (the sphere ignores them; it only rolls on the ground). After each step
+  // the box is swept from where it was (no tunnelling through a lamp post at speed) and pushed out of anything it
+  // overlaps, and the sphere moves with it. So the car stops exactly where the bodywork touches, and passing close
+  // to something without touching it does nothing.
+  // Then the car reacts to what it hit (physics.js SURFACES): it bounces back with `rebound` × the impact speed, a
+  // glancing hit scrapes off speed along the surface, the drift ends on a hard hit and the engine is cut for a moment
+  // (`crashStun`), so the car stops on the obstacle instead of grinding into it. Leaning on it slowly just stops.
+  const bodyShape = new RAPIER.Cuboid(BODY_HALF.x, BODY_HALF.y, BODY_HALF.z);
+  const isObstacle = (c: { handle: number }) => physics.surfaces.has(c.handle);
+  const bodyQ = new Quaternion();
+  const hitN = new Vector3();
+  const bodyAt = (x: number, z: number) => ({ x, y: body.translation().y - BALL_RADIUS + BODY_Y, z });
+  let penetrating = false;
+  function collide() {
+    const p = body.translation();
+    bodyQ.setFromAxisAngle(Y, travel + angle);
+    let px = p.x, pz = p.z;
+    let best = -Infinity, bestSurface = '';
+    const note = (nx: number, nz: number, handle: number) => {
+      const len = Math.hypot(nx, nz);
+      if (len < 0.5) return false; // mostly vertical: on top of it, not against it
+      nx /= len;
+      nz /= len;
+      const vin = -(preV.x * nx + preV.z * nz);
+      if (vin > best) {
+        best = vin;
+        hitN.set(nx, 0, nz);
+        bestSurface = physics.surfaces.get(handle) ?? 'concrete';
+      }
+      return true;
+    };
+    // Sweep from the previous position (fast car vs thin post)
+    const dx = px - preP.x, dz = pz - preP.z;
+    if (dx * dx + dz * dz > 0.04) {
+      const hit = world.castShape(bodyAt(preP.x, preP.z), bodyQ, { x: dx, y: 0, z: dz }, bodyShape, 0, 1, false, undefined, undefined, undefined, undefined, isObstacle);
+      // (for a world query, witness1/normal1 are on the obstacle: its outward normal)
+      if (hit && hit.time_of_impact < 1 && note(hit.normal1.x, hit.normal1.z, hit.collider.handle)) {
+        const back = Math.max(0, hit.time_of_impact - 0.02 / Math.hypot(dx, dz));
+        px = preP.x + dx * back;
+        pz = preP.z + dz * back;
+      }
+    }
+    // Push out of overlaps (a few passes for corners)
+    penetrating = false;
+    for (let pass = 0; pass < 4; pass++) {
+      let deepest = 0, mx = 0, mz = 0, handle = -1;
+      world.intersectionsWithShape(bodyAt(px, pz), bodyQ, bodyShape, (c) => {
+        const ct = c.contactShape(bodyShape, bodyAt(px, pz), bodyQ, 0);
+        if (ct && ct.distance < deepest && Math.hypot(ct.normal1.x, ct.normal1.z) > 0.5) {
+          deepest = ct.distance;
+          mx = ct.normal1.x;
+          mz = ct.normal1.z;
+          handle = c.handle;
+        }
+        return true;
+      }, undefined, undefined, undefined, undefined, isObstacle); // (no filter flags: they drop body-less colliders)
+      if (handle < 0) break;
+      const len = Math.hypot(mx, mz);
+      px += (mx / len) * (-deepest + 0.005);
+      pz += (mz / len) * (-deepest + 0.005);
+      note(mx, mz, handle);
+      if (pass === 3) penetrating = true;
+    }
+    if (penetrating) {
+      // Squeezed between obstacles from both sides (e.g. reset in a gap narrower than the car): jump free
+      if (px !== p.x || pz !== p.z) body.setTranslation({ x: px, y: p.y, z: pz }, true);
+      unstick(-1);
+      return;
+    }
+    if (best === -Infinity) return;
+    if (px !== p.x || pz !== p.z) body.setTranslation({ x: px, y: p.y, z: pz }, true);
+
+    const v = body.linvel();
+    const vn = v.x * hitN.x + v.z * hitN.z;
+    if (best < t.crashMinSpeed) {
+      // Leaning on it: no speed into the obstacle, the rest (along it) stays
+      if (vn < 0) {
+        const nx = v.x - hitN.x * vn, nz = v.z - hitN.z * vn;
+        body.setLinvel({ x: nx, y: v.y, z: nz }, true);
+        const w = body.angvel();
+        const wn = w.z * hitN.x - w.x * hitN.z; // spin that rolls the sphere towards −n
+        if (wn > 0) body.setAngvel({ x: w.x + hitN.z * wn, y: w.y, z: w.z - hitN.x * wn }, true);
+      }
+      return;
+    }
+    const sf = SURFACES[bestSurface as keyof typeof SURFACES] ?? SURFACES.concrete;
+    const speed = Math.hypot(preV.x, preV.z);
+    const headOn = MathUtils.clamp(best / Math.max(speed, 1e-3), 0, 1);
+    const keep = 1 - sf.scrape * headOn;
+    const tx = (preV.x + hitN.x * best) * keep, tz = (preV.z + hitN.z * best) * keep; // along the surface
+    const out = best * sf.rebound * t.crashRebound;
+    const nx = tx + hitN.x * out, nz = tz + hitN.z * out;
+    body.setLinvel({ x: nx, y: Math.min(v.y, 0), z: nz }, true);
+    body.setAngvel({ x: nz / BALL_RADIUS, y: 0, z: -nx / BALL_RADIUS }, true); // rolling with the new velocity
+    // Keep the body where it points; the line of travel follows the new velocity (or its reverse when backing off)
+    const heading = travel + angle;
+    const nSpeed = Math.hypot(nx, nz);
+    if (nSpeed > 0.5) {
+      const vYaw = Math.atan2(-nz, nx);
+      const newTravel = Math.cos(vYaw - heading) >= 0 ? vYaw : wrap(vYaw + Math.PI);
+      angle = MathUtils.clamp(wrap(heading - newTravel), -t.driftAngleMax * DEG, t.driftAngleMax * DEG);
+      travel = wrap(heading - angle);
+    }
+    turnRate = 0;
+    crashSide = hitN.x * Math.cos(heading) - hitN.z * Math.sin(heading) < 0 ? 1 : -1;
+    const severity = best / 10; // 1 at 36 km/h straight in
+    if (severity > 0.3) drifting = false;
+    engine *= 1 - MathUtils.clamp(severity, 0, 1);
+    crashTimer = Math.max(crashTimer, t.crashStun * Math.min(severity, 1.5));
+    if (best > crashSpeed) {
+      crashSpeed = best;
+      crashSurface = bestSurface;
+    }
   }
 
   function read() {
@@ -336,6 +492,9 @@ export function createVehicle(
     state.grounded = grounded;
     state.impact = impact;
     impact = 0;
+    state.crash = crashSpeed;
+    state.crashSurface = crashSurface;
+    crashSpeed = 0;
 
     // Visual body lean (Kenney effect_body): roll with sideways g, pitch with acceleration
     const latG = MathUtils.clamp((turnRate * state.speed) / 9.81, -1.2, 1.2);
@@ -366,7 +525,7 @@ export function createVehicle(
     body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     body.setAngvel({ x: 0, y: 0, z: 0 }, true);
     travel = yaw;
-    angle = turnRate = engine = driftBlend = sharpTimer = noThrottleTimer = accel = prevForwardSpeed = stuckTimer = 0;
+    angle = turnRate = engine = driftBlend = sharpTimer = noThrottleTimer = accel = prevForwardSpeed = stuckTimer = crashTimer = 0;
     drifting = false;
     driftSide = 0;
     hold = 1;

@@ -103,7 +103,7 @@ function toast(text) {
   toastTimer = 1.2;
 }
 
-const CRASH_FORCE = 300000; // N – sphere contact force counted as a crash (measured in Node: 10 km/h = 79 kN, 25 km/h = 463 kN)
+const CRASH_SPEED = 4; // m/s (≈ 14 km/h) straight into an obstacle counts as a crash (ends the drift combo)
 
 // ---------- Tuning panel (lil-gui, key G / pad Start) ----------
 const gui = new GUI({ title: 'Tuning (G)' });
@@ -125,7 +125,7 @@ const groups = {
   Kierownica: ['steerRate', 'steerRateHigh', 'steerFullSpeed', 'turnSmoothing'],
   'Wejście w drift': ['driftMinSpeed', 'sharpSteer', 'sharpThrottle', 'sharpSpeed', 'sharpTime', 'driftExitDelay', 'transitionSteer'],
   'Kąt driftu': ['driftAngleBase', 'driftAngleSteer', 'driftAngleThrottle', 'driftAngleHandbrake', 'selfAlign', 'driftAngleLowSpeed', 'driftAngleMax', 'driftAngleRate', 'straightenRate', 'driftTurnRate', 'driftTurnSteer', 'driftSpeedLoss'],
-  'Wygląd jazdy i kontakt': ['bodyRoll', 'bodyPitch', 'suspension', 'landingDamping', 'unstuckTime'],
+  'Wygląd jazdy i kontakt': ['bodyRoll', 'bodyPitch', 'suspension', 'landingDamping', 'unstuckTime', 'crashMinSpeed', 'crashRebound', 'crashStun'],
   'Kamera Diorama': ['dioPitch', 'dioYaw', 'dioYawFollow', 'dioZoom', 'dioZoomFast', 'dioLead', 'dioFollow', 'shakeSpeed', 'shakeImpact'],
   'Kamera Za autem': ['camDistance', 'camDistanceFast', 'camHeight', 'camFollow', 'camYawFollow', 'camLead', 'fovBase', 'fovFast'],
 };
@@ -255,9 +255,9 @@ function tick(time) {
   // Drift scoring
   const fwd = new THREE.Vector3(1, 0, 0).applyQuaternion(state.quaternion);
   const v = state.velocity;
-  if (state.impact > CRASH_FORCE) scorer.crash();
-  rig.hit(state.impact);
-  audio.hit(state.impact);
+  if (state.crash > CRASH_SPEED) scorer.crash();
+  rig.hit(state.crash);
+  audio.hit(state.crash);
   scorer.update(dt, fwd, v, state.grounded);
 
   // Dashboard: speed, virtual gear, rev counter

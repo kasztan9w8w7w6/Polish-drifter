@@ -49,7 +49,10 @@ const base = {
   // Contact / recovery
   landingDamping: 30, // 1/s – how fast bouncing off the ground dies out
   suspension: 18, // 1/s – how quickly the model follows the sphere's height (visual suspension)
-  unstuckTime: 1, // s of pedal without movement before the car is pushed free
+  unstuckTime: 1, // s of pedal without movement while really wedged (off the ground / on an edge) before the car is pushed free
+  crashMinSpeed: 1.5, // m/s into an obstacle that counts as a hit (below: the car just leans on it)
+  crashRebound: 1, // × each surface's bounce (physics.js SURFACES: concrete 0.12 … tyres 0.35)
+  crashStun: 0.5, // s without engine power after a hit at 36 km/h (scales with the impact), so the car stops and bounces off
 
   // Visual only
   bodyRoll: 5, // degrees of body lean at 1 g sideways

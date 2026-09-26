@@ -50,12 +50,12 @@ export function createAudio() {
       skid.rate(skidRate, skidId);
       impactCooldown -= dt;
     },
-    // force in N (vehicle.state.impact); Kenney maps impact speed 0..6 to −20..0 dB
-    hit(force) {
-      if (!started || force < 60000 || impactCooldown > 0) return;
+    // speed in m/s into the obstacle (vehicle.state.crash); Kenney maps impact speed 0..6 to −20..0 dB
+    hit(speed) {
+      if (!started || speed < 1.5 || impactCooldown > 0) return;
       impactCooldown = 0.25;
       const id = impact.play();
-      impact.volume(dbToGain(-20 + 20 * Math.min(1, force / 800000)) * audioSettings.impact, id);
+      impact.volume(dbToGain(-20 + 20 * Math.min(1, speed / 6)) * audioSettings.impact, id);
       impact.rate(0.9 + Math.random() * 0.2, id);
     },
   };

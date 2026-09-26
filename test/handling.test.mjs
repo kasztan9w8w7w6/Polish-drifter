@@ -171,53 +171,113 @@ test('nierówności (progi 15 cm co 4 m): model płynnie, auto nie podskakuje', 
   assert.ok(airborne < 0.1, 'nie wyskakuje w powietrze');
 });
 
-test('seria uderzeń w przeszkody: auto nie utyka (auto‑wypchnięcie ≤ 1 s)', async (t) => {
+test('seria uderzeń w przeszkody: auto nie klinuje się, po uderzeniu da się odjechać (bez wypychania)', async (t) => {
   const sim = await createSim({ obstacles: true, walls: true });
   sim.run(0.5, {});
-  // A minute of chaotic driving: gas held, steering and handbrake changing, reversing now and then
+  // A minute of chaotic driving: gas held, steering and handbrake changing, reversing now and then.
+  // Like a player, the driver backs off (reverse + opposite steer) after 0.5 s parked against something.
   let rng = 7;
   const rand = () => ((rng = (rng * 16807) % 2147483647) / 2147483647);
-  let cur = { throttle: 1, steer: 0, handbrake: 0, brake: 0 }, next = 0;
-  let stuckFor = 0, worst = 0, maxImpact = 0, embedded = 0;
+  let cur = { throttle: 1, steer: 0, handbrake: 0, brake: 0, since: 0 }, next = 0;
+  let stuckFor = 0, worst = 0, maxImpact = 0, embedded = 0, maxY = 0;
+  const hits = [];
   const { RAPIER, world } = sim.physics;
   const small = new RAPIER.Ball(0.5);
   sim.run(60, (s, time) => {
-    if (time >= next) {
+    if (stuckFor > 0.5 && time > cur.since + 0.5) {
+      cur = { throttle: cur.brake ? 1 : 0, brake: cur.brake ? 0 : 1, steer: -cur.steer, handbrake: 0, since: time };
+      next = time + 1;
+    } else if (time >= next) {
       next = time + 0.4 + rand() * 1.4;
       const reverse = rand() < 0.12;
-      cur = { throttle: reverse ? 0 : 1, brake: reverse ? 1 : 0, steer: rand() * 2 - 1, handbrake: rand() < 0.2 ? 1 : 0 };
+      cur = { throttle: reverse ? 0 : 1, brake: reverse ? 1 : 0, steer: rand() * 2 - 1, handbrake: rand() < 0.2 ? 1 : 0, since: time };
     }
     return cur;
-  }, (x) => {
+  }, (x, s) => {
     maxImpact = Math.max(maxImpact, x.impact);
+    if (s.crash) hits.push(s.crash * 3.6);
     stuckFor = (x.inp.throttle > 0.5 || x.inp.brake > 0.5) && x.speed < 2 ? stuckFor + DT : 0;
     worst = Math.max(worst, stuckFor);
+    maxY = Math.max(maxY, x.ballY);
     const b = sim.car.body.translation();
     if (world.intersectionWithShape(b, { x: 0, y: 0, z: 0, w: 1 }, small, RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC | RAPIER.QueryFilterFlags.EXCLUDE_KINEMATIC)) embedded++;
   });
   // The chassis box is kinematic: Rapier gives it no contacts with static geometry, so it can't wedge the car
   let chassisStatic = 0;
   world.contactPairsWith(sim.car.chassisCollider, (c) => { if (c.parent()?.isFixed?.() ?? !c.parent()) chassisStatic++; });
-  t.diagnostic(`60 s jazdy w przeszkody: najdłuższe stanie z wciśniętym pedałem ${fmt(worst, 2)} s, wypchnięć ${sim.car.state.unstuck}, klatek ze środkiem kuli w przeszkodzie ${embedded}, max siła ${fmt(maxImpact / 1000, 0)} kN, kontakty skrzyni z kolizjami statycznymi ${chassisStatic}`);
-  assert.ok(worst < 1.6, 'nigdy nie stoi dłużej niż ~1 s');
+  t.diagnostic(`60 s jazdy w przeszkody: ${hits.length} uderzeń (najmocniejsze ${fmt(Math.max(...hits), 0)} km/h), najdłuższe stanie z wciśniętym pedałem ${fmt(worst, 2)} s (kierowca cofa po 0,5 s), wypchnięć ${sim.car.state.unstuck}, najwyżej środek kuli ${fmt(maxY, 2)} m, klatek ze środkiem kuli w przeszkodzie ${embedded}, max siła ${fmt(maxImpact / 1000, 0)} kN, kontakty skrzyni z kolizjami statycznymi ${chassisStatic}`);
+  assert.ok(hits.length >= 5, 'były uderzenia');
+  assert.ok(worst < 1.6, 'po uderzeniu cofnięcie od razu odjeżdża (0,5 s reakcji kierowcy + ruszenie)');
+  assert.equal(sim.car.state.unstuck, 0, 'nie było potrzeby wypychania');
+  assert.ok(maxY < 1.3, 'kula nie wspina się na przeszkody');
   assert.equal(embedded, 0, 'kula nie wbija się w przeszkody (CCD)');
   assert.equal(chassisStatic, 0);
 });
 
-test('zaklinowanie (kula w wąskiej szparze / na krawędzi): wypchnięcie po ~1 s, R też działa', async (t) => {
+test('uderzenie czołowe: auto zatrzymuje się na przeszkodzie i odbija zależnie od materiału', async (t) => {
+  const rows = [];
+  for (const surface of ['tree', 'concrete', 'metal', 'car', 'tyres']) {
+    const sim = await createSim();
+    sim.physics.addStaticBox({ x: 40, y: 1, z: 0 }, { x: 2, y: 1, z: 5 }, { surface });
+    sim.run(0.3, {});
+    // Full gas into the wall (the box face is at x = 38, the car's nose ~2 m ahead of the sphere), off the gas
+    // on impact, then reverse
+    let hit = 0, bounce = 0, maxY = 0;
+    sim.run(4, (s) => ({ throttle: hit ? 0 : 1 }), (x, s) => {
+      if (s.crash && !hit) hit = s.crash * 3.6;
+      if (hit) bounce = Math.min(bounce, s.forwardSpeed * 3.6);
+      maxY = Math.max(maxY, x.ballY);
+    });
+    const end = sim.car.state;
+    const endX = end.position.x, endV = kmh(end);
+    const back = sim.run(1, { brake: 1 });
+    rows.push({ surface, hit, bounce: -bounce, maxY, endX, endV, back: kmh(back) });
+  }
+  t.diagnostic(rows.map((r) => `${r.surface}: w ${fmt(r.hit, 0)} km/h → odbicie ${fmt(r.bounce, 1)} km/h, staje ${fmt(38 - 2.15 - r.endX, 1)} m od ściany (${fmt(r.endV, 0)} km/h), kula max ${fmt(r.maxY, 2)} m, cofanie po 1 s ${fmt(r.back, 0)} km/h`).join('; '));
+  for (const r of rows) {
+    assert.ok(r.hit > 30, 'uderzenie wykryte');
+    assert.ok(r.maxY < 1.15, 'nie wspina się');
+    assert.ok(r.endV < 2 && r.endX > 30, 'zatrzymuje się blisko przeszkody');
+    assert.ok(r.back > 8, 'cofa bez problemu');
+  }
+  const b = Object.fromEntries(rows.map((r) => [r.surface, r.bounce]));
+  assert.ok(b.tree < b.concrete && b.concrete < b.metal && b.metal < b.car && b.car < b.tyres, 'opony odbijają najmocniej, drzewo najsłabiej');
+});
+
+test('przejazd tuż obok lampy (15 cm od karoserii): bez odpychania, bez uderzenia', async (t) => {
+  const rows = [];
+  for (const gap of [0.15, -0.1]) {
+    const sim = await createSim();
+    // Lamp post r = 0.25 m next to the line of travel; the body is 0.85 m wide from the centre line
+    sim.physics.addStaticCylinder({ x: 40, y: 0, z: 0.85 + 0.25 + gap }, 0.25, 7);
+    sim.run(0.3, {});
+    let crash = 0, maxZ = 0;
+    sim.run(3, { throttle: 1 }, (x, s) => { crash = Math.max(crash, s.crash); maxZ = Math.max(maxZ, Math.abs(x.z)); });
+    rows.push({ gap, crash: crash * 3.6, maxZ, x: sim.car.state.position.x });
+  }
+  t.diagnostic(rows.map((r) => `odstęp ${fmt(r.gap * 100, 0)} cm: uderzenie ${fmt(r.crash, 0)} km/h, zniesienie w bok ${fmt(r.maxZ * 100, 1)} cm, po 3 s x = ${fmt(r.x, 0)} m`).join('; '));
+  assert.equal(rows[0].crash, 0, 'nie dotyka lampy');
+  assert.ok(rows[0].maxZ < 0.01, 'nic go nie odpycha');
+  assert.ok(rows[1].crash > 0, 'zahaczenie lusterkiem = uderzenie');
+});
+
+test('auto wstawione w szparę węższą od siebie: od razu wypchnięte bez klinowania, R też działa', async (t) => {
   const sim = await createSim({ obstacles: true });
   sim.run(0.5, {});
-  // Drop the ball into the 1.9 m gap between the two boxes at x = −14 (narrower than the ball)
-  sim.car.reset({ x: -14, y: 3.2, z: 2.95 }, Math.PI / 2);
+  // Put the car across the 1.4 m gap between the two boxes at x = −14 (the body overlaps both)
+  sim.car.reset({ x: -14, y: 1, z: 1.7 }, Math.PI / 2);
   const p0 = { ...sim.car.body.translation() };
-  let freedAt = null;
-  const t0 = sim.time;
-  sim.run(3, { throttle: 1 }, (x) => { if (freedAt === null && x.unstuck > 0) freedAt = x.t - t0; });
+  sim.run(1 / 60, {});
   const p1 = sim.car.body.translation();
+  const { RAPIER, world } = sim.physics;
+  const box = new RAPIER.Cuboid(2.1, 0.55, 0.8); // the body box, a hair smaller
+  const q = { x: 0, y: Math.sin(Math.PI / 4), z: 0, w: Math.cos(Math.PI / 4) };
+  const overlaps = () => world.intersectionWithShape({ ...sim.car.body.translation(), y: 1 }, q, box, undefined, undefined, undefined, undefined, (c) => sim.physics.surfaces.has(c.handle));
+  const freed = !overlaps();
   sim.run(1, { throttle: 1 });
   const moving = kmh(sim.car.state);
-  t.diagnostic(`start w szparze na wys. ${fmt(p0.y, 2)} m → wypchnięte po ${freedAt === null ? '—' : fmt(freedAt, 2) + ' s'} o ${fmt(Math.hypot(p1.x - p0.x, p1.z - p0.z), 1)} m, po 1 s gazu ${fmt(moving, 0)} km/h`);
-  assert.ok(freedAt !== null && freedAt < 1.6);
+  t.diagnostic(`po 1 kroku wypchnięte o ${fmt(Math.hypot(p1.x - p0.x, p1.z - p0.z), 2)} m (bryła wolna: ${freed}), po 1 s gazu ${fmt(moving, 0)} km/h, awaryjnych wypchnięć ${sim.car.state.unstuck}`);
+  assert.ok(freed, 'bryła auta od razu poza przeszkodami');
   assert.ok(moving > 10, 'jedzie dalej');
   sim.car.reset();
   sim.run(0.2, {});

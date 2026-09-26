@@ -1,11 +1,8 @@
 import * as THREE from 'three';
-import { BALL_RADIUS } from './vehicle.ts';
 
 // "Plac manewrowy": a big asphalt lot fenced by concrete barriers, with cones and tyre stacks.
 const SIZE = 160;
-// The car's physics body is a sphere (radius 1 m) but the car is 4.3 m long, so static obstacles get
-// a collision shell this much thicker than they look – the bonnet stops right at the visible surface.
-const PAD = BALL_RADIUS;
+// Obstacles collide exactly as big as they look (the car's body box hits them, vehicle.ts).
 
 export function createTrack(scene, physics) {
   const dynamic = []; // { body, mesh } pairs synced each frame
@@ -25,7 +22,7 @@ export function createTrack(scene, physics) {
   const concrete = new THREE.MeshStandardMaterial({ color: 0x9a9a95, roughness: 0.9 });
   const half = SIZE / 2;
   const wall = (x, z, lx, lz) => {
-    physics.addStaticBox({ x, y: 0.6, z }, { x: lx / 2 + PAD, y: 0.6, z: lz / 2 + PAD });
+    physics.addStaticBox({ x, y: 0.6, z }, { x: lx / 2, y: 0.6, z: lz / 2 }, { surface: 'concrete' });
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(lx, 1.2, lz), concrete);
     mesh.position.set(x, 0.6, z);
     mesh.castShadow = mesh.receiveShadow = true;
@@ -58,7 +55,7 @@ export function createTrack(scene, physics) {
   tyreGeo.rotateX(Math.PI / 2);
   const tyreMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.95 });
   for (const [x, z] of [[0, 50], [50, 0], [-50, -10], [30, -50], [-40, 55]]) {
-    physics.addStaticCylinder({ x, y: 0, z }, 0.65 + PAD, 1.6);
+    physics.addStaticCylinder({ x, y: 0, z }, 0.65, 1.6, { surface: 'tyres' });
     for (let k = 0; k < 4; k++) {
       const m = new THREE.Mesh(tyreGeo, tyreMat);
       m.position.set(x, 0.2 + k * 0.4, z);

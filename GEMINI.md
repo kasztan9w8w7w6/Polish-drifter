@@ -43,7 +43,7 @@ gracz ucieka przed „promieniowaniem 5G”.
 ## Architektura (v0.2e)
 
 ```
-src/physics.js  – jedyne miejsce z Rapierem poza vehicle.ts: świat, stały krok 60 Hz, przeszkody, debugRender
+src/physics.js  – jedyne miejsce z Rapierem poza vehicle.ts: świat, stały krok 60 Hz, przeszkody (`surface` → SURFACES), debugRender
 src/vehicle.ts  – auto arcade (port Kenney Starter Kit Racing, vehicle.gd): toczona KULA r = 1 m + drift na wierzchu.
                   Wejście: { throttle, brake, steer (+ = lewo), handbrake } 0..1 / -1..1
                   Wyjście: vehicle.state { position, quaternion, velocity, speed, slipAngle, driftAngle, drifting,
@@ -51,7 +51,7 @@ src/vehicle.ts  – auto arcade (port Kenney Starter Kit Racing, vehicle.gd): to
 src/tuning.ts   – wszystkie parametry jazdy i kamery + presety „Łatwy” (domyślny), „Pro”
 src/camera.ts   – kamera „Diorama” (orto 3/4, przyciągana do siatki pikseli) i „Za autem” (port view.gd), klawisz C
 src/car.js      – wygląd auta: model Poloneza (koła = kości, kręcą się i skręcają), przechył, reflektory; zastępcze bryły
-src/track.js    – plac manewrowy; przeszkody statyczne mają kolizję grubszą o promień kuli (PAD)
+src/track.js    – plac manewrowy (ściany, słupki opon, pachołki)
 src/district.js – osiedle z Kenney City Kit/Car Kit: pętla ulic, latarnie, bloki, pawilony, sklep „Żappka 24h”, garaże, zaparkowane auta
 src/pixelart.js – pixel-art: RenderPixelatedPass (przykład three.js webgl_postprocessing_pixel), materiały toon z N stopniami,
                   posteryzacja jasności, mgła radialna wokół auta (podmienione chunki fog_*), opcjonalne drżenie PS1
@@ -89,7 +89,14 @@ Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości n
   - tor zakręca z `driftTurnRate` proporcjonalnie do kąta;
   - wyjście: brak gazu dłużej niż `driftExitDelay`; auto prostuje się z `straightenRate`.
 - **Kontakt:** kula ma restitution 0; prędkość „od podłoża” jest tłumiona (`landingDamping`), model podąża za wysokością
-  kuli z opóźnieniem (`suspension`). Pedał wciśnięty bez ruchu przez `unstuckTime` → wypchnięcie w najbliższe wolne miejsce.
+  kuli z opóźnieniem (`suspension`).
+- **Przeszkody** (kolidery z `surface`, grupa kolizji OBSTACLE_GROUP) mają kolizję dokładnie taką, jak wyglądają. Kula ich
+  nie widzi (tylko toczy się po ziemi). Uderza w nie karoseria: prostokąt 4,3 × 1,7 m (wysoki, więc wypycha zawsze w bok),
+  przesuwany po każdym kroku (`collide()`: castShape od poprzedniej pozycji, potem wypchnięcie z nakładek).
+  Reakcja zależy od materiału (`SURFACES`: rebound, scrape) i od `crashRebound`, `crashStun`, `crashMinSpeed`:
+  odbicie, utrata prędkości przy otarciu, koniec driftu i chwila bez gazu w stronę przeszkody (cofanie działa).
+  `state.crash` = prędkość uderzenia (m/s) napędza wstrząs kamery, dźwięk i przerwanie combo.
+  Wypchnięcie (`unstuckTime`) zostało tylko dla zakleszczenia: kula w powietrzu/na krawędzi albo karoseria ściśnięta z dwóch stron.
 - **Klawiatura:** skręt narasta 0→1 w 0,4 s (`KEY_RAMP` w input.js), pad działa wprost proporcjonalnie.
 - **Modele:** `.gltf` z buforem w base64 wczytuje `src/gltf.js` (sam składa GLB w pamięci), bo CSP strony artefaktu
   blokuje fetch adresów `data:`; tekstury są osobnymi plikami `.png`.

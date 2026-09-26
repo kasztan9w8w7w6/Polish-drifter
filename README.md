@@ -70,7 +70,12 @@ Dźwięk startuje po pierwszym klawiszu/kliknięciu (wymóg przeglądarek). Para
 4. **Przekładka:** mocna, przytrzymana kontra przeprowadza auto płynnie przez zero na drugą stronę.
 5. **Wyjście:** puść gaz, a auto samo płynnie się wyprostuje.
 
-Jeśli auto utknie na przeszkodzie (pedał wciśnięty, a auto stoi ~1 s), samo się wypchnie w najbliższe wolne miejsce.
+**Uderzenia:** przeszkody zderzają się z karoserią auta (prostokąt 4,3 × 1,7 m) i mają kolizję dokładnie taką, jak wyglądają.
+Przejazd tuż obok lampy nic nie robi, a zahaczenie jej rogiem to uderzenie. Po uderzeniu auto zatrzymuje się na przeszkodzie
+i lekko odbija, zależnie od materiału: od drzewa najsłabiej, potem beton, metal (lampy, śmietniki, płoty), zaparkowane auta,
+a od opon i plastikowych barierek najmocniej. Silnik przez chwilę nie pcha w przeszkodę; cofanie działa od razu.
+Suwaki: `crashRebound`, `crashStun`, `crashMinSpeed` w „Wygląd jazdy i kontakt”.
+Awaryjne wypchnięcie zostało tylko na wypadek zakleszczenia (np. auto wstawione w szparę węższą od siebie).
 
 Presety w panelu (G):
 - **Łatwy:** domyślny.
@@ -103,7 +108,7 @@ Workflow `.github/workflows/pages.yml` publikuje build na GitHub Pages po pushu 
 ## Znane ograniczenia
 
 - Bundle ma ~5 MB (1,8 MB gzip), bo `rapier3d-compat` wbudowuje WASM w JS. Modele to kolejne ~8 MB `.gltf` (base64). Do optymalizacji później.
-- Kolizja auta to kula r = 1 m, więc przeszkody mają niewidoczną „skorupę” grubszą o 1 m; bokiem auto zatrzymuje się ~1 m przed ścianą.
+- Kolizja karoserii z przeszkodami to prostokąt w rzucie z góry (bez zaokrągleń i bez wysokości): liczy się obrys auta na ziemi.
 - Model Poloneza ma licencję Sketchfab Standard, a nie CC0 (szczegóły w CREDITS).
 - Dźwięki są w `.ogg`: starsze Safari ich nie odtworzy.
 - Bez GPU sprawdzone tylko zrzutami (SwiftShader); płynność i jasność na prawdziwej karcie trzeba ocenić samemu.
