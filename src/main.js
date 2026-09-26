@@ -27,6 +27,9 @@ import { createMarkers } from './marker.js';
 import paczka from './missions/paczka.json';
 import { isTouchDevice } from './touchstate.js';
 import { createTouchControls, touchSettings } from './touch.js';
+import { loadSettings, saveSettings, pixelSizeFor, loadProgress, saveProgress } from './settings.js';
+import { createDashboard } from './dashboard.js';
+import { createMenu } from './menu.js';
 
 // ---------- Renderer / scene: night on the estate ----------
 installRadialFog(); // before any material compiles
@@ -64,9 +67,11 @@ function applyNight() {
 }
 applyNight();
 
-// ---------- Car profile (src/cars/*.json: adding a car = a new file) ----------
+// ---------- Player settings (menu, localStorage) and the car profile (src/cars/*.json: adding a car = a new file) ----------
+const settings = loadSettings();
 const CARS = Object.fromEntries(Object.values(import.meta.glob('./cars/*.json', { eager: true, import: 'default' })).map((p) => [p.id, p]));
 const profile = CARS.polonez ?? Object.values(CARS)[0];
+if (presets[settings.difficulty]) applyPreset(settings.difficulty);
 applyCar(tuning, profile);
 
 // ---------- Physics ----------
@@ -80,6 +85,11 @@ const home = map.points.spawn;
 const [sx, sz, sh] = spawnArg?.length === 3 ? spawnArg : [home.x, home.z, home.heading];
 const car = createVehicle(physics, { spawn: { x: sx, y: 1, z: sz }, spawnYaw: (sh * Math.PI) / 180 });
 const carView = await createCarView(scene, profile);
+if (settings.paint && profile.look.paints[settings.paint]) {
+  carLook.colour = settings.paint;
+  carLook.paint = profile.look.paints[settings.paint];
+  carView.applyLook();
+}
 const skids = createSkidMarks(scene);
 const smoke = createSmoke(scene);
 const district = await createMap(scene, physics, map);
@@ -94,13 +104,10 @@ for (const ev of ['keydown', 'pointerdown']) addEventListener(ev, () => audio.st
 
 // ---------- HUD / scoring ----------
 const $ = (id) => document.getElementById(id);
-const hud = { toast: $('toast'), telemetry: $('telemetry'), speed: $('speed'), gear: $('gear'), tach: $('tach'), rpm: $('rpm'), drift: $('drift'), points: $('drift-points'), combo: $('drift-combo'), score: $('score'), best: $('best') };
-const TACH_SEGMENTS = 20;
-hud.tach.innerHTML = '<i></i>'.repeat(TACH_SEGMENTS);
-const tachCells = [...hud.tach.children];
+const hud = { toast: $('toast'), telemetry: $('telemetry'), drift: $('drift'), points: $('drift-points'), combo: $('drift-combo'), best: $('best') };
+const dashboard = createDashboard($('dashboard')); // Eastern Bloc dials (dashboard.js)
 let hudFlashTimer = 0;
 const scorer = createDriftScorer((event, s) => {
-  hud.score.textContent = s.total.toLocaleString('pl-PL');
   hud.best.textContent = s.best.toLocaleString('pl-PL');
   if (event === 'drifting') {
     hud.drift.className = '';
@@ -122,10 +129,7 @@ function toast(text) {
 }
 
 // ---------- Survival: battery, shop, running flat (survival.js); narrator and mission 1 ----------
-const hudBat = { box: $('battery'), cells: $('bat-cells'), pct: $('bat-pct'), goal: $('goal'), narrator: $('narrator'), fade: $('fade'), summary: $('summary') };
-const BAT_CELLS = 10;
-hudBat.cells.innerHTML = '<i></i>'.repeat(BAT_CELLS);
-const batCells = [...hudBat.cells.children];
+const hudBat = { goal: $('goal'), narrator: $('narrator'), fade: $('fade'), summary: $('summary') };
 const homeSave = { x: home.x, z: home.z, heading: home.heading };
 const survival = createSurvival({ pad: map.shop.pad, save: homeSave, level: paczka.start.battery });
 const narrator = createNarrator();
@@ -145,8 +149,22 @@ function placeCar({ x, z, heading }) {
 function handleMission(events) {
   for (const e of events) {
     if (e.type === 'say') narrator.say(e.lines);
+    if (e.type === 'step') storeProgress();
     if (e.type === 'complete') showSummary(e.summary);
   }
+}
+// "Kontynuuj": the mission step and the save point (with its battery) go to localStorage
+function storeProgress() {
+  if (mission.state.running) saveProgress({ mission: paczka.id, step: mission.state.index, save: survival.state.save });
+}
+function continueGame() {
+  const p = loadProgress();
+  if (!p) return startMission();
+  placeCar(p.save);
+  survival.restart(p.save, Math.max(p.save.level ?? 0, batterySettings.respawnMin));
+  narrator.clear();
+  hudBat.summary.hidden = true;
+  handleMission(mission.resume(p.step, score()));
 }
 function startMission(keepCar = false) {
   const p = map.points[paczka.start.point];
@@ -167,7 +185,7 @@ const CRASH_SPEED = 4; // m/s (≈ 14 km/h) straight into an obstacle counts as 
 
 // ---------- Tuning panel (lil-gui, key G / pad Start) ----------
 const gui = new GUI({ title: 'Tuning (G)' });
-const panel = { preset: DEFAULT_PRESET, export: exportTuning, import: () => showJson('', true) };
+const panel = { preset: presets[settings.difficulty] ? settings.difficulty : DEFAULT_PRESET, export: exportTuning, import: () => showJson('', true) };
 gui.add(panel, 'preset', Object.keys(presets)).name('Preset').onChange((name) => {
   applyPreset(name);
   applyCar(tuning, profile); // the preset sets the driving feel, the car its mass and power
@@ -314,7 +332,11 @@ const rig = createCameraRig(chaseCam, dioCam, scene.fog);
 const TOUCH = isTouchDevice(window); // by capabilities (coarse pointer / touch without hover), not by user agent
 document.body.classList.toggle('touch', TOUCH);
 const actions = {
-  pause: () => setPaused(!paused),
+  pause: () => {
+    if (menu.open) return; // (the menu handles Esc / Start itself: back)
+    setPaused(true);
+    menu.openPause();
+  },
   reset: () => {
     car.reset();
     rig.reset();
@@ -330,34 +352,35 @@ const actions = {
   mission: () => startMission(),
   confirm: () => (hudBat.summary.hidden = true),
 };
-const input = createInput(actions);
+const input = createInput(actions, () => settings.keys);
 const touchControls = TOUCH ? createTouchControls({ actions }) : null;
 if (touchControls) input.addSource(touchControls.read);
 
-// ---------- Pause (app in the background, P / Esc, ❚❚ on touch) and the portrait board ----------
+// ---------- Pause (app in the background, Esc / P, Start on the pad, ❚❚ on touch) and the portrait board ----------
 let paused = false;
-const pauseBox = $('pause');
 function setPaused(on) {
   paused = on;
   input.enabled = !on;
   touchControls?.releaseAll();
   audio.mute(on);
-  pauseBox.hidden = !on;
+  document.body.classList.toggle('paused', on);
 }
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) setPaused(true);
-  else if (!TOUCH) setPaused(false); // desktop: back where it was; a phone waits for a tap (get your fingers ready)
+  if (document.hidden && !paused) actions.pause(); // the pause menu is waiting when you come back
 });
-pauseBox.addEventListener('pointerdown', () => setPaused(false));
 const portrait = matchMedia('(orientation: portrait)');
 portrait.addEventListener?.('change', () => touchControls?.releaseAll());
 
 // ---------- Performance: lower settings on touch devices, FPS counter in the panel ----------
-const perf = { quality: TOUCH ? 'niska' : 'wysoka', fps: 0 };
+const perf = { quality: settings.quality ?? (TOUCH ? 'niska' : 'wysoka'), fps: 0 };
+// Game pixel size from the screen height (settings: Drobne / Średnie / Grube ≈ 540 / 360 / 240 game pixels tall)
+function applyPixelSize() {
+  pixelArt.pixelSize = pixelSizeFor(innerHeight, settings.pixels);
+  applyPixel();
+}
 function applyQuality() {
   const low = perf.quality === 'niska';
-  pixelArt.pixelSize = low ? 5 : 4; // bigger game pixels: fewer to render
-  applyPixel();
+  applyPixelSize();
   bloom.enabled = !low;
   district.setLampShare(low ? 2 : 1); // half the street-lamp lights
   gui.controllersRecursive().forEach((c) => c.updateDisplay());
@@ -368,8 +391,63 @@ perfFolder.add(perf, 'fps').name('FPS').listen().disable();
 perfFolder.add(perf, 'quality', ['wysoka', 'niska']).name('jakość').onChange(applyQuality);
 if (touchControls) perfFolder.add(touchSettings, 'steering', ['joystick', 'przyciski']).name('skręt (dotyk)').onChange(() => touchControls.applySettings());
 let fpsFrames = 0, fpsTime = 0;
-if (new URLSearchParams(location.search).has('debug')) window.agro = { survival, mission, narrator, car, perf: () => perf, paused: () => paused }; // for testing from the console
-startMission(spawnArg?.length === 3); // (?spawn=… keeps the car where it asked for)
+
+// ---------- Menu (menu.js): main, garage, settings, pause ----------
+let garage = false;
+const garageLight = new THREE.PointLight(0xffd9a0, 0, 16, 1); // a bare bulb over the car in the garage view
+scene.add(garageLight);
+function applySettings(s) {
+  if (presets[s.difficulty] && panel.preset !== s.difficulty) {
+    panel.preset = s.difficulty;
+    applyPreset(s.difficulty);
+    applyCar(tuning, profile);
+    car.applyParams();
+  }
+  night.exposure = s.exposure;
+  applyNight();
+  perf.quality = s.quality ?? (TOUCH ? 'niska' : 'wysoka');
+  applyQuality();
+  Object.assign(audioSettings, { volume: s.volume, engine: s.engine, skid: s.skid, impact: s.impact, warning: s.warning });
+  gui.controllersRecursive().forEach((c) => c.updateDisplay());
+}
+const menu = createMenu({
+  settings,
+  paints: profile.look.paints,
+  hooks: {
+    play: () => (startMission(), setPaused(false)),
+    continue: () => (continueGame(), setPaused(false)),
+    hasProgress: () => !!loadProgress(),
+    resume: () => setPaused(false),
+    restart: () => (startMission(), setPaused(false)),
+    toMenu: () => (storeProgress(), setPaused(true)),
+    garage: (open) => {
+      garage = open;
+      garageLight.intensity = open ? 28 : 0;
+      if (open) {
+        placeCar(map.points.garage ?? home); // in front of the garages
+        carView.sync(car.read());
+      } else {
+        applyNight(); // (fog distance back from the close-up)
+        chaseCam.clearViewOffset();
+      }
+    },
+    paint: (name) => {
+      carLook.colour = name;
+      carLook.paint = profile.look.paints[name];
+      carView.applyLook();
+    },
+    apply: applySettings,
+    captureKey: (cb) => input.captureKey(cb),
+  },
+});
+applySettings(settings);
+if (new URLSearchParams(location.search).has('debug')) window.agro = { survival, mission, narrator, car, menu, settings, perf: () => perf, paused: () => paused }; // for testing from the console
+// ?spawn=… or ?graj skips the menu (testing); otherwise the game starts in the main menu, the world paused behind it
+if (spawnArg?.length === 3 || new URLSearchParams(location.search).has('graj')) startMission(spawnArg?.length === 3);
+else {
+  setPaused(true);
+  menu.openMain();
+}
 // ?bat=5 – start with that much battery (testing the flicker / running flat)
 const batArg = Number(new URLSearchParams(location.search).get('bat'));
 if (batArg > 0) survival.restart(survival.state.save, batArg);
@@ -386,6 +464,24 @@ function tick(time) {
   if ((fpsTime += timer.getDelta()) >= 0.5) {
     perf.fps = Math.round(fpsFrames / fpsTime);
     fpsFrames = fpsTime = 0;
+  }
+  menu.update(); // pad in the menu
+  // Garage: the Polonez turns slowly under a bare bulb, seen from a low camera
+  if (garage) {
+    const p = carView.root.position;
+    carView.root.rotateY(dt * 0.5);
+    const a = timer.getElapsed() * 0.05;
+    chaseCam.fov = 45;
+    chaseCam.position.set(p.x + Math.cos(a) * 7.5, p.y + 1.6, p.z + Math.sin(a) * 7.5);
+    chaseCam.lookAt(p.x, p.y - 0.1, p.z);
+    chaseCam.setViewOffset(innerWidth, innerHeight, -innerWidth * 0.22, 0, innerWidth, innerHeight); // car right of the menu
+    garageLight.position.set(p.x + 1.5, p.y + 3.5, p.z + 1);
+    setCamera(chaseCam);
+    scene.fog.near = 7.5; // (radial fog centred this far along the view: on the car, pixelart.js)
+    scene.fog.far = 45;
+    composer.render();
+    requestAnimationFrame(tick);
+    return;
   }
   // Paused, or a phone held upright (the "turn the phone" board is showing): the world stands still
   if (paused || (TOUCH && portrait.matches)) {
@@ -430,7 +526,10 @@ function tick(time) {
   const drifted = scorer.state.drifting ? scorer.state.angle : 0;
   for (const e of survival.update(dt, { x: state.position.x, z: state.position.z, heading, speed: state.speed, topSpeed, angle: drifted, grounded: state.grounded, highBeam: lightsState.high, crash: state.crash })) {
     handleMission(mission.notify(e));
-    if (e === 'saved') toast('Żappka: bateria 100%, zapisano');
+    if (e === 'saved') {
+      toast('Żappka: bateria 100%, zapisano');
+      storeProgress();
+    }
     if (e === 'hit') toast('Uderzenie – seria ładowania przerwana');
     if (e === 'dead') scorer.crash();
     if (e === 'respawn') {
@@ -451,11 +550,6 @@ function tick(time) {
     audio.beep();
     beepTimer = 1.2;
   }
-  // HUD: battery bar
-  const litBat = Math.ceil((sv.level / 100) * BAT_CELLS);
-  batCells.forEach((c, i) => (c.className = i < litBat ? 'on' : ''));
-  hudBat.pct.textContent = `${Math.ceil(sv.level)}%`;
-  hudBat.box.className = sv.charging ? 'charging' : sv.level < batterySettings.warn ? 'low warn' : sv.level < batterySettings.low ? 'low' : sv.level < 50 ? 'mid' : 'ok';
   district.update(timer.getElapsed(), sv.charging);
 
   // Mission, target marker, narrator
@@ -471,12 +565,20 @@ function tick(time) {
   // Dashboard: speed, virtual gear, rev counter
   const { gear, rpm, load } = gearbox.update(dt, state, controls.throttle);
   audio.update(dt, state, load, controls.throttle, survival.engineOn);
-  hud.speed.textContent = Math.round(state.speed * 3.6);
-  hud.gear.textContent = gear < 0 ? 'R' : gear;
-  const shownRpm = survival.engineOn ? rpm : 0; // battery flat: the engine is off
-  hud.rpm.textContent = Math.round(shownRpm / 100) * 100;
-  const lit = Math.round((shownRpm / gearbox.gears.redRpm) * TACH_SEGMENTS);
-  tachCells.forEach((c, i) => (c.className = i < lit ? (i >= TACH_SEGMENTS - 3 ? 'on red' : 'on') : ''));
+  const blink = Math.floor(timer.getElapsed() * 3) % 2 === 0;
+  dashboard.draw({
+    speedKmh: state.speed * 3.6,
+    rpm: survival.engineOn ? rpm : 0, // battery flat: the engine is off
+    redRpm: gearbox.gears.redRpm,
+    gear,
+    battery: sv.level,
+    charging: sv.driftCharge > 0 || sv.charging,
+    lightsOn: sv.level > 0,
+    highBeam: lightsState.high,
+    engineWarn: !survival.engineOn || (sv.level < batterySettings.warn && blink),
+    handbrake: controls.handbrake > 0.5,
+    points: score(),
+  }, dt);
   hud.telemetry.textContent = `kąt ${Math.round(Math.abs(state.slipAngle))}° · ${panel.preset}${input.gamepadConnected ? ' · pad' : ''}`;
   if (hudFlashTimer > 0 && (hudFlashTimer -= dt) <= 0) {
     hud.points.textContent = '';
@@ -508,7 +610,7 @@ addEventListener('resize', () => {
   chaseCam.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
   composer.setSize(innerWidth, innerHeight);
-  applyPixel();
+  applyPixelSize();
 });
 
 tick();

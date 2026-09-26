@@ -79,8 +79,8 @@ const base = {
   bodyPitch: 3, // degrees of nose lift at 1 g acceleration
 
   // Diorama camera (default): high 3/4 orthographic view
-  dioPitch: 45, // degrees down
-  dioYaw: 35, // degrees – fixed viewing direction (0 = looking along +X)
+  dioPitch: 35, // degrees down (lower than a 45° isometric view: more of the street ahead)
+  dioYaw: 28, // degrees – fixed viewing direction, turned a little from the map axis (0 = looking along +X)
   dioYawFollow: 0, // 1/s – slow swing behind the direction of travel (0 = fixed angle)
   dioZoom: 11, // m – half the visible height at a standstill…
   dioZoomFast: 16, // …and at top speed

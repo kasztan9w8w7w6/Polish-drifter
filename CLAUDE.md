@@ -40,7 +40,7 @@ src/vehicle.ts  – auto arcade (port Kenney Starter Kit Racing, vehicle.gd): to
 src/tuning.ts   – wszystkie parametry jazdy i kamery + presety „Normalny” (domyślny, wymagający), „Pro”, „Łatwy” (dostępność)
 src/cars/*.json – profile aut (realne dane + wartości arcade, przełożenia, paleta lakierów, model); nowe auto = nowy plik
 src/cars.js     – applyCar (masa, moc z prędkości maks., napęd → tuning), gearsOf (biegi i obroty dla gearbox.js)
-src/camera.ts   – kamera „Diorama” (orto 3/4, przyciągana do siatki pikseli) i „Za autem” (port view.gd), klawisz C
+src/camera.ts   – kamera „Diorama” (orto, 35° w dół, obrócona 28° od osi mapy, przyciągana do siatki pikseli) i „Za autem” (port view.gd), klawisz C
 src/car.js      – wygląd auta: model Poloneza (koła = kości, kręcą się i skręcają), przechył, reflektory; zastępcze bryły
 src/track.js    – podłoże: asfalt, ściany, słupki opon, pachołki (pozycje z mapy)
 src/maps/*.json – ręcznie ułożona mapa (lista obiektów: model, x, z, yaw, rozmiar, kolizja, materiał; latarnie, dziury, parkingi,
@@ -62,6 +62,12 @@ src/touchstate.js – dotyk bez DOM (testy w Node): isTouchDevice (po możliwoś
                   stan przycisków dla kilku palców, rampy jak klawiatura
 src/touch.js    – warstwa dotykowa (tylko na urządzeniach dotykowych): joystick nipplejs / przyciski ←→, gaz, hamulec, ręczny,
                   pełny ekran + screen.orientation.lock; w main.js: niższa jakość, FPS w panelu, pauza w tle, plansza „Obróć telefon”
+src/settings.js – ustawienia gracza w localStorage (try/catch, gra działa bez), klawisze do przypisania, piksele wg rozdzielczości
+                  (Drobne/Średnie/Grube ≈ 540/360/240 linii), postęp dla „Kontynuuj”
+src/dashboard.js – zegary jak w autach z bloku wschodniego (prędkościomierz, obrotomierz, bateria jak zegar paliwa, kontrolki,
+                  okienko biegu, bębenkowy licznik punktów): canvas 256×100 powiększony bez wygładzania
+src/menu.js     – menu (Graj / Kontynuuj / Garaż / Ustawienia), garaż (obracający się Polonez, lakiery), ustawienia
+                  (grafika, dźwięk, sterowanie + trudność), pauza (Esc / Start); mysz, klawiatura, pad, dotyk
 src/drift.js    – punktacja driftu
 src/effects.js  – dym i ślady opon
 src/main.js     – scena nocna (mgła radialna), HUD (w tym bateria), lil-gui (G), debug kolizji (F), klej bateria/misja/narrator, pętla

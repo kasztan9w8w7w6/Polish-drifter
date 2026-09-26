@@ -100,7 +100,17 @@ export function createMission(def, points) {
     return events;
   }
 
-  return { def, state, start, update, notify, target, get goal() { return state.step?.goal ?? ''; } };
+  // "Kontynuuj": start again at step `index` (saved progress)
+  function resume(index, score = 0) {
+    const events = start(score);
+    const lines = events.filter((e) => e.type === 'say').length;
+    events.splice(0, events.length);
+    if (lines && index > 0) events.push({ type: 'say', lines: ['Wracasz. Mgła ta sama, maszt ten sam, bateria prawie ta sama.'] });
+    enter(Math.min(index, def.steps.length - 1), events);
+    return events;
+  }
+
+  return { def, state, start, resume, update, notify, target, get goal() { return state.step?.goal ?? ''; } };
 }
 
 // "2:05" for the summary

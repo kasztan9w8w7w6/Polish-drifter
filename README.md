@@ -1,4 +1,4 @@
-# Agro Drifter 🇵🇱 (v0.3)
+# Agro Drifter 🇵🇱 (v0.4)
 
 Przeglądarkowa gra o driftowaniu Polonezem nocą po osiedlu: pixel-art 3D z kamerą jak nad dioramą
 i ucieczka przed „promieniowaniem 5G” (opis projektu i roadmapa w [`CLAUDE.md`](CLAUDE.md)).
@@ -60,6 +60,23 @@ npm run build    # statyczny build do dist/
 Po R, C i automatycznym wypchnięciu z przeszkody na środku ekranu pojawia się krótki komunikat.
 Dźwięk startuje po pierwszym klawiszu/kliknięciu (wymóg przeglądarek). Parametr `?spawn=x,z,kąt` w adresie ustawia auto w innym miejscu,
 `?bat=5` startuje z 5% baterii (do sprawdzenia migania i gaśnięcia).
+
+## Menu, garaż, ustawienia
+
+Gra startuje w **menu głównym**: Graj (misja 1 od początku), Kontynuuj (od ostatniego kroku misji i punktu zapisu), Garaż, Ustawienia.
+- **Garaż:** Polonez obraca się pod gołą żarówką; lakier wybierasz z palety z epoki.
+- **Ustawienia:** grafika (piksele Drobne / Średnie / Grube, ekspozycja, jakość), dźwięk (głośności), sterowanie (poziom jazdy
+  Łatwy / Normalny / Pro, klawisze do zmiany: kliknij przycisk i naciśnij nowy klawisz, lista przycisków pada).
+- **Pauza:** Esc (albo P, Start na padzie, ❚❚ na dotyku): Wznów, Restart misji, Ustawienia, Wyjście do menu. Gra pauzuje się też sama, gdy karta/aplikacja przejdzie w tło.
+- Ustawienia i postęp zapisują się w przeglądarce (localStorage); bez niego gra działa normalnie, tylko nie pamięta.
+- `?graj` w adresie pomija menu (testy).
+
+**Zegary** w prawym dolnym rogu wyglądają jak deska rozdzielcza auta z lat 70–80: prędkościomierz 0–160, obrotomierz ×1000 z czerwonym
+polem, bateria jak stary zegar paliwa (0 – ½ – 1), kontrolki (ładowanie driftem, światła: zielona krótkie / niebieska długie,
+silnik: miga przy niskiej baterii, świeci po zgaśnięciu, ręczny), okienko biegu i bębenkowy licznik punktów.
+
+**Obraz:** kamera Diorama patrzy 35° w dół i jest obrócona 28° od osi mapy (suwaki w panelu G). Rozmiar piksela dobiera się do
+wysokości ekranu: Średnie ≈ 360 linii (1080p: piksel 3), Drobne ≈ 540, Grube ≈ 240.
 
 ## Telefon i tablet (wersja testowa)
 

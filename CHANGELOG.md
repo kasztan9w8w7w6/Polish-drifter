@@ -2,6 +2,14 @@
 
 Każda wersja ma tag w git (`git checkout v0.4a` uruchamia dokładnie tę wersję). Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
 
+## v0.4b – kamera, zegary, menu
+- Kamera Diorama niżej (35°) i obrócona 28° od osi mapy; piksele nadal przyciągane do siatki.
+- Rozmiar piksela z rozdzielczości ekranu: Drobne / Średnie / Grube (≈ 540 / 360 / 240 linii), domyślnie Średnie.
+- Zegary w stylu aut z bloku wschodniego: analogowy prędkościomierz i obrotomierz, bateria jak zegar paliwa, kontrolki, okienko biegu,
+  bębenkowy licznik punktów; ciepłe podświetlenie, pikselowe.
+- Menu po polsku: Graj / Kontynuuj / Garaż (obracający się Polonez, lakiery z epoki) / Ustawienia (grafika, dźwięk, sterowanie
+  z przypisywaniem klawiszy i poziomem jazdy), menu pauzy (Esc / Start). Ustawienia i postęp w localStorage.
+
 ## v0.4a – trudniejsza jazda i bateria
 - Nowy domyślny preset **Normalny** (wymagający): zwykły skręt trzyma przyczepność. Poślizg wywołuje dopiero ręczny od ~40 km/h,
   gwałtowne odpuszczenie gazu w szybkim zakręcie (od ~54 km/h, przeniesienie masy) albo pełny gaz z pełnym skrętem od ~61 km/h.

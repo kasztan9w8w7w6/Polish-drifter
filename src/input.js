@@ -7,12 +7,13 @@
 export const KEY_RAMP = { steerUp: 2.5, steerDown: 4, pedalUp: 4, pedalDown: 6 };
 const STEER_DEADZONE = 0.12;
 
-// Gamepad buttons (standard mapping): 0 A, 1 B, 2 X, 3 Y, 4 LB, 5 RB, 6 LT, 7 RT, 9 Start
-const PAD_ACTIONS = { 3: 'reset', 2: 'camera', 9: 'gui', 12: 'lights', 8: 'mission' }; // 12 d-pad up, 8 Back
-// Actions match the physical key (e.code) and, as a fallback, the character (e.key) – some remote
-// desktops / virtual keyboards send an empty `code`.
-const KEY_ACTIONS = { KeyR: 'reset', KeyC: 'camera', KeyG: 'gui', KeyF: 'debug', KeyL: 'lights', KeyN: 'mission', Enter: 'confirm', KeyP: 'pause', Escape: 'pause' };
-const CHAR_ACTIONS = { r: 'reset', c: 'camera', g: 'gui', f: 'debug', l: 'lights', n: 'mission', enter: 'confirm', p: 'pause' };
+// Gamepad buttons (standard mapping): 0 A, 1 B, 2 X, 3 Y, 4 LB, 5 RB, 6 LT, 7 RT, 8 Back, 9 Start, 12 d-pad up
+export const PAD_ACTIONS = { 3: 'reset', 2: 'camera', 9: 'pause', 12: 'lights', 8: 'mission' };
+// Keys the player can rebind come from settings.js (DEFAULT_KEYS); these developer keys are fixed
+const FIXED_KEYS = { KeyG: 'gui', KeyF: 'debug', KeyN: 'mission', Enter: 'confirm' };
+const ONE_SHOT = ['reset', 'camera', 'lights', 'pause'];
+// Some remote desktops / virtual keyboards send an empty `code`: rebuild it from the character
+const codeOf = (e) => e.code || (e.key === ' ' ? 'Space' : e.key?.length === 1 ? `Key${e.key.toUpperCase()}` : e.key);
 
 // Move `value` towards `target` at `up` units/s when pushing further out, `down` when returning or reversing
 export function rampValue(value, target, dt, up, down) {
@@ -20,21 +21,32 @@ export function rampValue(value, target, dt, up, down) {
   return value + Math.max(-rate * dt, Math.min(rate * dt, target - value));
 }
 
-export function createInput(actions = {}) {
+// actions: { reset, camera, lights, pause, gui, debug, mission, confirm } callbacks; bindings: settings.js keys (live object)
+export function createInput(actions = {}, bindingsOf) {
+  const binds = typeof bindingsOf === 'function' ? bindingsOf : () => bindingsOf;
   const down = new Set();
+  let capture = null; // the menu waits for a key to rebind
   addEventListener('keydown', (e) => {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return; // typing in lil-gui
-    const action = KEY_ACTIONS[e.code] ?? CHAR_ACTIONS[e.key?.toLowerCase()];
+    const code = codeOf(e);
+    if (capture) {
+      e.preventDefault();
+      const cb = capture;
+      capture = null;
+      cb(code);
+      return;
+    }
+    const action = FIXED_KEYS[code] ?? ONE_SHOT.find((a) => binds()[a]?.includes(code));
     // e.repeat instead of "was it already down": a keyup lost to a focus change can't block the key any more
     if (action && !e.repeat) actions[action]?.();
-    down.add(e.code || e.key);
+    down.add(code);
     if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
   });
-  addEventListener('keyup', (e) => down.delete(e.code || e.key));
+  addEventListener('keyup', (e) => down.delete(codeOf(e)));
   addEventListener('blur', () => down.clear());
   document.addEventListener('visibilitychange', () => down.clear());
 
-  const any = (...codes) => codes.some((c) => down.has(c));
+  const held = (action) => (binds()[action] ?? []).some((c) => down.has(c));
   const keys = { throttle: 0, brake: 0, steer: 0, handbrake: 0 };
   const ramp = (value, target, dt, up, down) => rampValue(value, target, dt, up, down);
   let padButtons = [];
@@ -63,6 +75,10 @@ export function createInput(actions = {}) {
     get gamepadConnected() {
       return padConnected;
     },
+    // Next key press goes to cb(code) instead of the game (rebinding in the menu)
+    captureKey(cb) {
+      capture = cb;
+    },
     // Another control source: read(dt) → { throttle, brake, steer, handbrake }
     addSource(read) {
       sources.push(read);
@@ -73,10 +89,10 @@ export function createInput(actions = {}) {
       if (!on) down.clear();
     },
     read(dt) {
-      keys.throttle = ramp(keys.throttle, any('KeyW', 'ArrowUp', 'w') ? 1 : 0, dt, KEY_RAMP.pedalUp, KEY_RAMP.pedalDown);
-      keys.brake = ramp(keys.brake, any('KeyS', 'ArrowDown', 's') ? 1 : 0, dt, KEY_RAMP.pedalUp, KEY_RAMP.pedalDown);
-      keys.steer = ramp(keys.steer, (any('KeyA', 'ArrowLeft', 'a') ? 1 : 0) - (any('KeyD', 'ArrowRight', 'd') ? 1 : 0), dt, KEY_RAMP.steerUp, KEY_RAMP.steerDown);
-      keys.handbrake = any('Space', ' ') ? 1 : 0; // handbrake stays instant – it's a yank, not a pedal
+      keys.throttle = ramp(keys.throttle, held('gas') ? 1 : 0, dt, KEY_RAMP.pedalUp, KEY_RAMP.pedalDown);
+      keys.brake = ramp(keys.brake, held('brake') ? 1 : 0, dt, KEY_RAMP.pedalUp, KEY_RAMP.pedalDown);
+      keys.steer = ramp(keys.steer, (held('left') ? 1 : 0) - (held('right') ? 1 : 0), dt, KEY_RAMP.steerUp, KEY_RAMP.steerDown);
+      keys.handbrake = held('handbrake') ? 1 : 0; // handbrake stays instant – it's a yank, not a pedal
       const pad = readPad();
       const all = [pad, ...sources.map((r) => r(dt))].filter(Boolean);
       if (!enabled) return { throttle: 0, brake: 0, steer: 0, handbrake: 0 };

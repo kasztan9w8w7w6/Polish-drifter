@@ -35,7 +35,7 @@ test('diorama: świat trzyma się siatki pikseli przy ruchu kamery (brak migotan
   assert.ok(spread(0) < 0.02 && spread(1) < 0.02, 'punkt świata trafia zawsze w ten sam podpiksel');
 });
 
-test('diorama: kamera ~45° w dół, wyprzedza auto w kierunku jazdy, oddala się z prędkością', (t) => {
+test('diorama: kamera ~35° w dół, wyprzedza auto w kierunku jazdy, oddala się z prędkością', (t) => {
   const dio = new OrthographicCamera();
   const rig = createCameraRig(new PerspectiveCamera(), dio, null, tuning);
   let cam;
@@ -50,7 +50,7 @@ test('diorama: kamera ~45° w dół, wyprzedza auto w kierunku jazdy, oddala si�
   const centre = cam.position.clone().addScaledVector(cam.getWorldDirection(dir), 100);
   const lead = centre.x - 399 * 0.5;
   t.diagnostic(`nachylenie ${pitch.toFixed(1)}°, wysokość kadru stoi ${slowH.toFixed(1)} m → 108 km/h ${fastH.toFixed(1)} m, wyprzedzenie ${lead.toFixed(1)} m`);
-  assert.ok(pitch > 40 && pitch < 50);
+  assert.ok(pitch > 30 && pitch < 38);
   assert.ok(fastH > slowH * 1.2, 'oddala się przy prędkości');
   assert.ok(lead > 2, 'patrzy przed auto');
   assert.equal(rig.nextMode(), 'Za autem');
