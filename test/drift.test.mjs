@@ -104,3 +104,42 @@ for (const preset of ['Przyczepny', 'Drift łatwy', 'Drift pro']) {
     assert.ok(minUp > 0.5, 'auto nie przewraca się');
   });
 }
+
+test('poślizg bez ręcznego: gaz + skręt przy ~70 km/h', async (t) => {
+  const sim = await simAt(70);
+  const t0 = sim.time;
+  let maxSlip = 0;
+  sim.run(2, { throttle: 1, steer: 1 }, (x) => (maxSlip = Math.max(maxSlip, Math.abs(x.slip))));
+  t.diagnostic(`max poślizg w 2 s: ${fmt(maxSlip)}°`);
+  assert.ok(maxSlip > 15, `tylko ${fmt(maxSlip)}°`);
+  assert.ok(maxSlip < 90, 'bez bączka');
+});
+
+test('poślizg bez ręcznego: muśnięcie hamulca w zakręcie, potem gaz', async (t) => {
+  const sim = await simAt(70);
+  const t0 = sim.time;
+  let maxSlip = 0;
+  sim.run(2, (s, time) => (time - t0 < 0.3 ? { brake: 1, steer: 1 } : { throttle: 1, steer: 0.6 }), (x) => (maxSlip = Math.max(maxSlip, Math.abs(x.slip))));
+  t.diagnostic(`max poślizg w 2 s: ${fmt(maxSlip)}°`);
+  assert.ok(maxSlip > 15, `tylko ${fmt(maxSlip)}°`);
+  assert.ok(maxSlip < 90, 'bez bączka');
+});
+
+test('przekładka: drift w lewo → pełny skręt w prawo = drift w prawo', async (t) => {
+  const sim = await simAt(60);
+  const t0 = sim.time;
+  // establish a left drift
+  sim.run(2, (s, time) => (time - t0 < 0.6 ? { steer: 1, handbrake: 1, throttle: 0.5 } : { throttle: 0.85, steer: 0 }));
+  const before = sim.car.state.slipAngle;
+  const t1 = sim.time;
+  let otherSide = null, maxAbs = 0;
+  sim.run(2.5, { throttle: 0.85, steer: -1 }, (x) => {
+    maxAbs = Math.max(maxAbs, Math.abs(x.slip));
+    if (otherSide === null && Math.sign(x.slip) === -Math.sign(before) && Math.abs(x.slip) > 15) otherSide = x.t - t1;
+  });
+  const after = sim.car.state.slipAngle;
+  t.diagnostic(`poślizg przed: ${fmt(before)}°, drift po drugiej stronie (>15°) po ${otherSide === null ? '—' : fmt(otherSide, 2) + ' s'}, na końcu ${fmt(after)}°, max ${fmt(maxAbs)}°`);
+  assert.ok(otherSide !== null && otherSide < 1.5, 'drift przechodzi na drugą stronę');
+  assert.ok(Math.sign(after) === -Math.sign(before) && Math.abs(after) > 15, 'i się tam utrzymuje');
+  assert.ok(maxAbs < 90, 'bez bączka');
+});

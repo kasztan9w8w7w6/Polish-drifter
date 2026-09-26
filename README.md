@@ -39,10 +39,20 @@ npm run build    # statyczny build do dist/
 
 ## Jak jeździć driftem (preset „Drift łatwy”)
 
-1. Rozpędź się do ~50–60 km/h, skręć i szarpnij **ręczny**. Tył odjedzie płynnie.
+1. **Wejście w poślizg** (od ~25 km/h), jeden z czterech sposobów:
+   - skręć i szarpnij **ręczny**,
+   - **gaz + mocny skręt**,
+   - **muśnij hamulec** w zakręcie, potem gaz,
+   - **puść gaz** w trakcie ostrego skrętu.
 2. Trzymaj **gaz** (od ok. połowy): gaz podtrzymuje poślizg, a drift traci mało prędkości.
-3. Kierownicą wybierasz kąt: w stronę zakrętu = głęboki drift (~40°), puszczona = ~30°, kontra = płytki (~15–20°). Asysta nie pozwala na bączka.
-4. Żeby wyjść z driftu, **puść gaz**. Auto samo się wyprostuje.
+3. Kierownicą wybierasz kąt:
+   - w stronę zakrętu = głęboki drift (~40°),
+   - puszczona = ~30°,
+   - lekka kontra = płytki (~15–20°).
+
+   Asysta nie pozwala na bączka.
+4. **Przekładka:** mocna kontra, na klawiaturze po prostu przytrzymany przeciwny kierunek, przerzuca auto do driftu w drugą stronę.
+5. Żeby wyjść z driftu, **puść gaz**. Auto samo się wyprostuje.
 
 Presety w panelu (G):
 - **Przyczepny:** ręczny tylko zarzuca, tył szybko łapie.

@@ -57,9 +57,21 @@ Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości n
 
 ## Model driftu (skrót)
 
-- **Utrata przyczepności tyłu** (`rearLoss`, 0..1, płynnie): max z ręcznego, gazu × skrętu (power oversteer) i gazu w trwającym poślizgu (podtrzymanie).
-- **Tryb driftu z histerezą:** wejście powyżej 12°, wyjście poniżej 4° albo po puszczeniu gazu.
-- **Kierownica w drifcie** wybiera docelowy kąt poślizgu: w zakręt → max, puszczona → środek, pełna kontra → min. Regulator PD obrotu (`driftAngleControl`/`driftAngleDamping`).
+- **Utrata przyczepności tyłu** (`rearLoss`, 0..1, płynnie). Sposoby wejścia, każdy od ~25 km/h:
+  - ręczny,
+  - gaz + skręt (`powerOversteer`),
+  - muśnięcie hamulca w zakręcie (`brakeDrift`),
+  - puszczenie gazu w zakręcie (`liftOffLoss`).
+
+  Gaz w trwającym poślizgu go podtrzymuje. Przy wejściu działa `entryKick`.
+- **Tryb driftu z histerezą:** wejście powyżej 12°, wyjście po puszczeniu gazu albo gdy kąt jest < 4° dłużej niż `transitionGrace`, dzięki czemu przekładka przez 0° nie gasi driftu.
+- **Kierownica w drifcie** wybiera docelowy kąt poślizgu:
+  - w zakręt → max,
+  - puszczona → środek,
+  - lekka kontra → min,
+  - mocna kontra (powyżej `counterSteerSwitch`) → cel po drugiej stronie, czyli przekładka.
+
+  Kątem steruje regulator PD obrotu (`driftAngleControl`/`driftAngleDamping`).
 - **Asysta kontry:** przednie koła podążają za kierunkiem jazdy (`counterSteerAssist`), a limit kontry (`counterSteerLimit`) nie pozwala im odbić auta.
 - **Anty-bączek** powyżej `driftAngleMax − 5°` (`angleHold`), `speedKeep` ogranicza utratę prędkości w drifcie.
 - **Niski środek masy** i asysta pionu (`uprightAssist`), żeby auto nie dachowało.

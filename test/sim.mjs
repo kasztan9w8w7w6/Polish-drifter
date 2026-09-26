@@ -6,7 +6,7 @@ import { presets, DEFAULT_PRESET } from '../src/tuning.js';
 export async function createSim({ preset = DEFAULT_PRESET, walls = false } = {}) {
   await initPhysics();
   const physics = createPhysics();
-  physics.addStaticBox({ x: 0, y: -1, z: 0 }, { x: 500, y: 1, z: 500 }, { friction: 0.8 });
+  physics.addStaticBox({ x: 0, y: -1, z: 0 }, { x: 5000, y: 1, z: 5000 }, { friction: 0.8 });
   if (walls) {
     // A 40 m square pen of concrete barriers around the origin
     for (const [x, z, hx, hz] of [[0, 20, 20, 0.5], [0, -20, 20, 0.5], [20, 0, 0.5, 20], [-20, 0, 0.5, 20]]) {

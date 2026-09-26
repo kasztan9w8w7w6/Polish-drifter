@@ -81,6 +81,10 @@ export function createVehicle(physics, { tuning = sharedTuning, spawn = { x: 0, 
   let prevSpeed = 0;
   let prevSlip = 0;
   let driftLatched = false;
+  let driftSide = 0; // sign of slipAngle of the current drift
+  let smallSlipTime = 0;
+  let prevThrottle = 0;
+  let liftOffTimer = 0;
   let braking = false;
   let impact = 0;
   let lastInput = { throttle: 0, brake: 0, steer: 0, handbrake: 0 };
@@ -136,19 +140,33 @@ export function createVehicle(physics, { tuning = sharedTuning, spawn = { x: 0, 
     const { f, speed, slip } = measure();
     const absSlip = Math.abs(slip);
     const movingForward = f > 2;
-    // Drift latch with hysteresis: enters above 12°, stays until the angle drops under 4° or the gas is released
-    if (!movingForward || absSlip < 4 * DEG || (input.throttle < 0.2 && input.handbrake === 0)) driftLatched = false;
+    // Drift latch with hysteresis: enters above 12°, ends when the gas is released or the angle stays
+    // under 4° for longer than `transitionGrace` (so a left→right switch passing through 0° survives)
+    smallSlipTime = absSlip < 4 * DEG ? smallSlipTime + h : 0;
+    const throttleOff = input.throttle < 0.2 && input.handbrake === 0;
+    if (!movingForward || throttleOff || smallSlipTime > t.transitionGrace) driftLatched = false;
     else if (absSlip > 12 * DEG) driftLatched = true;
+    if (driftLatched && absSlip > 6 * DEG) driftSide = Math.sign(slip);
     const sliding = driftLatched ? 1 : movingForward ? MathUtils.smoothstep(absSlip, 3 * DEG, 12 * DEG) : 0;
     const slipRate = (slip - prevSlip) / h;
     prevSlip = slip;
 
-    // --- Rear grip loss: handbrake, power oversteer, and throttle keeps an existing slide going
+    // --- Rear grip loss. Ways in: handbrake, power oversteer (gas + steer), brake tap in a turn,
+    // lift-off (gas released mid-turn). Gas keeps an existing slide going.
     const speedGate = MathUtils.smoothstep(speed, 4, 10);
+    const entryGate = MathUtils.smoothstep(speed, 5, 9); // entries without handbrake work from ~20–30 km/h
+    const steerAmt = MathUtils.smoothstep(Math.abs(input.steer), 0.25, 0.8);
+    if (prevThrottle > 0.6 && input.throttle < 0.3 && steerAmt > 0.5 && speed > 10) liftOffTimer = 0.5;
+    liftOffTimer = Math.max(0, liftOffTimer - h);
+    prevThrottle = input.throttle;
+    const brakeEntry = f > 1 ? input.brake * steerAmt * t.brakeDrift * entryGate : 0;
+    const liftEntry = liftOffTimer > 0 ? t.liftOffLoss * steerAmt * entryGate : 0;
     const target = movingForward
       ? Math.max(
           input.handbrake * t.handbrakeLoss,
-          input.throttle * Math.abs(input.steer) * t.powerOversteer * speedGate,
+          input.throttle * steerAmt * t.powerOversteer * entryGate,
+          brakeEntry,
+          liftEntry,
           MathUtils.smoothstep(input.throttle, 0.3, 0.7) * t.driftSustain * sliding,
         )
       : 0;
@@ -209,17 +227,26 @@ export function createVehicle(physics, { tuning = sharedTuning, spawn = { x: 0, 
         dYaw += t.angleHold * (slip - Math.sign(slip) * top);
         if (Math.sign(slipRate) === Math.sign(slip)) dYaw += t.driftAngleDamping * slipRate;
       }
-      // Drift angle control: while drifting, steering picks a target angle inside [min, max]:
-      // into the turn → max, neutral → middle, full counter-steer → min. Increasing yaw rate lowers slip.
-      if (driftFactor > 0.2 && absSlip > 3 * DEG) {
-        const into = -input.steer * Math.sign(slip); // +1 steering into the turn, -1 counter-steering
+      // Drift angle control: while drifting, steering picks a target angle (signed, along the drift side):
+      // into the turn → top, neutral → middle, counter-steer → min, and past `counterSteerSwitch`
+      // the target crosses 0° to the other side, so a strong counter-steer swings the car into the
+      // opposite drift (transition). Increasing yaw rate lowers slip.
+      if (driftFactor > 0.2 && (absSlip > 3 * DEG || driftLatched)) {
+        const side = absSlip > 3 * DEG ? Math.sign(slip) : driftSide || 1;
+        const into = -input.steer * side; // +1 steering into the turn, -1 counter-steering
         const mid = (min + top) / 2;
-        const targetMag = into >= 0 ? MathUtils.lerp(mid, top, into) : MathUtils.lerp(mid, min, -into);
+        const sw = t.counterSteerSwitch;
+        let target;
+        if (into >= 0) target = MathUtils.lerp(mid, top, into);
+        else if (-into <= sw) target = MathUtils.lerp(mid, min, -into / sw);
+        else target = MathUtils.lerp(min, -mid, (-into - sw) / Math.max(1 - sw, 1e-3));
         // PD controller: P pulls towards the target angle, D damps how fast the angle changes
-        dYaw += driftFactor * (t.driftAngleControl * (slip - Math.sign(slip) * targetMag) + t.driftAngleDamping * slipRate);
+        dYaw += driftFactor * (t.driftAngleControl * (slip - side * target) + t.driftAngleDamping * slipRate);
       }
-      // Handbrake kick: extra yaw into the turn while the slide is still small, so a drift starts quickly
-      if (input.handbrake > 0 && absSlip < min) dYaw += t.handbrakeKick * input.handbrake * input.steer * speedGate * (1 - absSlip / min);
+      // Entry kick: extra yaw into the turn while the slide is still small (handbrake, brake tap,
+      // lift-off), so a drift starts quickly
+      const kick = Math.max(input.handbrake, brakeEntry, liftEntry);
+      if (kick > 0 && absSlip < min) dYaw += t.entryKick * kick * input.steer * speedGate * (1 - absSlip / min);
     }
     // --- Upright assist: pull roll/pitch back once tilt exceeds ~12°
     tmp.crossVectors(up, Y);
@@ -303,6 +330,9 @@ export function createVehicle(physics, { tuning = sharedTuning, spawn = { x: 0, 
     driftFactor = 0;
     prevSlip = 0;
     driftLatched = false;
+    driftSide = 0;
+    smallSlipTime = 0;
+    liftOffTimer = 0;
   }
   reset();
   read();

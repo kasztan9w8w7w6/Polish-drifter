@@ -101,8 +101,8 @@ const groups = {
   'Silnik i hamulce': ['engineForce', 'maxSpeed', 'reverseForce', 'brakeForce', 'handbrakeBrake'],
   Kierownica: ['steerMaxLow', 'steerMaxHigh', 'steerFadeSpeed', 'steerRate', 'steerReturnRate'],
   Przyczepność: ['frontGrip', 'rearGrip', 'frontSideStiffness', 'rearSideStiffness', 'rearGripDrift', 'rearSideStiffnessDrift', 'gripBlendIn', 'gripBlendOut'],
-  'Wejście w drift': ['handbrakeLoss', 'powerOversteer', 'driftSustain', 'handbrakeKick'],
-  Asysty: ['counterSteerAssist', 'counterSteerLimit', 'driftSteerAuthority', 'driftAngleMin', 'driftAngleMax', 'driftAngleControl', 'driftAngleDamping', 'angleHold', 'speedKeep', 'uprightAssist'],
+  'Wejście w drift': ['handbrakeLoss', 'powerOversteer', 'brakeDrift', 'liftOffLoss', 'driftSustain', 'entryKick'],
+  Asysty: ['counterSteerAssist', 'counterSteerLimit', 'counterSteerSwitch', 'transitionGrace', 'driftSteerAuthority', 'driftAngleMin', 'driftAngleMax', 'driftAngleControl', 'driftAngleDamping', 'angleHold', 'speedKeep', 'uprightAssist'],
   Podwozie: ['mass', 'comHeight', 'yawInertiaScale', 'suspensionStiffness', 'suspensionCompression', 'suspensionRelaxation', 'suspensionRestLength', 'maxSuspensionTravel'],
 };
 for (const [title, keys] of Object.entries(groups)) {

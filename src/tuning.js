@@ -28,16 +28,20 @@ const base = {
 
   // What triggers / sustains rear grip loss (0..1 each)
   handbrakeLoss: 0.85,
-  powerOversteer: 0.5, // throttle × steer in a corner
+  powerOversteer: 1, // gas + steering in a corner
+  brakeDrift: 0.9, // brake tap while steering (weight transfer)
+  liftOffLoss: 0.8, // gas released mid-turn, short pulse
   driftSustain: 0.85, // throttle while already sliding keeps the rear loose
 
   // Assists
   counterSteerAssist: 0.7, // 0..1, front wheels follow the direction of travel
   counterSteerLimit: 0.7, // max front angle towards the outside, as a multiple of the slip angle
+  counterSteerSwitch: 0.6, // counter-steer beyond this (0..1) swings the drift to the other side; 1 = never
+  transitionGrace: 0.6, // s the drift stays active while passing through 0° during a switch
   driftAngleMin: 15,
   driftAngleMax: 45,
   angleHold: 40, // yaw correction strength above driftAngleMax
-  handbrakeKick: 0.8, // rad/s² extra yaw when pulling the handbrake with steering
+  entryKick: 0.8, // rad/s² extra yaw at drift entry (handbrake, brake tap, lift-off)
   driftAngleControl: 60, // how firmly the slip angle follows the steering-chosen target while drifting
   driftAngleDamping: 7.5, // damps fast changes of the slip angle (anti-wobble)
   driftSteerAuthority: 0.4, // share of player steering on the front wheels during a drift
@@ -59,8 +63,10 @@ export const presets = {
   Przyczepny: {
     ...base,
     handbrakeLoss: 0.9, // a handbrake turn still works…
-    handbrakeKick: 0.4,
-    powerOversteer: 0.1,
+    entryKick: 0.4,
+    powerOversteer: 0.15,
+    brakeDrift: 0.3,
+    liftOffLoss: 0.3,
     driftSustain: 0.15, // …but the rear hooks up again quickly
     rearGripDrift: 0.6,
     rearSideStiffnessDrift: 0.45,
@@ -81,7 +87,7 @@ export const presets = {
     driftAngleControl: 20,
     driftAngleDamping: 3,
     driftSteerAuthority: 0.7,
-    handbrakeKick: 0.4,
+    entryKick: 0.4,
     speedKeep: 0.65,
     driftAngleMax: 55,
     gripBlendIn: 10,
