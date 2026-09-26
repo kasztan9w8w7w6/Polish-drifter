@@ -53,8 +53,11 @@ src/cars/*.json – profile aut (realne dane + wartości arcade, przełożenia, 
 src/cars.js     – applyCar (masa, moc z prędkości maks., napęd → tuning), gearsOf (biegi i obroty dla gearbox.js)
 src/camera.ts   – kamera „Diorama” (orto 3/4, przyciągana do siatki pikseli) i „Za autem” (port view.gd), klawisz C
 src/car.js      – wygląd auta: model Poloneza (koła = kości, kręcą się i skręcają), przechył, reflektory; zastępcze bryły
-src/track.js    – plac manewrowy (ściany, słupki opon, pachołki)
-src/district.js – osiedle z Kenney City Kit/Car Kit: pętla ulic, latarnie, bloki, pawilony, sklep „Żappka 24h”, garaże, zaparkowane auta
+src/track.js    – podłoże: asfalt, ściany, słupki opon, pachołki (pozycje z mapy)
+src/maps/*.json – ręcznie ułożona mapa (lista obiektów: model, x, z, yaw, rozmiar, kolizja, materiał; latarnie, dziury, parkingi,
+                  paczkomat, sklep, punkty misji). Edytuj tu, nie w kodzie. Opis pól w `_help` w pliku.
+src/map.js      – buduje mapę z pliku: pętla ulic, modele Kenneya, latarnie, dziury (tylko wygląd), linie parkingowe, paczkomat,
+                  szyld sklepu. Kolizja modelu = obrys jego geometrii na wysokości karoserii (0,1–2,2 m): drzewo = pień.
 src/pixelart.js – pixel-art: RenderPixelatedPass (przykład three.js webgl_postprocessing_pixel), materiały toon z N stopniami,
                   posteryzacja jasności, mgła radialna wokół auta (podmienione chunki fog_*), opcjonalne drżenie PS1
 src/occlusion.js – obiekty zasłaniające auto robią się półprzezroczyste

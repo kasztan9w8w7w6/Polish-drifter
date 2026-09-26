@@ -70,6 +70,12 @@ Dźwięk startuje po pierwszym klawiszu/kliknięciu (wymóg przeglądarek). Para
 4. **Przekładka:** mocna, przytrzymana kontra przeprowadza auto płynnie przez zero na drugą stronę.
 5. **Wyjście:** puść gaz, a auto samo płynnie się wyprostuje.
 
+**Mapa:** osiedle jest ręcznie ułożone w `src/maps/osiedle.json`. Plik to lista obiektów (model, pozycja, obrót, rozmiar, kolizja,
+materiał), latarni, dziur w drodze, parkingów i punktów misji. Żeby coś przestawić, zmień liczby w pliku i odśwież stronę.
+Układ: pętla ulic dookoła osiedla, 3 bloki, duży parking do driftu na środku (pachołki, opony), rząd 12 garaży od północy,
+sklep „Żappka 24h” z parkingiem, paczkomat przy Bloku 1, zaparkowane auta, latarnie wzdłuż ulic i 7 dziur w drodze (tylko wizualnie).
+Kolizja każdego obiektu to obrys jego geometrii na wysokości karoserii, więc drzewo zderza się pniem, a latarnia słupem.
+
 **Uderzenia:** przeszkody zderzają się z karoserią auta (prostokąt 4,3 × 1,7 m) i mają kolizję dokładnie taką, jak wyglądają.
 Przejazd tuż obok lampy nic nie robi, a zahaczenie jej rogiem to uderzenie. Po uderzeniu auto zatrzymuje się na przeszkodzie
 i lekko odbija, zależnie od materiału: od drzewa najsłabiej, potem beton, metal (lampy, śmietniki, płoty), zaparkowane auta,

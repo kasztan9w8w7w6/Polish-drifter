@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 
-// "Plac manewrowy": a big asphalt lot fenced by concrete barriers, with cones and tyre stacks.
-const SIZE = 160;
+// The ground of the estate: asphalt, concrete barriers around it, cones and tyre stacks (positions from the map file,
+// src/maps/*.json; buildings, lamps and cars: map.js).
 // Obstacles collide exactly as big as they look (the car's body box hits them, vehicle.ts).
 
-export function createTrack(scene, physics) {
+export function createTrack(scene, physics, map) {
+  const SIZE = map.size;
   const dynamic = []; // { body, mesh } pairs synced each frame
 
   // Ground
@@ -20,7 +21,6 @@ export function createTrack(scene, physics) {
 
   // Concrete barriers around the lot (static)
   const concrete = new THREE.MeshStandardMaterial({ color: 0x9a9a95, roughness: 0.9 });
-  const half = SIZE / 2;
   const wall = (x, z, lx, lz) => {
     physics.addStaticBox({ x, y: 0.6, z }, { x: lx / 2, y: 0.6, z: lz / 2 }, { surface: 'concrete' });
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(lx, 1.2, lz), concrete);
@@ -28,10 +28,7 @@ export function createTrack(scene, physics) {
     mesh.castShadow = mesh.receiveShadow = true;
     scene.add(mesh);
   };
-  wall(0, half, SIZE, 1);
-  wall(0, -half, SIZE, 1);
-  wall(half, 0, 1, SIZE);
-  wall(-half, 0, 1, SIZE);
+  for (const [x, z, lx, lz] of map.walls) wall(x, z, lx, lz);
 
   // Traffic cones (dynamic, knockable)
   const coneGeo = new THREE.ConeGeometry(0.25, 0.7, 12);
@@ -44,17 +41,13 @@ export function createTrack(scene, physics) {
     scene.add(mesh);
     dynamic.push({ body, mesh });
   };
-  // Figure-eight markers + a slalom line
-  for (const cx of [-25, 25]) {
-    for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) addCone(cx + Math.cos(a) * 6, 30 + Math.sin(a) * 6);
-  }
-  for (let i = 0; i < 8; i++) addCone(-35 + i * 10, -20);
+  for (const [x, z] of map.cones) addCone(x, z);
 
   // Tyre stacks (static obstacles)
   const tyreGeo = new THREE.TorusGeometry(0.45, 0.2, 8, 16);
   tyreGeo.rotateX(Math.PI / 2);
   const tyreMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.95 });
-  for (const [x, z] of [[0, 50], [50, 0], [-50, -10], [30, -50], [-40, 55]]) {
+  for (const [x, z] of map.tyres) {
     physics.addStaticCylinder({ x, y: 0, z }, 0.65, 1.6, { surface: 'tyres' });
     for (let k = 0; k < 4; k++) {
       const m = new THREE.Mesh(tyreGeo, tyreMat);
@@ -64,7 +57,6 @@ export function createTrack(scene, physics) {
     }
   }
 
-  // (blocks of flats, garages, shops, lamps: district.js)
 
   return {
     sync() {
