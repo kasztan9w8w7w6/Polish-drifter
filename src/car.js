@@ -67,11 +67,23 @@ export async function createCarView(scene, profile) {
     root.add(l, l.target);
     return l;
   });
+  // Battery (survival.js headlightLevel): brightness and reach 0..1; high beams brighter and further
+  const power = { brightness: 1, reach: 1, high: false };
+  const lampMats = [];
   function applyHeadlights() {
+    const k = power.high ? 1.6 : 1;
     for (const l of headlights) {
-      l.intensity = headlightSettings.intensity;
-      l.distance = headlightSettings.range;
+      l.intensity = headlightSettings.intensity * power.brightness * k;
+      l.distance = headlightSettings.range * (0.2 + 0.8 * power.reach) * (power.high ? 1.5 : 1);
+      l.angle = power.high ? 0.5 : 0.42;
     }
+    // (collected on first use: pixelart.js swaps the materials for toon ones after the car is built)
+    if (!lampMats.length) root.traverse((o) => o.isMesh && [].concat(o.material).forEach((m) => m.name === 'Headlight' && lampMats.push(m)));
+    for (const m of lampMats) m.emissiveIntensity = 2.5 * Math.max(0.05, power.brightness);
+  }
+  function setLights(brightness, reach, high) {
+    Object.assign(power, { brightness, reach, high });
+    applyHeadlights();
   }
   // (materials are swapped for toon ones later, so look the paint up by name)
   function applyLook() {
@@ -79,7 +91,7 @@ export async function createCarView(scene, profile) {
   }
   applyLook();
 
-  return { root, sync, applyHeadlights, applyLook, hasModel: !fallbackWheels };
+  return { root, sync, applyHeadlights, setLights, applyLook, hasModel: !fallbackWheels };
 }
 
 // Scale the model to `length`, turn it so the headlights point along +X, stand it on the ground and

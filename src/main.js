@@ -20,6 +20,11 @@ import { headlightSettings, carLook } from './car.js';
 import { createAudio, audioSettings } from './audio.js';
 import { createGearbox } from './gearbox.js';
 import { applyCar, gearsOf } from './cars.js';
+import { createSurvival, headlightLevel, batterySettings } from './survival.js';
+import { createNarrator, narratorSettings } from './narrator.js';
+import { createMission, formatTime } from './mission.js';
+import { createMarkers } from './marker.js';
+import paczka from './missions/paczka.json';
 
 // ---------- Renderer / scene: night on the estate ----------
 installRadialFog(); // before any material compiles
@@ -77,6 +82,7 @@ const skids = createSkidMarks(scene);
 const smoke = createSmoke(scene);
 const district = await createMap(scene, physics, map);
 pixelizeScene(scene);
+const markers = createMarkers(scene); // (after pixelizeScene: unlit, keeps its own materials)
 const occlusion = createOcclusion();
 for (const o of district.occluders) occlusion.add(o);
 const audio = createAudio();
@@ -111,6 +117,48 @@ function toast(text) {
   hud.toast.textContent = text;
   hud.toast.className = 'on';
   toastTimer = 1.2;
+}
+
+// ---------- Survival: battery, shop, running flat (survival.js); narrator and mission 1 ----------
+const hudBat = { box: $('battery'), cells: $('bat-cells'), pct: $('bat-pct'), goal: $('goal'), narrator: $('narrator'), fade: $('fade'), summary: $('summary') };
+const BAT_CELLS = 10;
+hudBat.cells.innerHTML = '<i></i>'.repeat(BAT_CELLS);
+const batCells = [...hudBat.cells.children];
+const homeSave = { x: home.x, z: home.z, heading: home.heading };
+const survival = createSurvival({ pad: map.shop.pad, save: homeSave, level: paczka.start.battery });
+const narrator = createNarrator();
+const mission = createMission(paczka, map.points);
+const lightsState = { high: false };
+let beepTimer = 0;
+let summaryTimer = 0;
+const score = () => scorer.state.total + scorer.state.current * scorer.state.combo;
+const headingOf = (q) => {
+  const f = new THREE.Vector3(1, 0, 0).applyQuaternion(q);
+  return (Math.atan2(-f.z, f.x) * 180) / Math.PI;
+};
+function placeCar({ x, z, heading }) {
+  car.reset({ x, y: 1, z }, (heading * Math.PI) / 180);
+  rig.reset();
+}
+function handleMission(events) {
+  for (const e of events) {
+    if (e.type === 'say') narrator.say(e.lines);
+    if (e.type === 'complete') showSummary(e.summary);
+  }
+}
+function startMission(keepCar = false) {
+  const p = map.points[paczka.start.point];
+  if (!keepCar) placeCar(p);
+  survival.restart({ x: p.x, z: p.z, heading: p.heading }, paczka.start.battery);
+  narrator.clear();
+  hudBat.summary.hidden = true;
+  handleMission(mission.start(score()));
+}
+function showSummary(s) {
+  hudBat.summary.innerHTML = `<h2>Misja zakończona: ${s.title}</h2><p><span>Czas</span><b>${formatTime(s.time)}</b></p>
+    <p><span>Punkty za drift</span><b>${s.driftPoints.toLocaleString('pl-PL')}</b></p><small>Enter: dalej · N: jeszcze raz</small>`;
+  hudBat.summary.hidden = false;
+  summaryTimer = 15;
 }
 
 const CRASH_SPEED = 4; // m/s (≈ 14 km/h) straight into an obstacle counts as a crash (ends the drift combo)
@@ -183,6 +231,22 @@ snd.add(audioSettings, 'volume', 0, 1, 0.01).name('głośność');
 snd.add(audioSettings, 'engine', 0, 2, 0.01).name('silnik');
 snd.add(audioSettings, 'skid', 0, 2, 0.01).name('pisk opon');
 snd.add(audioSettings, 'impact', 0, 2, 0.01).name('uderzenia');
+snd.add(audioSettings, 'warning', 0, 2, 0.01).name('ostrzeżenie baterii');
+const bat = gui.addFolder('Bateria i misja').close();
+bat.add(batterySettings, 'drainIdle', 0, 1, 0.01).name('rozładowanie: silnik (%/s)');
+bat.add(batterySettings, 'drainDrive', 0, 3, 0.05).name('rozładowanie: jazda, maks. (%/s)');
+bat.add(batterySettings, 'drainHighBeam', 0, 3, 0.05).name('rozładowanie: długie (%/s)');
+bat.add(batterySettings, 'chargeRate', 0, 0.05, 0.001).name('ładowanie driftem (%/s na °·m/s)');
+bat.add(batterySettings, 'shopCharge', 1, 100, 1).name('ładowanie w sklepie (%/s)');
+bat.add(batterySettings, 'low', 0, 50, 1).name('miganie świateł poniżej (%)');
+bat.add(batterySettings, 'warn', 0, 50, 1).name('ostrzeżenie poniżej (%)');
+bat.add(batterySettings, 'dyingTime', 0.5, 6, 0.1).name('gaśnięcie (s)');
+bat.add(batterySettings, 'darkTime', 0.5, 6, 0.1).name('ciemny ekran (s)');
+bat.add(batterySettings, 'respawnMin', 0, 100, 1).name('min. bateria po restarcie (%)');
+bat.add(survival.state, 'level', 0, 100, 1).name('bateria teraz (%)').listen();
+bat.add(narratorSettings, 'charsPerSec', 5, 120, 1).name('narrator: liter/s');
+bat.add(narratorSettings, 'hold', 0.5, 10, 0.1).name('narrator: czas na ekranie (s)');
+bat.add({ start: () => startMission() }, 'start').name('Misja 1 od nowa (N)');
 gui.hide();
 
 function exportTuning() {
@@ -248,7 +312,18 @@ const input = createInput({
   camera: () => toast(`Kamera: ${rig.nextMode()}`),
   gui: () => gui.show(gui._hidden),
   debug: () => (debugLines.visible = !debugLines.visible),
+  lights: () => {
+    lightsState.high = !lightsState.high;
+    toast(lightsState.high ? 'Długie światła (bateria szybciej schodzi)' : 'Krótkie światła');
+  },
+  mission: () => startMission(),
+  confirm: () => (hudBat.summary.hidden = true),
 });
+if (new URLSearchParams(location.search).has('debug')) window.agro = { survival, mission, narrator, car }; // for testing from the console
+startMission(spawnArg?.length === 3); // (?spawn=… keeps the car where it asked for)
+// ?bat=5 – start with that much battery (testing the flicker / running flat)
+const batArg = Number(new URLSearchParams(location.search).get('bat'));
+if (batArg > 0) survival.restart(survival.state.save, batArg);
 
 // ---------- Loop ----------
 const timer = new THREE.Timer();
@@ -259,6 +334,11 @@ function tick(time) {
   timer.update(time);
   const dt = Math.min(timer.getDelta(), 0.1);
   const controls = input.read(dt);
+  if (!survival.engineOn) {
+    // Battery flat: no engine (no throttle, no reverse), the car just rolls to a stop; brakes and steering still work
+    controls.throttle = 0;
+    if (car.state.forwardSpeed < 0.5) controls.brake = 0;
+  }
   physics.step(dt, (h) => car.update(controls, h), () => car.afterStep());
   const state = car.read();
   carView.sync(state);
@@ -284,13 +364,57 @@ function tick(time) {
   audio.hit(state.crash);
   scorer.update(dt, fwd, v, state.grounded);
 
+  // Battery (charges from the same drift the points count), shop, running flat
+  const topSpeed = tuning.power / tuning.angularDamping;
+  const heading = headingOf(state.quaternion);
+  const drifted = scorer.state.drifting ? scorer.state.angle : 0;
+  for (const e of survival.update(dt, { x: state.position.x, z: state.position.z, heading, speed: state.speed, topSpeed, angle: drifted, grounded: state.grounded, highBeam: lightsState.high })) {
+    handleMission(mission.notify(e));
+    if (e === 'saved') toast('Żappka: bateria 100%, zapisano');
+    if (e === 'dead') scorer.crash();
+    if (e === 'respawn') {
+      placeCar(survival.state.save);
+      hudBat.fade.className = '';
+    }
+    if (e === 'dark') hudBat.fade.className = 'dark';
+  }
+  const sv = survival.state;
+  const fadeTo = sv.phase === 'dying' ? Math.min(1, sv.phaseTime / batterySettings.dyingTime) : sv.phase === 'dark' ? 1 : 0;
+  const fadeNow = Number(hudBat.fade.style.opacity || 0);
+  hudBat.fade.style.opacity = fadeTo >= fadeNow ? fadeTo : Math.max(fadeTo, fadeNow - dt); // fades back in 1 s after a restart
+  // Headlights follow the battery; after it runs flat they die out
+  const hl = headlightLevel(sv.level, batterySettings);
+  const dying = sv.phase === 'drive' ? 1 : sv.phase === 'dying' ? Math.max(0, 1 - sv.phaseTime / 0.8) : 0;
+  carView.setLights(hl.brightness * dying, hl.reach, lightsState.high);
+  if (sv.warn && (beepTimer -= dt) <= 0) {
+    audio.beep();
+    beepTimer = 1.2;
+  }
+  // HUD: battery bar
+  const litBat = Math.ceil((sv.level / 100) * BAT_CELLS);
+  batCells.forEach((c, i) => (c.className = i < litBat ? 'on' : ''));
+  hudBat.pct.textContent = `${Math.ceil(sv.level)}%`;
+  hudBat.box.className = sv.charging ? 'charging' : sv.level < batterySettings.warn ? 'low warn' : sv.level < batterySettings.low ? 'low' : sv.level < 50 ? 'mid' : 'ok';
+  district.update(timer.getElapsed(), sv.charging);
+
+  // Mission, target marker, narrator
+  handleMission(mission.update(dt, { x: state.position.x, z: state.position.z, speed: state.speed, battery: sv.level, score: score() }));
+  const target = mission.target();
+  const dist = markers.update(timer.getElapsed(), target, state.position);
+  hudBat.goal.innerHTML = mission.goal ? `Cel: ${mission.goal}${target ? ` <small>${Math.round(dist)} m</small>` : ''}` : '';
+  const nr = narrator.update(dt);
+  if (hudBat.narrator.textContent !== nr.text) hudBat.narrator.textContent = nr.text;
+  hudBat.narrator.style.opacity = nr.opacity;
+  if (summaryTimer > 0 && (summaryTimer -= dt) <= 0) hudBat.summary.hidden = true;
+
   // Dashboard: speed, virtual gear, rev counter
   const { gear, rpm, load } = gearbox.update(dt, state, controls.throttle);
-  audio.update(dt, state, load, controls.throttle);
+  audio.update(dt, state, load, controls.throttle, survival.engineOn);
   hud.speed.textContent = Math.round(state.speed * 3.6);
   hud.gear.textContent = gear < 0 ? 'R' : gear;
-  hud.rpm.textContent = Math.round(rpm / 100) * 100;
-  const lit = Math.round((rpm / gearbox.gears.redRpm) * TACH_SEGMENTS);
+  const shownRpm = survival.engineOn ? rpm : 0; // battery flat: the engine is off
+  hud.rpm.textContent = Math.round(shownRpm / 100) * 100;
+  const lit = Math.round((shownRpm / gearbox.gears.redRpm) * TACH_SEGMENTS);
   tachCells.forEach((c, i) => (c.className = i < lit ? (i >= TACH_SEGMENTS - 3 ? 'on red' : 'on') : ''));
   hud.telemetry.textContent = `kąt ${Math.round(Math.abs(state.slipAngle))}° · ${panel.preset}${input.gamepadConnected ? ' · pad' : ''}`;
   if (hudFlashTimer > 0 && (hudFlashTimer -= dt) <= 0) {

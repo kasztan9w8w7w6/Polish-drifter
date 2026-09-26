@@ -1,4 +1,4 @@
-# Agro Drifter 🇵🇱 (v0.2e)
+# Agro Drifter 🇵🇱 (v0.3)
 
 Przeglądarkowa gra o driftowaniu Polonezem nocą po osiedlu: pixel-art 3D z kamerą jak nad dioramą
 i ucieczka przed „promieniowaniem 5G” (opis projektu i roadmapa w [`CLAUDE.md`](CLAUDE.md)).
@@ -24,6 +24,7 @@ Zasada projektu: **składamy gotowe klocki zamiast pisać własne**.
 | Model jazdy i kamera | [Kenney Starter Kit Racing](https://github.com/KenneyNL/Starter-Kit-Racing) (MIT) | auto jako toczona kula + model podążający za nią, kamera z opóźnieniem (przeniesione z GDScript do TypeScript) |
 | Tuning | [lil-gui](https://lil-gui.georgealways.com) | suwaki, presety, eksport/import JSON (klawisz **G**) |
 | Pad | Gamepad API przeglądarki | analogowy gaz, hamulec i skręt |
+| Ostrzeżenie baterii | Web Audio (przez kontekst Howlera) | krótki pisk generowany w kodzie, bez pliku |
 | Testy | `node:test` (wbudowany w Node ≥ 22.18, czyta TypeScript) | scenariusze jazdy bez przeglądarki |
 | Typy | [TypeScript](https://www.typescriptlang.org) | `vehicle.ts`, `camera.ts`, `tuning.ts`; sprawdzanie `npm run typecheck` |
 | Build | [Vite](https://vite.dev) | dev server z HMR, produkcyjny build |
@@ -50,9 +51,13 @@ npm run build    # statyczny build do dist/
 | Kamera (Diorama / Za autem) | C | X |
 | Panel tuningu | G | Start |
 | Podgląd kolizji (Rapier debug render) | F | — |
+| Długie / krótkie światła | L | krzyżak w górę |
+| Misja od nowa | N | Back |
+| Zamknij podsumowanie misji | Enter | — |
 
 Po R, C i automatycznym wypchnięciu z przeszkody na środku ekranu pojawia się krótki komunikat.
-Dźwięk startuje po pierwszym klawiszu/kliknięciu (wymóg przeglądarek). Parametr `?spawn=x,z,kąt` w adresie ustawia auto w innym miejscu.
+Dźwięk startuje po pierwszym klawiszu/kliknięciu (wymóg przeglądarek). Parametr `?spawn=x,z,kąt` w adresie ustawia auto w innym miejscu,
+`?bat=5` startuje z 5% baterii (do sprawdzenia migania i gaśnięcia).
 
 ## Jak jeździć driftem (preset „Łatwy”)
 
@@ -104,6 +109,19 @@ W panelu są też foldery:
 
 Przycisk **Eksport ustawień (JSON)** kopiuje wszystkie parametry do schowka (i pokazuje je w okienku), a **Wczytaj JSON** wczytuje wklejone.
 
+## Bateria, Żappka i misja 1
+
+- **Bateria** (pasek nad licznikiem) powoli się rozładowuje w jeździe: ok. 22% na minutę przy 54 km/h, dwa razy szybciej na długich
+  światłach (L). Ładuje się **tylko w drifcie**, tym szybciej, im większy kąt i prędkość (np. 40° przy 54 km/h ≈ +5,6% na sekundę).
+- **Reflektory** słabną razem z baterią; poniżej 20% migoczą, poniżej 10% pasek miga i słychać pisk.
+- **0%:** silnik gaśnie, auto się toczy, ekran ciemnieje, komunikat, restart z ostatniego punktu zapisu (z co najmniej 30% baterii).
+- **Żappka 24h:** zatrzymaj się na świecącym zielonym polu przed wejściem. Bateria ładuje się do 100% (ok. 2 s) i tu zapisuje się punkt odrodzenia.
+- **Misja 1 „Paczka”** startuje sama: narrator (u góry ekranu) wprowadza w klimat, cel i odległość są w lewym górnym rogu, nad celem stoi
+  żółty słup światła, a nad autem strzałka. Kroki: odbierz paczkę z Paczkoboxu przy Bloku 1 → naładuj baterię driftem do 70%
+  (duży parking) → dowieź paczkę pod Blok 2 → wróć na pole przed Żappką. Na końcu podsumowanie: czas i punkty za drift.
+  Misja to plik `src/missions/paczka.json` (kroki, cele, teksty narratora), a punkty celów są w pliku mapy.
+- Wszystkie liczby są w panelu (G), w folderze „Bateria i misja”.
+
 ## Punktacja
 
 HUD w prawym dolnym rogu: prędkość, wirtualny bieg, obrotomierz i punkty. Biegi są tylko na pokaz i do dźwięku, fizyka ich nie ma.
@@ -113,7 +131,7 @@ Uderzenie w przeszkodę (od ~20 km/h) w trakcie driftu = punkty przepadają. Rek
 
 ## Struktura
 
-Opis modułów i modelu jazdy: [`CLAUDE.md`](CLAUDE.md#architektura-v02e). Fizyka auta jest zamknięta w `src/vehicle.ts`
+Opis modułów i modelu jazdy: [`CLAUDE.md`](CLAUDE.md#architektura-v03). Fizyka auta jest zamknięta w `src/vehicle.ts`
 z prostym interfejsem wejście/wyjście, więc reszta gry nie zależy od biblioteki fizycznej.
 
 ## Deploy
@@ -124,6 +142,7 @@ Workflow `.github/workflows/pages.yml` publikuje build na GitHub Pages po pushu 
 ## Znane ograniczenia
 
 - Bundle ma ~5 MB (1,8 MB gzip), bo `rapier3d-compat` wbudowuje WASM w JS. Modele to kolejne ~8 MB `.gltf` (base64). Do optymalizacji później.
+- Misje: na razie jest jedna i gra startuje ją automatycznie (wybór misji w v0.4).
 - Kolizja karoserii z przeszkodami to prostokąt w rzucie z góry (bez zaokrągleń i bez wysokości): liczy się obrys auta na ziemi.
 - Model Poloneza ma licencję Sketchfab Standard, a nie CC0 (szczegóły w CREDITS).
 - Dźwięki są w `.ogg`: starsze Safari ich nie odtworzy.

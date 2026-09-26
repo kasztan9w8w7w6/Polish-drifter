@@ -98,6 +98,7 @@ export async function createMap(scene, physics, map) {
 
   // --- The all-night shop's sign and light (the building is an object in the map) ---
   let sign = null;
+  let pad = null;
   if (map.shop) {
     sign = shopSign(map.shop.sign);
     sign.position.set(...map.shop.signAt);
@@ -105,6 +106,9 @@ export async function createMap(scene, physics, map) {
     const shopLight = new THREE.PointLight(0x7cffb0, 12, 20, 1);
     shopLight.position.set(...map.shop.light);
     scene.add(sign, shopLight);
+    // The safe spot in front of the entrance (survival.js): a softly glowing, pulsing frame on the asphalt
+    pad = safePad(map.shop.pad);
+    scene.add(pad);
   }
 
   // --- Parcel locker (own geometry, fictional brand) ---
@@ -156,6 +160,12 @@ export async function createMap(scene, physics, map) {
 
   return {
     occluders,
+    // time (s), charging: brighter and faster while the battery fills up
+    update(time, charging = false) {
+      if (!pad) return;
+      const k = charging ? 0.75 + 0.25 * Math.sin(time * 9) : 0.45 + 0.2 * Math.sin(time * 2.2);
+      pad.children.forEach((m) => (m.material.opacity = k * m.userData.alpha));
+    },
     applyLights() {
       for (const s of spots) {
         s.intensity = lights.lamp;
@@ -277,6 +287,25 @@ function parcelLocker(name) {
   body.position.y = LOCKER.h / 2;
   const g = new THREE.Group();
   g.add(body);
+  return g;
+}
+
+// Glowing pad: a filled rectangle plus a brighter border (unlit, additive, so the bloom picks it up)
+function safePad({ x, z, w, d }) {
+  const g = new THREE.Group();
+  const mat = (alpha) => new THREE.MeshBasicMaterial({ color: 0x5dff9a, transparent: true, opacity: alpha, blending: THREE.AdditiveBlending, depthWrite: false });
+  const fill = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mat(0.25));
+  fill.userData.alpha = 0.25;
+  g.add(fill);
+  const B = 0.25;
+  for (const [px, pz, lx, lz] of [[0, -d / 2, w, B], [0, d / 2, w, B], [-w / 2, 0, B, d], [w / 2, 0, B, d]]) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(lx, lz), mat(1));
+    m.position.set(px, 0.001, pz);
+    m.userData.alpha = 1;
+    g.add(m);
+  }
+  g.children.forEach((m) => (m.rotation.x = -Math.PI / 2));
+  g.position.set(x, 0.07, z);
   return g;
 }
 

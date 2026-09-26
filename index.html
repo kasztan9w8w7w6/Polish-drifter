@@ -13,13 +13,18 @@
       <div class="row"><span id="speed">0</span><small>km/h</small><span class="gearbox">bieg <b id="gear">1</b></span></div>
       <div class="row small"><span><b id="rpm">900</b> obr/min</span><span>pkt <b id="score">0</b></span></div>
     </div>
+    <div id="battery"><span class="label">bat</span><div id="bat-cells"></div><b id="bat-pct">100%</b></div>
+    <div id="narrator"></div>
+    <div id="goal"></div>
     <div id="drift"><span id="drift-points"></span><span id="drift-combo"></span></div>
     <div id="telemetry"></div>
     <div id="total">Rekord: <b id="best">0</b></div>
     <div id="toast"></div>
   </div>
+  <div id="fade"><div id="fade-msg"><b>Bateria padła</b><span>Maszt buczy coraz głośniej. Wracasz do ostatniego zapisu…</span></div></div>
+  <div id="summary" hidden></div>
   <div id="help">
-    <b>W/S</b> gaz/hamulec · <b>A/D</b> skręt · <b>Spacja</b> ręczny · <b>R</b> reset · <b>C</b> kamera · <b>G</b> tuning · <b>F</b> kolizje · pad: RT/LT, lewa gałka, A ręczny, Y reset, X kamera
+    <b>W/S</b> gaz/hamulec · <b>A/D</b> skręt · <b>Spacja</b> ręczny · <b>R</b> reset · <b>C</b> kamera · <b>G</b> tuning · <b>F</b> kolizje · <b>L</b> długie · <b>N</b> misja od nowa · pad: RT/LT, lewa gałka, A ręczny, Y reset, X kamera, ↑ długie
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>

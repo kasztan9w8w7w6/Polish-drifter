@@ -7,12 +7,12 @@ const BASE = `${import.meta.env.BASE_URL}assets/kenney/racing/audio/`;
 const dbToGain = (db) => 10 ** (db / 20);
 const lerp = (a, b, k) => a + (b - a) * k;
 
-export const audioSettings = { volume: 0.7, engine: 1, skid: 1, impact: 1 };
+export const audioSettings = { volume: 0.7, engine: 1, skid: 1, impact: 1, warning: 1 };
 
 export function createAudio() {
   let engine, skid, impact, engineId, skidId;
   let started = false;
-  let engVol = 0, engRate = 0.5, skidVol = 0, skidRate = 1;
+  let engVol = 0, engRate = 0.5, skidVol = 0, skidRate = 1, engOn = 1;
   let impactCooldown = 0;
 
   function start() {
@@ -31,14 +31,15 @@ export function createAudio() {
       return started;
     },
     // state: vehicle.state, load = rpm between idle (0) and redline (1) from gearbox, throttle 0..1, dt seconds
-    update(dt, state, load, throttle) {
+    update(dt, state, load, throttle, engineOn = true) {
       if (!started) return;
       Howler.volume(audioSettings.volume);
       const r = load;
       // Kenney: volume −15..−5 dB with speed/throttle, pitch 0.5..3
       engVol = lerp(engVol, dbToGain(-15 + 10 * Math.min(1, (r + throttle * 0.5) / 1.5)), Math.min(1, dt * 5));
       engRate = lerp(engRate, 0.6 + r * 1.6 + (throttle > 0.1 ? 0.1 : 0), Math.min(1, dt * 8));
-      engine.volume(engVol * audioSettings.engine, engineId);
+      engOn = lerp(engOn, engineOn ? 1 : 0, Math.min(1, dt * 3)); // battery flat: the engine dies away
+      engine.volume(engVol * engOn * audioSettings.engine, engineId);
       engine.rate(engRate, engineId);
       // Kenney: screech from drift intensity, −10..0 dB, pitch clamp(speed, 1, 3)
       const slip = Math.abs(state.slipAngle);
@@ -48,6 +49,21 @@ export function createAudio() {
       skid.volume(skidVol * audioSettings.skid, skidId);
       skid.rate(skidRate, skidId);
       impactCooldown -= dt;
+    },
+    // Low-battery warning: a short square-wave beep (Web Audio through Howler's context, no sound file)
+    beep() {
+      const ctx = Howler.ctx;
+      if (!started || !ctx) return;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'square';
+      o.frequency.value = 1320;
+      const t = ctx.currentTime;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.12 * audioSettings.warning, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+      o.connect(g).connect(Howler.masterGain);
+      o.start(t);
+      o.stop(t + 0.14);
     },
     // speed in m/s into the obstacle (vehicle.state.crash); Kenney maps impact speed 0..6 to −20..0 dB
     hit(speed) {

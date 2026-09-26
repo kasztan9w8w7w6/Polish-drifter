@@ -152,7 +152,7 @@
  },
  "locker": {"name": "Paczkobox 24/7", "x": -14, "z": -35, "yaw": 0},
  "points": {
-  "spawn": {"x": -30, "z": 28, "heading": 90, "label": "pod Blokiem 3"},
+  "spawn": {"x": -30, "z": 46, "heading": 90, "label": "pod Blokiem 3"},
   "locker": {"x": -14, "z": -30, "r": 3.5, "label": "Paczkobox"},
   "delivery": {"x": 36, "z": -27, "r": 4, "label": "Blok 2, klatka B"},
   "shop": {"x": 40, "z": 32.5, "r": 3, "label": "Żappka 24h"}

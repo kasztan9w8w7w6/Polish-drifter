@@ -47,7 +47,7 @@ Licencje Kenneya leżą obok modeli (`License.txt` w każdym folderze, `LICENSE-
 udostępniać samego pliku modelu tak, żeby dało się go wyciągnąć i używać osobno. Publiczne repozytorium z plikiem `.glb`/`.gltf`
 może być z tym sprzeczne. Przed upublicznieniem sprawdź warunki na stronie modelu albo zapytaj autora.
 
-Generowane w kodzie: asfalt, żarówki i światła latarni, szyld „Żappka 24h” (fikcyjna nazwa), paczkomat „Paczkobox 24/7” (fikcyjna marka), dziury w drodze, linie parkingowe, dym, zastępcze auto z brył (gdy model się nie wczyta).
+Generowane w kodzie: asfalt, żarówki i światła latarni, szyld „Żappka 24h” (fikcyjna nazwa), paczkomat „Paczkobox 24/7” (fikcyjna marka), świecące pole przed sklepem, znacznik celu, pisk ostrzeżenia baterii (Web Audio), dziury w drodze, linie parkingowe, dym, zastępcze auto z brył (gdy model się nie wczyta).
 
 ## Inspiracje i techniki (bez kopiowania kodu)
 

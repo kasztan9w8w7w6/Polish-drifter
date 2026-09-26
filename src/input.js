@@ -8,11 +8,11 @@ export const KEY_RAMP = { steerUp: 2.5, steerDown: 4, pedalUp: 4, pedalDown: 6 }
 const STEER_DEADZONE = 0.12;
 
 // Gamepad buttons (standard mapping): 0 A, 1 B, 2 X, 3 Y, 4 LB, 5 RB, 6 LT, 7 RT, 9 Start
-const PAD_ACTIONS = { 3: 'reset', 2: 'camera', 9: 'gui' };
+const PAD_ACTIONS = { 3: 'reset', 2: 'camera', 9: 'gui', 12: 'lights', 8: 'mission' }; // 12 d-pad up, 8 Back
 // Actions match the physical key (e.code) and, as a fallback, the character (e.key) – some remote
 // desktops / virtual keyboards send an empty `code`.
-const KEY_ACTIONS = { KeyR: 'reset', KeyC: 'camera', KeyG: 'gui', KeyF: 'debug' };
-const CHAR_ACTIONS = { r: 'reset', c: 'camera', g: 'gui', f: 'debug' };
+const KEY_ACTIONS = { KeyR: 'reset', KeyC: 'camera', KeyG: 'gui', KeyF: 'debug', KeyL: 'lights', KeyN: 'mission', Enter: 'confirm' };
+const CHAR_ACTIONS = { r: 'reset', c: 'camera', g: 'gui', f: 'debug', l: 'lights', n: 'mission', enter: 'confirm' };
 
 // Move `value` towards `target` at `up` units/s when pushing further out, `down` when returning or reversing
 export function rampValue(value, target, dt, up, down) {

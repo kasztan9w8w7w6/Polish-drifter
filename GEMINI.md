@@ -11,10 +11,8 @@ gracz ucieka przed „promieniowaniem 5G”.
 - **Jazda:** arcade. Drift ma być łatwy, płynny i widowiskowy, a auto nie dachuje.
 - **Klimat:** noc, czarna mgła, bloki z wielkiej płyty, dziurawe drogi, garaże, nocne sklepy z fikcyjnymi nazwami.
 - **Przyszłe mechaniki:**
-  - bateria ładowana TYLKO driftem,
-  - reflektory zależne od baterii,
-  - sklepy jako punkty zapisu,
-  - misje z dialogami,
+  - (zrobione w v0.3: bateria ładowana TYLKO driftem, reflektory zależne od baterii, sklep jako punkt zapisu, misja z narratorem),
+  - kolejne misje i dialogi,
   - radio zmieniające mgłę i przyczepność,
   - uszkodzenia.
 
@@ -29,8 +27,10 @@ gracz ucieka przed „promieniowaniem 5G”.
 | v0.2c | poprawki jazdy: płynny kąt, power oversteer w Pro, bez odbić, bez utykania | zrobione |
 | v0.2d | kamera Diorama + pixel-art (toon, obrysy, mgła radialna) | zrobione |
 | v0.2e | Polonez (koła na kościach) + osiedle z City Kit / Car Kit | zrobione |
-| v0.3 | bateria + sklep + misja | następne |
-| v0.4 | MVP | |
+| v0.3a | profile aut (JSON), kontra (wizualna; w Pro prawdziwa) | zrobione |
+| v0.3b | ręczna mapa osiedla w pliku danych, kolizje z geometrii | zrobione |
+| v0.3c | bateria, sklep = punkt zapisu, narrator, misja 1 „Paczka” | zrobione |
+| v0.4 | MVP | następne |
 
 ## Zasady pracy
 
@@ -40,7 +40,7 @@ gracz ucieka przed „promieniowaniem 5G”.
 4. **Każdy asset** (model, tekstura, dźwięk, font) wpisz do `CREDITS.md` ze źródłem i licencją.
 5. Nie przepisuj niezwiązanego kodu. Dostosowuj go do zmian.
 
-## Architektura (v0.2e)
+## Architektura (v0.3)
 
 ```
 src/physics.js  – jedyne miejsce z Rapierem poza vehicle.ts: świat, stały krok 60 Hz, przeszkody (`surface` → SURFACES), debugRender
@@ -60,13 +60,18 @@ src/map.js      – buduje mapę z pliku: pętla ulic, modele Kenneya, latarnie,
                   szyld sklepu. Kolizja modelu = obrys jego geometrii na wysokości karoserii (0,1–2,2 m): drzewo = pień.
 src/pixelart.js – pixel-art: RenderPixelatedPass (przykład three.js webgl_postprocessing_pixel), materiały toon z N stopniami,
                   posteryzacja jasności, mgła radialna wokół auta (podmienione chunki fog_*), opcjonalne drżenie PS1
+src/survival.js – pętla przetrwania (logika bez DOM, testy w Node): bateria (rozładowanie, ładowanie driftem jak punkty),
+                  reflektory (headlightLevel), 0% → gaśnięcie → ciemny ekran → restart z punktu zapisu, pole przed Żappką = 100% + zapis
+src/narrator.js – narrator: tekst u góry, pisany litera po literze, znika po kilku sekundach, nie pauzuje gry
+src/mission.js  – wykonawca misji z plików danych; src/missions/*.json – kroki (reach / battery / wait), cele, teksty, podpowiedzi
+src/marker.js   – znacznik celu misji: słup światła nad celem + strzałka nad autem
 src/occlusion.js – obiekty zasłaniające auto robią się półprzezroczyste
 src/audio.js    – Howler.js: silnik (pitch z obrotów), pisk opon (z kąta), uderzenia
 src/gearbox.js  – wirtualne biegi/obroty dla HUD i dźwięku (fizyka nie ma biegów)
 src/input.js    – klawiatura (płynna rampa) + pad (Gamepad API, standard mapping)
 src/drift.js    – punktacja driftu
 src/effects.js  – dym i ślady opon
-src/main.js     – scena nocna (mgła radialna), HUD, lil-gui (G), debug kolizji (F), pętla
+src/main.js     – scena nocna (mgła radialna), HUD (w tym bateria), lil-gui (G), debug kolizji (F), klej bateria/misja/narrator, pętla
 public/assets/  – assety (Kenney CC0), public/models/polonez/ – Polonez; każdy wpisany w CREDITS.md
 assets-src/     – źródła assetów (zipy Kenneya, .glb Poloneza, tablica); scripts/convert-assets.mjs → public/
 test/           – testy scenariuszy jazdy (`npm test`, node:test, bez przeglądarki; Node ≥ 22.18 czyta .ts)
@@ -74,6 +79,17 @@ test/           – testy scenariuszy jazdy (`npm test`, node:test, bez przeglą
 
 TypeScript tylko przez usuwanie typów (bez enumów itp.), importy z rozszerzeniem `.ts`; `npm run typecheck` = `tsc`.
 Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości na lewo od maski (drift w lewo daje ujemny).
+
+## Bateria i misje (skrót)
+
+- Bateria 0–100%: `drainIdle` + `drainDrive` × prędkość/maks. + `drainHighBeam` (długie, klawisz L) %/s; ładowanie tylko w drifcie:
+  `chargeRate` × kąt (°) × prędkość (m/s), te same progi co punkty (drift.js: ≥ 12°, ≥ 6 m/s). Wszystko w `batterySettings` (lil-gui).
+- Reflektory: jasność 0,25–1 i zasięg 0,35–1 z baterią; poniżej `low` (20%) migoczą, poniżej `warn` (10%) piszczy ostrzeżenie.
+- 0%: silnik gaśnie (bez gazu i wstecznego), auto się toczy, `dyingTime` ciemnienie, `darkTime` komunikat, restart z punktu zapisu
+  (bateria co najmniej `respawnMin`). Misja nie cofa się.
+- Żappka: stój (< 1 m/s) na polu `map.shop.pad` → ładowanie `shopCharge` %/s do 100% → zapis punktu odrodzenia.
+- Misja = plik JSON: `start` (punkt z mapy, bateria), `intro`, `steps` (type, point/min/time, goal, say, done), `outro`, `hints` (on: low/warn/dead/respawn/shop).
+  Punkty celów są w pliku mapy (`points`). Nowa misja = nowy plik, bez kodu (na razie main.js startuje `paczka.json`).
 
 ## Model jazdy (skrót)
 
