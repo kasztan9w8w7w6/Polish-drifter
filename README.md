@@ -79,7 +79,17 @@ Awaryjne wypchnięcie zostało tylko na wypadek zakleszczenia (np. auto wstawion
 
 Presety w panelu (G):
 - **Łatwy:** domyślny.
-- **Pro:** drift gazem wchodzi dopiero od ~61 km/h, przy pełnym gazie i dłużej trzymanym skręcie. Większy zakres kąta od kierownicy, większa utrata prędkości.
+- **Pro:** drift gazem wchodzi dopiero od ~61 km/h, przy pełnym gazie i dłużej trzymanym skręcie. **Prawdziwa kontra:** w drifcie
+  tył sam chce wyjść dalej (bardziej z gazem). Kontra trzyma kąt (przy pełnym gazie ok. 45% skrętu), mocniejsza kontra go zmniejsza
+  aż do złapania przyczepności, puszczenie kontry go zwiększa, a skręt w zakręt pogłębia drift aż do obrotu (powyżej 75°).
+  Po obrocie auto wytraca prędkość i można odjechać.
+
+W obu presetach przednie koła w drifcie same pokazują kontrę (skręcone przeciwnie do zakrętu, o tyle, ile wynosi kąt driftu).
+
+**Auto** czyta profil z `src/cars/polonez.json`: realne dane Poloneza 1500 (82 KM, 114 Nm, 1110 kg, RWD, 4 biegi 3,75/2,30/1,49/1,00,
+155 km/h) i wartości do gry (108 km/h, jak dotąd, żeby prowadzenie się nie zmieniło). Z niego biorą się masa i moc kuli, biegi
+i obroty na liczniku, model i paleta lakierów. Nowe auto = nowy plik JSON w `src/cars/`. Lakier z epoki (domyślnie beż) wybierzesz
+w panelu, w folderze „Auto”.
 
 W panelu są też foldery:
 - **Grafika (noc, pixel-art):** rozmiar piksela, obrysy, stopnie jasności, dithering, drżenie PS1 (domyślnie wyłączone), ekspozycja, mgła, światła, lakier Poloneza;

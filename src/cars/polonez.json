@@ -1,0 +1,49 @@
+{
+  "id": "polonez",
+  "name": "FSO Polonez 1500",
+  "years": "1978–1991",
+  "real": {
+    "_source": "Polonez 1500 (silnik 1481 cm³, gaźnik): dane fabryczne wg katalogów (AutoCentrum, klasyk.pl), przełożenia 4-biegowej skrzyni Fiata 125p",
+    "powerHp": 82,
+    "powerRpm": 5200,
+    "torqueNm": 114,
+    "torqueRpm": 3400,
+    "massKg": 1110,
+    "drive": "RWD",
+    "gearRatios": [
+      3.75,
+      2.3,
+      1.49,
+      1.0
+    ],
+    "reverseRatio": 3.87,
+    "finalDrive": 4.1,
+    "topSpeedKmh": 155,
+    "zeroTo100s": 17,
+    "idleRpm": 850,
+    "redlineRpm": 6000
+  },
+  "arcade": {
+    "_note": "Przeskalowanie pod grę: prędkość maks. 108 km/h (70% realnej, jak dotąd), masa i napęd z realnych danych. Moc gry = topSpeed / angularDamping.",
+    "topSpeedKmh": 108,
+    "massKg": 1110,
+    "reverseFraction": 0.5
+  },
+  "look": {
+    "model": "models/polonez/polonez.gltf",
+    "length": 4.3,
+    "paintMaterial": "Paint",
+    "_paints": "kolory w stylu lakierów FSO z lat 80. (nazwy robocze, odcienie dobrane na oko)",
+    "defaultPaint": "Beż Sahara",
+    "paints": {
+      "Beż Sahara": "#c9b48a",
+      "Kość słoniowa": "#e6dcc2",
+      "Zieleń butelkowa": "#2f4f3a",
+      "Granat": "#1f2a4a",
+      "Czerwień Toledo": "#9c2a22",
+      "Brąz Kakao": "#5a3a28",
+      "Biel Alpejska": "#e9e9e4",
+      "Błękit Adriatyk": "#4b7da0"
+    }
+  }
+}

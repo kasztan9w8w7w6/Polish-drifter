@@ -2,8 +2,10 @@
 import { initPhysics, createPhysics } from '../src/physics.js';
 import { createVehicle } from '../src/vehicle.ts';
 import { presets, DEFAULT_PRESET } from '../src/tuning.ts';
+import { applyCar } from '../src/cars.js';
+import polonez from '../src/cars/polonez.json' with { type: 'json' };
 
-export async function createSim({ preset = DEFAULT_PRESET, walls = false, ramps = false, bumps = false, obstacles = false } = {}) {
+export async function createSim({ preset = DEFAULT_PRESET, car: profile = polonez, walls = false, ramps = false, bumps = false, obstacles = false } = {}) {
   await initPhysics();
   const physics = createPhysics();
   physics.addStaticBox({ x: 0, y: -1, z: 0 }, { x: 5000, y: 1, z: 5000 }, { friction: 0.8 });
@@ -35,7 +37,7 @@ export async function createSim({ preset = DEFAULT_PRESET, walls = false, ramps 
     physics.addStaticBox({ x: 16, y: 1.5, z: -14 }, { x: 0.5, y: 1.5, z: 4 }, o);
     physics.addStaticBox({ x: 12, y: 1.5, z: -17.5 }, { x: 4, y: 1.5, z: 0.5 }, o);
   }
-  const tuning = { ...presets[preset] };
+  const tuning = applyCar({ ...presets[preset] }, profile);
   const car = createVehicle(physics, { tuning });
   let time = 0;
   const log = [];

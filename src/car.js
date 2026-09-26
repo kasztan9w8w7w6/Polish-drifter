@@ -6,14 +6,15 @@ import { loadGltf } from './gltf.js';
 // scripts/convert-assets.mjs (logo removed, fictional plate). The wheels are bones of the skinned body,
 // so they spin and steer by rotating those bones. If the model can't be loaded, a primitive car is used.
 const WHEEL_RADIUS = 0.3;
-const CAR_LENGTH = 4.3;
 const RIDE_HEIGHT = 0.72; // car origin above the ground (vehicle.ts)
 export const headlightSettings = { intensity: 30, range: 45 }; // decay 1: a long, even beam on the asphalt
-export const carLook = { paint: '#b8261c' };
+export const carLook = { colour: '', paint: '#c9b48a' }; // colour = name from the profile's palette, paint = hex
 
-const MODEL_URL = `${import.meta.env.BASE_URL}models/polonez/polonez.gltf`;
-
-export async function createCarView(scene) {
+// profile: car profile (src/cars/*.json) – model path, length, paint material and palette
+export async function createCarView(scene, profile) {
+  const look = profile.look;
+  carLook.colour = look.defaultPaint;
+  carLook.paint = look.paints[look.defaultPaint];
   const root = new THREE.Group(); // follows the physics pose
   const body = new THREE.Group(); // visual lean inside it
   root.add(body);
@@ -22,8 +23,8 @@ export async function createCarView(scene) {
   let wheels = []; // { bone, rest, up, axle, front } for the model, or meshes for the fallback
   let fallbackWheels = null;
   try {
-    const gltf = await loadGltf(MODEL_URL);
-    wheels = fitPolonez(gltf.scene, body);
+    const gltf = await loadGltf(`${import.meta.env.BASE_URL}${look.model}`);
+    wheels = fitPolonez(gltf.scene, body, look.length);
     if (new URLSearchParams(location.search).has('debugcar')) {
       root.updateMatrixWorld(true);
       console.log('wheels', JSON.stringify(wheels.map((w) => [w.bone.name, w.bone.getWorldPosition(new THREE.Vector3()).toArray().map((v) => +v.toFixed(3))])));
@@ -74,16 +75,16 @@ export async function createCarView(scene) {
   }
   // (materials are swapped for toon ones later, so look the paint up by name)
   function applyLook() {
-    root.traverse((o) => o.isMesh && [].concat(o.material).forEach((m) => m.name === 'Paint' && m.color.set(carLook.paint)));
+    root.traverse((o) => o.isMesh && [].concat(o.material).forEach((m) => m.name === look.paintMaterial && m.color.set(carLook.paint)));
   }
   applyLook();
 
   return { root, sync, applyHeadlights, applyLook, hasModel: !fallbackWheels };
 }
 
-// Scale the model to CAR_LENGTH, turn it so the headlights point along +X, stand it on the ground and
+// Scale the model to `length`, turn it so the headlights point along +X, stand it on the ground and
 // find the wheel bones.
-function fitPolonez(model, parent) {
+function fitPolonez(model, parent, length) {
   parent.add(model);
   model.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(model, true);
@@ -101,8 +102,7 @@ function fitPolonez(model, parent) {
   parent.add(holder);
   holder.add(model);
   holder.rotation.y = -yaw;
-  const length = Math.max(size.x, size.z);
-  holder.scale.setScalar(CAR_LENGTH / length);
+  holder.scale.setScalar(length / Math.max(size.x, size.z));
   holder.updateMatrixWorld(true);
   const fitted = new THREE.Box3().setFromObject(holder, true);
   const c2 = fitted.getCenter(new THREE.Vector3());

@@ -49,6 +49,8 @@ src/vehicle.ts  – auto arcade (port Kenney Starter Kit Racing, vehicle.gd): to
                   Wyjście: vehicle.state { position, quaternion, velocity, speed, slipAngle, driftAngle, drifting,
                   bodyRoll, bodyPitch, wheels[] }
 src/tuning.ts   – wszystkie parametry jazdy i kamery + presety „Łatwy” (domyślny), „Pro”
+src/cars/*.json – profile aut (realne dane + wartości arcade, przełożenia, paleta lakierów, model); nowe auto = nowy plik
+src/cars.js     – applyCar (masa, moc z prędkości maks., napęd → tuning), gearsOf (biegi i obroty dla gearbox.js)
 src/camera.ts   – kamera „Diorama” (orto 3/4, przyciągana do siatki pikseli) i „Za autem” (port view.gd), klawisz C
 src/car.js      – wygląd auta: model Poloneza (koła = kości, kręcą się i skręcają), przechył, reflektory; zastępcze bryły
 src/track.js    – plac manewrowy (ściany, słupki opon, pachołki)
@@ -72,7 +74,7 @@ Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości n
 
 ## Model jazdy (skrót)
 
-- **Kula (Kenney):** masa 1000, gravity scale 1,5, tarcie 5. Gaz dodaje obrót kuli wokół osi prostopadłej do kierunku jazdy;
+- **Kula (Kenney):** masa z profilu auta (Polonez 1110 kg), gravity scale 1,5, tarcie 5. Gaz dodaje obrót kuli wokół osi prostopadłej do kierunku jazdy;
   prędkość maks. ≈ `power / angularDamping`. Bez gazu działa `coastDamping` (hamowanie silnikiem).
   `sideGrip` wygasza ruch w bok, więc kula trzyma się toru.
 - **Model auta** to osobny obiekt: pozycja kuli − promień, obrót = kurs, nachylenie do normalnej z raycastu w dół (lerp 0,2). Nie może dachować.
@@ -88,6 +90,10 @@ Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości n
   - kontra powyżej `transitionSteer` przesuwa cel na drugą stronę, kąt przechodzi płynnie przez zero;
   - tor zakręca z `driftTurnRate` proporcjonalnie do kąta;
   - wyjście: brak gazu dłużej niż `driftExitDelay`; auto prostuje się z `straightenRate`.
+- **Kontra:** w drifcie przednie koła same pokazują kontrę (`counterSteerVisual` × kąt driftu), niezależnie od wejścia.
+  Pro (`realCounter` = 1): kąt nie goni celu, tylko sam rośnie (`proGrow` + gaz `proGrowThrottle` + ręczny `proGrowHandbrake`);
+  kontra go zmniejsza (`proSteer` °/s na pełny skręt), skręt w zakręt pogłębia (`proSteerInto`), powyżej `proSpinAngle`
+  obrót (`proSpinTime`: bez gazu, auto wytraca prędkość, potem odjeżdża w stronę, w którą patrzy). Łatwy: bez zmian.
 - **Kontakt:** kula ma restitution 0; prędkość „od podłoża” jest tłumiona (`landingDamping`), model podąża za wysokością
   kuli z opóźnieniem (`suspension`).
 - **Przeszkody** (kolidery z `surface`, grupa kolizji OBSTACLE_GROUP) mają kolizję dokładnie taką, jak wyglądają. Kula ich

@@ -1,5 +1,4 @@
 import { Howl, Howler } from 'howler';
-import { IDLE_RPM, RED_RPM } from './gearbox.js';
 
 // Engine, tyre screech and impact sounds with Howler.js. Sounds: Kenney Starter Kit Racing (CC0).
 // Mapping follows Kenney's vehicle.gd (effect_engine / effect_trails / impact), with pitch driven by our
@@ -31,11 +30,11 @@ export function createAudio() {
     get started() {
       return started;
     },
-    // state: vehicle.state, rpm from gearbox, throttle 0..1, dt seconds
-    update(dt, state, rpm, throttle) {
+    // state: vehicle.state, load = rpm between idle (0) and redline (1) from gearbox, throttle 0..1, dt seconds
+    update(dt, state, load, throttle) {
       if (!started) return;
       Howler.volume(audioSettings.volume);
-      const r = Math.min(1, Math.max(0, (rpm - IDLE_RPM) / (RED_RPM - IDLE_RPM)));
+      const r = load;
       // Kenney: volume −15..−5 dB with speed/throttle, pitch 0.5..3
       engVol = lerp(engVol, dbToGain(-15 + 10 * Math.min(1, (r + throttle * 0.5) / 1.5)), Math.min(1, dt * 5));
       engRate = lerp(engRate, 0.6 + r * 1.6 + (throttle > 0.1 ? 0.1 : 0), Math.min(1, dt * 8));

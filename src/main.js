@@ -17,7 +17,8 @@ import { createPixelComposer, installRadialFog, pixelizeScene, pixelArt } from '
 import { createOcclusion, occlusionSettings } from './occlusion.js';
 import { headlightSettings, carLook } from './car.js';
 import { createAudio, audioSettings } from './audio.js';
-import { createGearbox, RED_RPM } from './gearbox.js';
+import { createGearbox } from './gearbox.js';
+import { applyCar, gearsOf } from './cars.js';
 
 // ---------- Renderer / scene: night on the estate ----------
 installRadialFog(); // before any material compiles
@@ -55,6 +56,11 @@ function applyNight() {
 }
 applyNight();
 
+// ---------- Car profile (src/cars/*.json: adding a car = a new file) ----------
+const CARS = Object.fromEntries(Object.values(import.meta.glob('./cars/*.json', { eager: true, import: 'default' })).map((p) => [p.id, p]));
+const profile = CARS.polonez ?? Object.values(CARS)[0];
+applyCar(tuning, profile);
+
 // ---------- Physics ----------
 await initPhysics();
 const physics = createPhysics();
@@ -62,7 +68,7 @@ const track = createTrack(scene, physics);
 // ?spawn=x,z,yawDeg – start somewhere else (handy for screenshots and testing a spot)
 const spawnArg = new URLSearchParams(location.search).get('spawn')?.split(',').map(Number);
 const car = createVehicle(physics, spawnArg?.length === 3 ? { spawn: { x: spawnArg[0], y: 1, z: spawnArg[1] }, spawnYaw: (spawnArg[2] * Math.PI) / 180 } : {});
-const carView = await createCarView(scene);
+const carView = await createCarView(scene, profile);
 const skids = createSkidMarks(scene);
 const smoke = createSmoke(scene);
 const district = await createDistrict(scene, physics);
@@ -70,7 +76,7 @@ pixelizeScene(scene);
 const occlusion = createOcclusion();
 for (const o of district.occluders) occlusion.add(o);
 const audio = createAudio();
-const gearbox = createGearbox();
+const gearbox = createGearbox(gearsOf(profile));
 // Browsers only allow sound after a user gesture
 for (const ev of ['keydown', 'pointerdown']) addEventListener(ev, () => audio.start(), { once: true });
 
@@ -110,6 +116,7 @@ const gui = new GUI({ title: 'Tuning (G)' });
 const panel = { preset: DEFAULT_PRESET, export: exportTuning, import: () => showJson('', true) };
 gui.add(panel, 'preset', Object.keys(presets)).name('Preset').onChange((name) => {
   applyPreset(name);
+  applyCar(tuning, profile); // the preset sets the driving feel, the car its mass and power
   car.applyParams();
   gui.controllersRecursive().forEach((c) => c.updateDisplay());
 });
@@ -117,7 +124,7 @@ gui.add(panel, 'export').name('Eksport ustawień (JSON)');
 gui.add(panel, 'import').name('Wczytaj JSON');
 const RANGES = {
   mass: [300, 3000], gravityScale: [0.5, 3], sharpSteer: [0.5, 1.01], sharpThrottle: [0, 1], transitionSteer: [0.3, 1.01], driftAngleLowSpeed: [0.2, 1],
-  driftAngleMax: [20, 60], dioPitch: [20, 80], dioYaw: [-180, 180], dioYawFollow: [0, 2], driftSpeedLoss: [0, 0.5], fovBase: [40, 90], fovFast: [40, 110], shakeSpeed: [0, 1],
+  driftAngleMax: [20, 60], realCounter: [0, 1], counterSteerVisual: [0, 1.5], proSpinAngle: [45, 120], dioPitch: [20, 80], dioYaw: [-180, 180], dioYawFollow: [0, 2], driftSpeedLoss: [0, 0.5], fovBase: [40, 90], fovFast: [40, 110], shakeSpeed: [0, 1],
 };
 const groups = {
   'Kula (Kenney)': ['mass', 'gravityScale', 'angularDamping', 'coastDamping', 'linearDamping'],
@@ -125,6 +132,7 @@ const groups = {
   Kierownica: ['steerRate', 'steerRateHigh', 'steerFullSpeed', 'turnSmoothing'],
   'Wejście w drift': ['driftMinSpeed', 'sharpSteer', 'sharpThrottle', 'sharpSpeed', 'sharpTime', 'driftExitDelay', 'transitionSteer'],
   'Kąt driftu': ['driftAngleBase', 'driftAngleSteer', 'driftAngleThrottle', 'driftAngleHandbrake', 'selfAlign', 'driftAngleLowSpeed', 'driftAngleMax', 'driftAngleRate', 'straightenRate', 'driftTurnRate', 'driftTurnSteer', 'driftSpeedLoss'],
+  'Kontra (Pro: prawdziwa)': ['counterSteerVisual', 'realCounter', 'proGrow', 'proGrowThrottle', 'proGrowHandbrake', 'proSteer', 'proSteerInto', 'proSpinAngle', 'proSpinTime'],
   'Wygląd jazdy i kontakt': ['bodyRoll', 'bodyPitch', 'suspension', 'landingDamping', 'unstuckTime', 'crashMinSpeed', 'crashRebound', 'crashStun'],
   'Kamera Diorama': ['dioPitch', 'dioYaw', 'dioYawFollow', 'dioZoom', 'dioZoomFast', 'dioLead', 'dioFollow', 'shakeSpeed', 'shakeImpact'],
   'Kamera Za autem': ['camDistance', 'camDistanceFast', 'camHeight', 'camFollow', 'camYawFollow', 'camLead', 'fovBase', 'fovFast'],
@@ -151,7 +159,13 @@ gfx.add(night, 'visibility', 15, 150, 1).name('mgła: widoczność (m)').onChang
 gfx.add(night, 'ambient', 0, 3, 0.05).name('światło otoczenia').onChange(applyNight);
 gfx.add(night, 'moon', 0, 3, 0.05).name('księżyc').onChange(applyNight);
 gfx.add(night, 'carLight', 0, 30, 0.5).name('światło przy aucie').onChange(applyNight);
-gfx.addColor(carLook, 'paint').name('lakier Poloneza').onChange(() => carView.applyLook());
+const carFolder = gui.addFolder(`Auto: ${profile.name}`).close();
+carFolder.add(carLook, 'colour', Object.keys(profile.look.paints)).name('lakier (epoka)').onChange((name) => {
+  carLook.paint = profile.look.paints[name];
+  carView.applyLook();
+  paintPicker.updateDisplay();
+});
+const paintPicker = carFolder.addColor(carLook, 'paint').name('lakier (dowolny)').onChange(() => carView.applyLook());
 gfx.add(headlightSettings, 'intensity', 0, 200, 1).name('reflektory').onChange(() => carView.applyHeadlights());
 gfx.add(headlightSettings, 'range', 10, 120, 1).name('zasięg reflektorów').onChange(() => carView.applyHeadlights());
 gfx.add(lights, 'lamp', 0, 200, 1).name('latarnie').onChange(() => district.applyLights());
@@ -235,6 +249,7 @@ const input = createInput({
 // ---------- Loop ----------
 const timer = new THREE.Timer();
 let lastUnstuck = 0;
+let lastSpins = 0;
 
 function tick(time) {
   timer.update(time);
@@ -250,6 +265,11 @@ function tick(time) {
   if (state.position.y < -5) car.reset();
   if (state.unstuck !== lastUnstuck) toast('Wypchnięto z przeszkody');
   lastUnstuck = state.unstuck;
+  if (state.spins !== lastSpins) {
+    toast('Obrót!'); // Pro: over-rotated drift
+    scorer.crash();
+  }
+  lastSpins = state.spins;
   if (toastTimer > 0 && (toastTimer -= dt) <= 0) hud.toast.className = '';
 
   // Drift scoring
@@ -261,12 +281,12 @@ function tick(time) {
   scorer.update(dt, fwd, v, state.grounded);
 
   // Dashboard: speed, virtual gear, rev counter
-  const { gear, rpm } = gearbox.update(dt, state, controls.throttle);
-  audio.update(dt, state, rpm, controls.throttle);
+  const { gear, rpm, load } = gearbox.update(dt, state, controls.throttle);
+  audio.update(dt, state, load, controls.throttle);
   hud.speed.textContent = Math.round(state.speed * 3.6);
   hud.gear.textContent = gear < 0 ? 'R' : gear;
   hud.rpm.textContent = Math.round(rpm / 100) * 100;
-  const lit = Math.round((rpm / RED_RPM) * TACH_SEGMENTS);
+  const lit = Math.round((rpm / gearbox.gears.redRpm) * TACH_SEGMENTS);
   tachCells.forEach((c, i) => (c.className = i < lit ? (i >= TACH_SEGMENTS - 3 ? 'on red' : 'on') : ''));
   hud.telemetry.textContent = `kąt ${Math.round(Math.abs(state.slipAngle))}° · ${panel.preset}${input.gamepadConnected ? ' · pad' : ''}`;
   if (hudFlashTimer > 0 && (hudFlashTimer -= dt) <= 0) {

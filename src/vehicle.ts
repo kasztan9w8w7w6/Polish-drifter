@@ -35,6 +35,8 @@ const BODY_Y = 0.2 + 20; // box centre above the ground (bottom 0.2 m above it)
 const GROUP_BALL = (0x0001 << 16) | (0xfffd & ~OBSTACLE_GROUP);
 const GROUP_CHASSIS = (0x0002 << 16) | 0xfffd;
 
+const SPIN_RATE = 5; // rad/s the body keeps rotating after a spin-out (Pro)
+const SPIN_DRAG = 1.6; // 1/s speed lost while spinning
 const CRASH_BRAKE = 4; // 1/s – how fast the bounce after a hit dies out while the engine is cut (crashStun)
 const Y = new Vector3(0, 1, 0);
 const DEG = Math.PI / 180;
@@ -98,6 +100,9 @@ export function createVehicle(
   let visY = 0; // smoothed sphere height for the model (light visual suspension)
   let stuckTimer = 0;
   let unstuckCount = 0;
+  let spinTimer = 0; // s left of a spin-out (Pro: over-rotated drift)
+  let spins = 0;
+  const maxAngle = () => (t.realCounter > 0.5 ? t.proSpinAngle : t.driftAngleMax); // degrees
   let crashTimer = 0; // s left without engine power towards the obstacle after a hit
   let crashSide = 1; // +1 the obstacle was hit with the front, −1 with the rear
   let crashSpeed = 0; // m/s into the obstacle of the last hit (reported once in read())
@@ -124,6 +129,8 @@ export function createVehicle(
     driftAngle: 0, // degrees, the commanded heading − travel
     yawRate: 0,
     drifting: false,
+    spinning: false, // Pro: spun out after over-rotating a drift
+    spins: 0,
     driftFactor: 0,
     steerAngle: 0, // visual front-wheel angle (rad)
     wheelSpin: 0, // accumulated wheel rotation (rad), for models with their own wheels
@@ -204,21 +211,53 @@ export function createVehicle(
       target = MathUtils.lerp(same, sideTarget(-driftSide), flip) * DEG;
     }
     const prevAngle = angle;
-    angle = approach(angle, target, drifting ? t.driftAngleRate : t.straightenRate, h);
-    angle = MathUtils.clamp(angle, -t.driftAngleMax * DEG, t.driftAngleMax * DEG);
-    if (drifting && Math.sign(angle) === -driftSide && Math.sign(prevAngle) !== -driftSide) {
+    const realCounter = t.realCounter > 0.5;
+    if (spinTimer > 0) {
+      // Spun out (Pro, over-rotated): the body keeps rotating while the car slides on and scrubs off speed
+      spinTimer -= h;
+      angle += driftSide * SPIN_RATE * Math.min(1, spinTimer / 0.4 + 0.2) * h;
+      if (spinTimer <= 0) {
+        travel = wrap(travel + angle); // it ends up pointing wherever it stopped
+        angle = 0;
+      }
+    } else if (realCounter && drifting) {
+      // Pro: real counter-steer. The angle is not chased towards a target: it keeps growing on its own (more with
+      // throttle and handbrake: the rear wants to come round) and the steering adds or takes away from that growth.
+      // Counter-steer holds or reduces it, letting go of it lets the slide grow, steering into the slide deepens it
+      // – past proSpinAngle the car spins out.
+      const speedScale = MathUtils.lerp(t.driftAngleLowSpeed, 1, MathUtils.clamp((speed - t.driftMinSpeed) / t.driftMinSpeed, 0, 1));
+      const grow = (t.proGrow + throttle * t.proGrowThrottle + inp.handbrake * t.proGrowHandbrake) * speedScale;
+      const u = steer * driftSide; // + into the slide, − counter-steer
+      angle += driftSide * (grow + u * (u > 0 ? t.proSteerInto : t.proSteer)) * DEG * h;
+      if (angle * driftSide <= 0) {
+        if (-steer * driftSide > t.transitionSteer) {
+          driftSide = -driftSide; // flicked through zero with a big counter-steer: now sliding the other way
+        } else {
+          angle = 0; // caught it: grip again
+          drifting = false;
+        }
+      } else if (Math.abs(angle) > t.proSpinAngle * DEG) {
+        drifting = false; // too much: spin
+        spinTimer = t.proSpinTime;
+        spins++;
+      }
+    } else {
+      angle = approach(angle, target, drifting ? t.driftAngleRate : t.straightenRate, h);
+    }
+    if (spinTimer <= 0) angle = MathUtils.clamp(angle, -maxAngle() * DEG, maxAngle() * DEG);
+    if (!realCounter && drifting && Math.sign(angle) === -driftSide && Math.sign(prevAngle) !== -driftSide) {
       driftSide = -driftSide; // crossed zero: now sliding the other way
       hold = 1;
     }
-    if (drifting && hold < 0.15 && Math.abs(angle) < 3 * DEG) drifting = false; // straightened out
+    if (!realCounter && drifting && hold < 0.15 && Math.abs(angle) < 3 * DEG) drifting = false; // straightened out
     // --- Line of travel (Kenney: steering_grip = clamp(speed), target_angular = -input.x * 4, lerp delta*4) ---
     const dir = Math.abs(forwardSpeed) > 0.5 ? Math.sign(forwardSpeed) : throttle >= inp.brake ? 1 : -1;
     const speedFactor = MathUtils.clamp(Math.abs(forwardSpeed) / t.steerFullSpeed, 0, 1);
     const topSpeed = t.power / t.angularDamping * BALL_RADIUS;
     const gripRate = steer * speedFactor * dir * MathUtils.lerp(t.steerRate, t.steerRateHigh, MathUtils.clamp(speed / topSpeed, 0, 1));
     // In a drift the line curves with the angle (deeper = tighter), steering adds or takes away a bit
-    const driftRate = t.driftTurnRate * (angle / (30 * DEG) + steer * t.driftTurnSteer);
-    turnRate = approach(turnRate, MathUtils.lerp(gripRate, driftRate, driftBlend), t.turnSmoothing, h);
+    const driftRate = t.driftTurnRate * (MathUtils.clamp(angle, -t.driftAngleMax * DEG, t.driftAngleMax * DEG) / (30 * DEG) + steer * t.driftTurnSteer);
+    turnRate = spinTimer > 0 ? approach(turnRate, 0, 4, h) : approach(turnRate, MathUtils.lerp(gripRate, driftRate, driftBlend), t.turnSmoothing, h);
     travel = wrap(travel + turnRate * h);
 
     // --- Drive: add spin around the axis perpendicular to travel (Kenney's handle_input) ---
@@ -231,6 +270,7 @@ export function createVehicle(
     if (inp.brake > 0) throttleTarget = forwardSpeed > 0.5 ? 0 : -inp.brake * t.reversePower;
     crashTimer = Math.max(0, crashTimer - h);
     if (crashTimer > 0 && throttleTarget * crashSide > 0) throttleTarget = 0; // just hit it: stop and bounce off first (backing away works)
+    if (spinTimer > 0) throttleTarget = 0; // spinning: the wheels are just along for the ride
     engine = approach(engine, throttleTarget, t.throttleResponse, h);
     body.setAngularDamping(Math.abs(throttleTarget) > 0.05 ? t.angularDamping : t.coastDamping);
     const backingOff = throttleTarget * crashSide < 0;
@@ -238,7 +278,14 @@ export function createVehicle(
     spin += engine * t.power * (1 - t.driftSpeedLoss * driftBlend) * h;
     if (inp.brake > 0 && forwardSpeed > 0.5) spin = Math.max(0, spin - inp.brake * t.brakePower * h);
     if (inp.handbrake > 0) spin -= Math.sign(spin) * Math.min(Math.abs(spin), inp.handbrake * t.handbrakeDrag * h);
+    if (spinTimer > 0) spin *= Math.exp(-SPIN_DRAG * h);
     if (grounded) {
+      if (spinTimer > 0) {
+        const k = Math.exp(-SPIN_DRAG * h); // tyres scrubbing sideways
+        body.setLinvel({ x: v.x * k, y: v.y, z: v.z * k }, true);
+        v.x *= k;
+        v.z *= k;
+      }
       if (crashTimer > 0 && !backingOff) {
         const k = Math.exp(-CRASH_BRAKE * h);
         body.setLinvel({ x: v.x * k, y: v.y, z: v.z * k }, true);
@@ -456,10 +503,11 @@ export function createVehicle(
     if (nSpeed > 0.5) {
       const vYaw = Math.atan2(-nz, nx);
       const newTravel = Math.cos(vYaw - heading) >= 0 ? vYaw : wrap(vYaw + Math.PI);
-      angle = MathUtils.clamp(wrap(heading - newTravel), -t.driftAngleMax * DEG, t.driftAngleMax * DEG);
+      angle = MathUtils.clamp(wrap(heading - newTravel), -maxAngle() * DEG, maxAngle() * DEG);
       travel = wrap(heading - angle);
     }
     turnRate = 0;
+    spinTimer = 0;
     crashSide = hitN.x * Math.cos(heading) - hitN.z * Math.sin(heading) < 0 ? 1 : -1;
     const severity = best / 10; // 1 at 36 km/h straight in
     if (severity > 0.3) drifting = false;
@@ -488,6 +536,8 @@ export function createVehicle(
     state.driftAngle = angle / DEG;
     state.yawRate = turnRate;
     state.drifting = drifting;
+    state.spinning = spinTimer > 0;
+    state.spins = spins;
     state.driftFactor = driftBlend;
     state.grounded = grounded;
     state.impact = impact;
@@ -501,8 +551,13 @@ export function createVehicle(
     state.bodyRoll = approach(state.bodyRoll, latG * t.bodyRoll * DEG, 5, 1 / 60);
     state.bodyPitch = approach(state.bodyPitch, MathUtils.clamp(accel / 9.81, -1, 1) * t.bodyPitch * DEG, 10, 1 / 60);
 
-    // Front wheels: steering input + automatic counter-steer (they point along the line of travel)
-    const steerVis = MathUtils.clamp((lastInput.steer || 0) * 0.45 - angle, -0.7, 0.7);
+    // Front wheels: the steering input in grip; in a drift they show counter-steer on their own, pointing against
+    // the turn in proportion to the drift angle (counterSteerVisual = 1: along the line of travel), whatever the
+    // player presses. Pro: the player's real input on top (the counter-steer really steers there).
+    const counter = -angle * t.counterSteerVisual;
+    const input = (lastInput.steer || 0) * 0.45;
+    const inDrift = spinTimer > 0 ? 0 : driftBlend;
+    const steerVis = MathUtils.clamp(MathUtils.lerp(input, counter + (t.realCounter > 0.5 ? input * 0.5 : 0), inDrift), -0.7, 0.7);
     state.steerAngle = approach(state.steerAngle, steerVis, 10, 1 / 60);
 
     const slipAbs = Math.abs(state.slipAngle);
@@ -525,7 +580,7 @@ export function createVehicle(
     body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     body.setAngvel({ x: 0, y: 0, z: 0 }, true);
     travel = yaw;
-    angle = turnRate = engine = driftBlend = sharpTimer = noThrottleTimer = accel = prevForwardSpeed = stuckTimer = crashTimer = 0;
+    angle = turnRate = engine = driftBlend = sharpTimer = noThrottleTimer = accel = prevForwardSpeed = stuckTimer = crashTimer = spinTimer = 0;
     drifting = false;
     driftSide = 0;
     hold = 1;

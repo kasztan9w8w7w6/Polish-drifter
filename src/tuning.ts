@@ -45,6 +45,16 @@ const base = {
   transitionSteer: 0.8, // counter-steer above this swings the car over to the other side (>1 = off)
   driftExitDelay: 0.3, // s without throttle before the drift ends
   driftSpeedLoss: 0.08, // fraction of engine power lost while drifting
+  counterSteerVisual: 1, // in a drift the front wheels show counter-steer: × the drift angle (1 = along the line of travel)
+  // Real counter-steer (preset Pro: realCounter = 1). The drift angle grows on its own, steering changes the growth:
+  realCounter: 0, // 0 = the angle follows a target (Łatwy), 1 = held and regulated by counter-steer, can spin out
+  proGrow: 10, // °/s the angle grows with neutral steering and no throttle
+  proGrowThrottle: 30, // °/s more at full throttle
+  proGrowHandbrake: 20, // °/s more on the handbrake
+  proSteer: 90, // °/s the angle drops per full counter-steer lock
+  proSteerInto: 40, // °/s the angle grows per full lock into the slide (too much → spin)
+  proSpinAngle: 75, // ° past this the car spins out
+  proSpinTime: 1.2, // s the spin lasts (engine off, speed scrubbed)
 
   // Contact / recovery
   landingDamping: 30, // 1/s – how fast bouncing off the ground dies out
@@ -100,6 +110,7 @@ export const presets: Record<string, Tuning> = {
     driftSpeedLoss: 0.15,
     transitionSteer: 0.7,
     steerRate: 2.6,
+    realCounter: 1,
   },
 };
 
