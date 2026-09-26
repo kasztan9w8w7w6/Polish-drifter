@@ -12,7 +12,7 @@ export const lights = { lamp: 60, lampRange: 28, sign: 1.4 };
 
 export async function createDistrict(scene, physics) {
   const loader = new GLTFLoader();
-  const load = (name) => loader.loadAsync(`${BASE}${name}.glb`).then((g) => g.scene);
+  const load = (name) => loader.loadAsync(`${BASE}${name}.gltf`).then((g) => g.scene);
   const names = ['building-garage', 'building-small-a', 'building-small-b', 'building-small-c', 'building-small-d', 'grass-trees', 'grass-trees-tall'];
   const models = Object.fromEntries(await Promise.all(names.map(async (n) => [n, await load(n).catch(() => null)])));
 

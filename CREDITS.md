@@ -28,7 +28,7 @@ Pliki w `public/assets/kenney/`, licencja kitów: `public/assets/kenney/LICENSE-
 |---|---|---|---|
 | `racing/audio/engine.ogg`, `impact.ogg` | [Starter Kit Racing](https://github.com/KenneyNL/Starter-Kit-Racing) `audio/` | Kenney | CC0 |
 | `racing/audio/skid.ogg` | jw. | [Landeplage](https://github.com/Landeplage) | CC0 |
-| `city/building-garage.glb`, `building-small-a…d.glb`, `grass-trees*.glb`, `Textures/colormap.png` | [Starter Kit City Builder](https://github.com/KenneyNL/Starter-Kit-City-Builder) `models/` | Kenney | CC0 |
+| `city/building-garage.gltf`, `building-small-a…d.gltf`, `grass-trees*.gltf`, `Textures/colormap.png` | [Starter Kit City Builder](https://github.com/KenneyNL/Starter-Kit-City-Builder) `models/` (przekonwertowane z `.glb` na `.gltf` bez zmian w geometrii) | Kenney | CC0 |
 
 Generowane w kodzie: auto (bryły), asfalt, bloki (tekstura okien), latarnie, szyld „Żappka 24h” (fikcyjna nazwa), dym.
 
