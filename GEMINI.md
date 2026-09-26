@@ -28,6 +28,7 @@ gracz ucieka przed „promieniowaniem 5G”.
 | v0.2b | noc + PS1 + assety + dźwięk + HUD | zrobione |
 | v0.2c | poprawki jazdy: płynny kąt, power oversteer w Pro, bez odbić, bez utykania | zrobione |
 | v0.2d | kamera Diorama + pixel-art (toon, obrysy, mgła radialna) | zrobione |
+| v0.2e | Polonez (koła na kościach) + osiedle z City Kit / Car Kit | zrobione |
 | v0.3 | bateria + sklep + misja | następne |
 | v0.4 | MVP | |
 
@@ -39,7 +40,7 @@ gracz ucieka przed „promieniowaniem 5G”.
 4. **Każdy asset** (model, tekstura, dźwięk, font) wpisz do `CREDITS.md` ze źródłem i licencją.
 5. Nie przepisuj niezwiązanego kodu. Dostosowuj go do zmian.
 
-## Architektura (v0.2a)
+## Architektura (v0.2e)
 
 ```
 src/physics.js  – jedyne miejsce z Rapierem poza vehicle.ts: świat, stały krok 60 Hz, przeszkody, debugRender
@@ -49,9 +50,9 @@ src/vehicle.ts  – auto arcade (port Kenney Starter Kit Racing, vehicle.gd): to
                   bodyRoll, bodyPitch, wheels[] }
 src/tuning.ts   – wszystkie parametry jazdy i kamery + presety „Łatwy” (domyślny), „Pro”
 src/camera.ts   – kamera „Diorama” (orto 3/4, przyciągana do siatki pikseli) i „Za autem” (port view.gd), klawisz C
-src/car.js      – wyłącznie wygląd auta (bryły) z wizualnym przechyłem, synchronizowany ze state
+src/car.js      – wygląd auta: model Poloneza (koła = kości, kręcą się i skręcają), przechył, reflektory; zastępcze bryły
 src/track.js    – plac manewrowy; przeszkody statyczne mają kolizję grubszą o promień kuli (PAD)
-src/district.js – osiedle wokół placu: garaże, pawilony, sklep „Żappka 24h”, latarnie (GLB Kenneya, CC0)
+src/district.js – osiedle z Kenney City Kit/Car Kit: pętla ulic, latarnie, bloki, pawilony, sklep „Żappka 24h”, garaże, zaparkowane auta
 src/pixelart.js – pixel-art: RenderPixelatedPass (przykład three.js webgl_postprocessing_pixel), materiały toon z N stopniami,
                   posteryzacja jasności, mgła radialna wokół auta (podmienione chunki fog_*), opcjonalne drżenie PS1
 src/occlusion.js – obiekty zasłaniające auto robią się półprzezroczyste
@@ -61,7 +62,8 @@ src/input.js    – klawiatura (płynna rampa) + pad (Gamepad API, standard mapp
 src/drift.js    – punktacja driftu
 src/effects.js  – dym i ślady opon
 src/main.js     – scena nocna (mgła radialna), HUD, lil-gui (G), debug kolizji (F), pętla
-public/assets/  – assety (Kenney CC0); każdy wpisany w CREDITS.md
+public/assets/  – assety (Kenney CC0), public/models/polonez/ – Polonez; każdy wpisany w CREDITS.md
+assets-src/     – źródła assetów (zipy Kenneya, .glb Poloneza, tablica); scripts/convert-assets.mjs → public/
 test/           – testy scenariuszy jazdy (`npm test`, node:test, bez przeglądarki; Node ≥ 22.18 czyta .ts)
 ```
 

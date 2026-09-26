@@ -67,20 +67,7 @@ export function createTrack(scene, physics) {
     }
   }
 
-  // Blocks of flats on the horizon – the essential Polish backdrop
-  // At night only the lit windows show through the fog (emissive map = lit windows only)
-  const [blokMap, blokLit] = blokTexture();
-  const blokMat = new THREE.MeshStandardMaterial({ map: blokMap, emissiveMap: blokLit, emissive: 0xffc070, emissiveIntensity: 0.9, roughness: 0.9 });
-  for (let i = 0; i < 18; i++) {
-    const a = (i / 18) * Math.PI * 2;
-    const r = SIZE * 0.68 + (i % 3) * 12;
-    const h = 20 + (i % 4) * 8;
-    const m = new THREE.Mesh(new THREE.BoxGeometry(40, h, 12), blokMat);
-    m.position.set(Math.cos(a) * r, h / 2, Math.sin(a) * r);
-    m.lookAt(0, h / 2, 0);
-    m.castShadow = m.receiveShadow = true;
-    scene.add(m);
-  }
+  // (blocks of flats, garages, shops, lamps: district.js)
 
   return {
     sync() {
@@ -117,35 +104,4 @@ function asphaltTexture() {
   t.anisotropy = 8;
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
-}
-
-function blokTexture() {
-  const make = () => {
-    const c = document.createElement('canvas');
-    c.width = 256;
-    c.height = 128;
-    return [c, c.getContext('2d')];
-  };
-  const [c, ctx] = make();
-  const [cl, lit] = make();
-  ctx.fillStyle = '#8f8a7e';
-  ctx.fillRect(0, 0, 256, 128);
-  lit.fillStyle = '#000';
-  lit.fillRect(0, 0, 256, 128);
-  for (let y = 6; y < 128; y += 12) {
-    for (let x = 4; x < 256; x += 12) {
-      const on = Math.random() < 0.18;
-      ctx.fillStyle = on ? '#ffd27a' : '#2b323b';
-      ctx.fillRect(x, y, 7, 6);
-      if (on) {
-        lit.fillStyle = Math.random() < 0.2 ? '#9ab8ff' : '#ffd27a'; // the odd TV-blue window
-        lit.fillRect(x, y, 7, 6);
-      }
-    }
-  }
-  return [c, cl].map((canvas) => {
-    const t = new THREE.CanvasTexture(canvas);
-    t.colorSpace = THREE.SRGBColorSpace;
-    return t;
-  });
 }

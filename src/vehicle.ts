@@ -16,14 +16,15 @@ export type Controls = { throttle: number; brake: number; steer: number; handbra
 
 export const BALL_RADIUS = 1; // m – bigger than Kenney's 0.5 because our car is a real-size 4.3 m sedan
 const RIDE_HEIGHT = 0.72; // model origin above the ground
-const WHEEL_RADIUS = 0.3;
+const WHEEL_RADIUS = 0.29;
+// Wheel centres of the Polonez model (car.js), used for skid marks, smoke and the fallback wheels
 const WHEELS = [
-  { x: 1.25, z: -0.72, front: true },
-  { x: 1.25, z: 0.72, front: true },
-  { x: -1.25, z: -0.72, front: false },
-  { x: -1.25, z: 0.72, front: false },
+  { x: 1.34, z: -0.68, front: true },
+  { x: 1.34, z: 0.68, front: true },
+  { x: -1.14, z: -0.68, front: false },
+  { x: -1.14, z: 0.68, front: false },
 ];
-const CHASSIS_HALF = { x: 2.15, y: 0.45, z: 0.84 };
+const CHASSIS_HALF = { x: 2.15, y: 0.45, z: 0.9 };
 // Collision groups: (membership << 16) | filter. The sphere and the kinematic chassis box ignore each other.
 const GROUP_BALL = (0x0001 << 16) | 0xfffd;
 const GROUP_CHASSIS = (0x0002 << 16) | 0xfffd;
@@ -110,6 +111,7 @@ export function createVehicle(
     drifting: false,
     driftFactor: 0,
     steerAngle: 0, // visual front-wheel angle (rad)
+    wheelSpin: 0, // accumulated wheel rotation (rad), for models with their own wheels
     bodyRoll: 0, // visual lean (rad), + = leaning right
     bodyPitch: 0, // visual pitch (rad), + = nose up
     grounded: false,
@@ -306,6 +308,7 @@ export function createVehicle(
     placeModel(p);
     state.quaternion.copy(modelQ);
     state.unstuck = unstuckCount;
+    state.wheelSpin = wheelSpin;
     state.velocity.set(v.x, v.y, v.z);
     const heading = travel + angle;
     const fwdX = Math.cos(heading), fwdZ = -Math.sin(heading);

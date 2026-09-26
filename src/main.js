@@ -15,7 +15,7 @@ import { createDriftScorer } from './drift.js';
 import { createDistrict, lights } from './district.js';
 import { createPixelComposer, installRadialFog, pixelizeScene, pixelArt } from './pixelart.js';
 import { createOcclusion, occlusionSettings } from './occlusion.js';
-import { headlightSettings } from './car.js';
+import { headlightSettings, carLook } from './car.js';
 import { createAudio, audioSettings } from './audio.js';
 import { createGearbox, RED_RPM } from './gearbox.js';
 
@@ -30,7 +30,7 @@ document.body.appendChild(renderer.domElement);
 // The darkness comes from the fog (black beyond `visibility` around the car), not from dim lights:
 // near the car everything is lit enough to read.
 const NIGHT = 0x020203;
-const night = { visibility: 45, exposure: 1.1, ambient: 0.9, moon: 0.8, carLight: 6 };
+const night = { visibility: 45, exposure: 1.1, ambient: 0.9, moon: 0.8, carLight: 14 };
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(NIGHT);
 scene.fog = new THREE.Fog(NIGHT, 100, night.visibility); // radial fog, see pixelart.js
@@ -62,7 +62,7 @@ const track = createTrack(scene, physics);
 // ?spawn=x,z,yawDeg – start somewhere else (handy for screenshots and testing a spot)
 const spawnArg = new URLSearchParams(location.search).get('spawn')?.split(',').map(Number);
 const car = createVehicle(physics, spawnArg?.length === 3 ? { spawn: { x: spawnArg[0], y: 1, z: spawnArg[1] }, spawnYaw: (spawnArg[2] * Math.PI) / 180 } : {});
-const carView = createCarView(scene);
+const carView = await createCarView(scene);
 const skids = createSkidMarks(scene);
 const smoke = createSmoke(scene);
 const district = await createDistrict(scene, physics);
@@ -151,6 +151,7 @@ gfx.add(night, 'visibility', 15, 150, 1).name('mgła: widoczność (m)').onChang
 gfx.add(night, 'ambient', 0, 3, 0.05).name('światło otoczenia').onChange(applyNight);
 gfx.add(night, 'moon', 0, 3, 0.05).name('księżyc').onChange(applyNight);
 gfx.add(night, 'carLight', 0, 30, 0.5).name('światło przy aucie').onChange(applyNight);
+gfx.addColor(carLook, 'paint').name('lakier Poloneza').onChange(() => carView.applyLook());
 gfx.add(headlightSettings, 'intensity', 0, 200, 1).name('reflektory').onChange(() => carView.applyHeadlights());
 gfx.add(headlightSettings, 'range', 10, 120, 1).name('zasięg reflektorów').onChange(() => carView.applyHeadlights());
 gfx.add(lights, 'lamp', 0, 200, 1).name('latarnie').onChange(() => district.applyLights());

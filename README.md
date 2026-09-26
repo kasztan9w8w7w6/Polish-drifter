@@ -1,9 +1,9 @@
-# Agro Drifter 🇵🇱 (v0.2b)
+# Agro Drifter 🇵🇱 (v0.2e)
 
-Przeglądarkowa gra o driftowaniu starym polskim sedanem z napędem na tył. Docelowo: noc, osiedle,
-estetyka PS1 i ucieczka przed „promieniowaniem 5G” (opis projektu i roadmapa w [`CLAUDE.md`](CLAUDE.md)).
+Przeglądarkowa gra o driftowaniu Polonezem nocą po osiedlu: pixel-art 3D z kamerą jak nad dioramą
+i ucieczka przed „promieniowaniem 5G” (opis projektu i roadmapa w [`CLAUDE.md`](CLAUDE.md)).
 
-![Drift nocą](docs/screenshot-drift.png)
+![Drift nocą (kamera Diorama)](docs/screenshot-diorama.png)
 ![Nocny sklep „Żappka 24h”](docs/screenshot-sklep.png)
 
 *Zrzuty z headless Chromium (renderer programowy SwiftShader); na prawdziwej karcie graficznej obraz może się nieco różnić.*
@@ -12,10 +12,12 @@ Zasada projektu: **składamy gotowe klocki zamiast pisać własne**.
 
 | Warstwa | Gotowiec | Co z niego bierzemy |
 |---|---|---|
-| Render | [three.js](https://threejs.org) | scena, cienie, materiały PBR |
-| Noc | `THREE.FogExp2`, `SpotLight`, `PointLight` | czarna mgła, reflektory, latarnie, świecący szyld |
-| Wygląd PS1 | `three/addons/postprocessing` | `RenderPixelatedPass` (niska rozdzielczość + obrysy), `UnrealBloomPass`, `OutputPass`, `ShaderPass` (15-bit kolor + dithering); drżenie wierzchołków przez `onBeforeCompile` |
-| Modele | [Kenney Starter Kit City Builder](https://github.com/KenneyNL/Starter-Kit-City-Builder) (CC0) | garaże, pawilony, sklep, drzewa (`GLTFLoader`) |
+| Render | [three.js](https://threejs.org) | scena, `MeshToonMaterial` (cieniowanie w kilku stopniach) |
+| Pixel-art | przykład three.js [`webgl_postprocessing_pixel`](https://threejs.org/examples/#webgl_postprocessing_pixel) | `RenderPixelatedPass` (pikselizacja + obrysy z głębi i normalnych), kamera ortograficzna przyciągana do siatki pikseli; do tego `UnrealBloomPass`, `OutputPass` i mały `ShaderPass` (stopnie jasności + dithering) |
+| Noc | `THREE.Fog` z podmienionym chunkiem shadera, `SpotLight`, `PointLight` | mgła radialna wokół auta (czerń dookoła), reflektory, latarnie, świecący szyld |
+| Auto | [„1993 FSO Polonez MR93 (LP)”](https://sketchfab.com/3d-models/1993-fso-polonez-mr93-lp-f191456e08a041ad81264ce67f4ed1d1) (Sketchfab) | model z kołami na kościach (kręcą się i skręcają) |
+| Osiedle | [Kenney City Kit Roads / Commercial / Suburban, Car Kit, Starter Kit City Builder](CREDITS.md) (CC0) | drogi, latarnie, bloki, pawilony, sklep, garaże, zaparkowane auta, drzewa (`GLTFLoader`) |
+| Konwersja modeli | [glTF-Transform](https://gltf-transform.dev) | `npm run assets` (usunięcie logo, fikcyjna tablica, `.glb` → `.gltf`) |
 | Dźwięk | [Howler.js](https://howlerjs.com) + dźwięki z Kenney Starter Kit Racing (CC0) | silnik, pisk opon, uderzenia |
 | Czcionka HUD | [Silkscreen](https://fonts.google.com/specimen/Silkscreen) przez `@fontsource/silkscreen` (OFL) | pikselowy licznik |
 | Fizyka | [Rapier](https://rapier.rs) (`@dimforge/rapier3d-compat`) | świat, kolizje, raycast, debug render |
@@ -31,7 +33,8 @@ Zasada projektu: **składamy gotowe klocki zamiast pisać własne**.
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm test         # testy scenariuszy jazdy (Node, ~5 s)
+npm test         # testy jazdy i kamery (Node, ~8 s)
+npm run assets   # przebudowa modeli z assets-src/ (potrzebny program unzip)
 npm run typecheck
 npm run build    # statyczny build do dist/
 ```
@@ -44,32 +47,38 @@ npm run build    # statyczny build do dist/
 | Skręt | A / D | lewa gałka |
 | Ręczny | Spacja | A lub RB |
 | Reset auta | R | Y |
-| Kamera (pościg / daleko / maska) | C | X |
+| Kamera (Diorama / Za autem) | C | X |
 | Panel tuningu | G | Start |
 | Podgląd kolizji (Rapier debug render) | F | — |
 
+Po R, C i automatycznym wypchnięciu z przeszkody na środku ekranu pojawia się krótki komunikat.
 Dźwięk startuje po pierwszym klawiszu/kliknięciu (wymóg przeglądarek). Parametr `?spawn=x,z,kąt` w adresie ustawia auto w innym miejscu.
 
 ## Jak jeździć driftem (preset „Łatwy”)
 
 1. **Wejście** (od ~30 km/h):
    - skręć i wciśnij **ręczny** (Spacja),
-   - albo przy ~55 km/h+ skręć **do oporu z gazem**.
-2. Trzymaj **gaz**: podtrzymuje drift i powiększa kąt; drift traci mało prędkości.
-3. Kierownicą regulujesz kąt:
-   - w stronę zakrętu = głęboko (do ~45°),
-   - prosto = ~25–30°,
-   - lekka kontra = płytko (~20°).
+   - albo od ~47 km/h skręć mocno **z gazem** (power oversteer).
+2. Trzymaj **gaz**: podtrzymuje drift; drift traci mało prędkości.
+3. Kąt zmienia się płynnie, bez skoków:
+   - im dłużej trzymasz skręt w stronę zakrętu, tym głębszy kąt (do ~42°);
+   - kierownica prosto = ~20–25°;
+   - lekka kontra zmniejsza kąt stopniowo.
 
-   Kąt ma twardy limit, bączka nie da się zrobić.
-4. **Przekładka:** mocna kontra (na klawiaturze przytrzymany przeciwny kierunek) przerzuca drift na drugą stronę.
+   Na klawiaturze skręt narasta przez ~0,4 s. Pad działa proporcjonalnie do wychylenia gałki. Kąt ma twardy limit, bączka nie da się zrobić.
+4. **Przekładka:** mocna, przytrzymana kontra przeprowadza auto płynnie przez zero na drugą stronę.
 5. **Wyjście:** puść gaz, a auto samo płynnie się wyprostuje.
 
-Presety w panelu (G):
-- **Łatwy:** domyślny, drift wchodzi też z samego ostrego skrętu.
-- **Pro:** tylko z ręcznego, większy zakres kąta od kierownicy, szybsza reakcja, większa utrata prędkości.
+Jeśli auto utknie na przeszkodzie (pedał wciśnięty, a auto stoi ~1 s), samo się wypchnie w najbliższe wolne miejsce.
 
-W panelu są też foldery **Grafika (noc, PS1)** (mgła, reflektory, latarnie, bloom, rozmiar piksela, drżenie wierzchołków, dithering) i **Dźwięk**.
+Presety w panelu (G):
+- **Łatwy:** domyślny.
+- **Pro:** drift gazem wchodzi dopiero od ~61 km/h, przy pełnym gazie i dłużej trzymanym skręcie. Większy zakres kąta od kierownicy, większa utrata prędkości.
+
+W panelu są też foldery:
+- **Grafika (noc, pixel-art):** rozmiar piksela, obrysy, stopnie jasności, dithering, drżenie PS1 (domyślnie wyłączone), ekspozycja, mgła, światła, lakier Poloneza;
+- **Kamera Diorama** i **Kamera Za autem**;
+- **Dźwięk**.
 
 Przycisk **Eksport ustawień (JSON)** kopiuje wszystkie parametry do schowka (i pokazuje je w okienku), a **Wczytaj JSON** wczytuje wklejone.
 
@@ -82,7 +91,7 @@ Uderzenie w przeszkodę (od ~20 km/h) w trakcie driftu = punkty przepadają. Rek
 
 ## Struktura
 
-Opis modułów i modelu jazdy: [`CLAUDE.md`](CLAUDE.md#architektura-v02a). Fizyka auta jest zamknięta w `src/vehicle.ts`
+Opis modułów i modelu jazdy: [`CLAUDE.md`](CLAUDE.md#architektura-v02e). Fizyka auta jest zamknięta w `src/vehicle.ts`
 z prostym interfejsem wejście/wyjście, więc reszta gry nie zależy od biblioteki fizycznej.
 
 ## Deploy
@@ -92,9 +101,9 @@ Workflow `.github/workflows/pages.yml` publikuje build na GitHub Pages po pushu 
 
 ## Znane ograniczenia
 
-- Bundle ma ~5 MB (1,8 MB gzip), bo `rapier3d-compat` wbudowuje WASM w JS. Do optymalizacji później (wariant bez `-compat` + ładowanie `.wasm`).
+- Bundle ma ~5 MB (1,8 MB gzip), bo `rapier3d-compat` wbudowuje WASM w JS. Modele to kolejne ~8 MB `.gltf` (base64). Do optymalizacji później.
 - Kolizja auta to kula r = 1 m, więc przeszkody mają niewidoczną „skorupę” grubszą o 1 m; bokiem auto zatrzymuje się ~1 m przed ścianą.
-- Auto to na razie bryły z prymitywów (sedan z Kenney Car Kit nie został pobrany, patrz CREDITS).
+- Model Poloneza ma licencję Sketchfab Standard, a nie CC0 (szczegóły w CREDITS).
 - Dźwięki są w `.ogg`: starsze Safari ich nie odtworzy.
 - Bez GPU sprawdzone tylko zrzutami (SwiftShader); płynność i jasność na prawdziwej karcie trzeba ocenić samemu.
 
