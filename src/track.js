@@ -79,14 +79,7 @@ function asphaltTexture() {
     ctx.fillStyle = `rgb(${v},${v},${v + 2})`;
     ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
   }
-  // Painted parking-lot lines
-  ctx.strokeStyle = '#d8d8c8';
-  ctx.lineWidth = 6;
-  ctx.setLineDash([40, 30]);
-  ctx.beginPath();
-  ctx.moveTo(0, 256);
-  ctx.lineTo(512, 256);
-  ctx.stroke();
+  // (no painted lines: streets are road tiles, parking bays are drawn by map.js)
   const t = new THREE.CanvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.repeat.set(24, 24);

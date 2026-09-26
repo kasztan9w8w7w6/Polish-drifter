@@ -22,10 +22,10 @@
       "id": "ladowanie",
       "type": "battery",
       "min": 70,
-      "goal": "Naładuj baterię driftem do 70% (duży parking)",
+      "goal": "Naładuj baterię driftem do 70% (plac pod Supersamem)",
       "say": [
-        "Pan Zdzisław z Bloku 2 nie otworzy nikomu, kto przyjedzie na przygaszonych światłach. „Oni tak przyjeżdżają”, mówi.",
-        "Bateria sama się nie naładuje. Duży parking na środku. Bokiem. Im szerzej i szybciej, tym lepiej."
+        "Pan Zdzisław z Bloku 4 nie otworzy nikomu, kto przyjedzie na przygaszonych światłach. „Oni tak przyjeżdżają”, mówi.",
+        "Bateria sama się nie naładuje. Plac pod Supersamem, za ul. Gagarina. Bokiem, szeroko i czysto – każde uderzenie to stracona seria."
       ],
       "done": ["Reflektory świecą jak u prezesa spółdzielni. Można jechać."]
     },
@@ -34,8 +34,8 @@
       "type": "reach",
       "point": "delivery",
       "stop": true,
-      "goal": "Dowieź paczkę pod Blok 2, klatka B",
-      "say": ["Blok 2, klatka B. Domofon nie działa od 1997 roku, ale pan Zdzisław i tak czuwa."],
+      "goal": "Dowieź paczkę pod Blok 4 (punktowiec przy ul. Lotników)",
+      "say": ["Blok 4, punktowiec przy Lotników. Domofon nie działa od 1997 roku, ale pan Zdzisław z parteru i tak czuwa."],
       "done": [
         "Okno na parterze uchyla się na dwa palce. Ręka w rękawicy kuchennej zabiera pudełko.",
         "„Czapka z folii, rozmiar L. Nareszcie”. Okno się zamyka. Zasłony też."
@@ -46,7 +46,7 @@
       "type": "reach",
       "point": "shop",
       "stop": true,
-      "goal": "Wróć do Żappki 24h i stań na świecącym polu",
+      "goal": "Wróć do Żappki 24h przy głównej i stań na świecącym polu",
       "say": ["Czas wracać. Żappka 24h to jedyne miejsce na osiedlu, gdzie 5G nie ma zasięgu. Tak twierdzi pani ekspedientka."]
     }
   ],

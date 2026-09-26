@@ -20,19 +20,19 @@ const OUT = 'public';
 const KITS = {
   roads: {
     zip: 'kenney_city-kit-roads.zip',
-    models: ['road-straight', 'road-bend', 'road-crossroad', 'road-intersection', 'light-square', 'light-square-double', 'light-curved', 'dumpster', 'construction-barrier', 'construction-cone', 'electricity-pole', 'road-sign-stop', 'road-sign-warning'],
+    models: ['road-straight', 'road-bend', 'road-crossroad', 'road-intersection', 'road-end', 'road-crossing', 'light-curved-double', 'traffic-light', 'road-sign-street', 'construction-fence', 'light-square', 'light-square-double', 'light-curved', 'dumpster', 'construction-barrier', 'construction-cone', 'electricity-pole', 'road-sign-stop', 'road-sign-warning'],
   },
   commercial: {
     zip: 'kenney_city-kit-commercial_2.1.zip',
-    models: ['building-a', 'building-b', 'building-c', 'building-d', 'building-e', 'building-f', 'building-h', 'building-j', 'building-k', 'building-l', 'building-n', 'building-skyscraper-a', 'building-skyscraper-b', 'building-skyscraper-d', 'building-skyscraper-e', 'detail-awning', 'detail-awning-wide', 'low-detail-building-a', 'low-detail-building-c', 'low-detail-building-wide-a'],
+    models: ['building-a', 'building-b', 'building-c', 'building-d', 'building-e', 'building-f', 'building-g', 'building-h', 'building-i', 'building-m', 'building-j', 'building-k', 'building-l', 'building-n', 'building-skyscraper-a', 'building-skyscraper-b', 'building-skyscraper-d', 'building-skyscraper-e', 'detail-awning', 'detail-awning-wide', 'low-detail-building-a', 'low-detail-building-c', 'low-detail-building-wide-a'],
   },
   suburban: {
     zip: 'kenney_city-kit-suburban_20.zip',
-    models: ['tree-large', 'tree-small', 'fence-1x3', 'fence-low', 'planter', 'path-long', 'building-type-c', 'building-type-m'],
+    models: ['tree-large', 'tree-small', 'fence-1x3', 'fence-1x4', 'fence-low', 'planter', 'path-long', 'path-short', 'building-type-c', 'building-type-m'],
   },
   cars: {
     zip: 'kenney_car-kit.zip',
-    models: ['sedan', 'hatchback-sports', 'van', 'suv', 'taxi', 'delivery', 'cone', 'box'],
+    models: ['sedan', 'hatchback-sports', 'van', 'suv', 'taxi', 'delivery', 'cone', 'box', 'garbage-truck', 'truck', 'sedan-sports'],
   },
 };
 

@@ -442,6 +442,29 @@ const menu = createMenu({
 });
 applySettings(settings);
 if (new URLSearchParams(location.search).has('debug')) window.agro = { survival, mission, narrator, car, menu, settings, perf: () => perf, paused: () => paused }; // for testing from the console
+// ?plan – the whole map from straight above, lit like daytime (docs/mapa.md screenshot, checking the layout)
+const PLAN = new URLSearchParams(location.search).has('plan');
+if (PLAN) {
+  const half = map.size / 2 + 8;
+  const top = new THREE.OrthographicCamera(-half * (innerWidth / innerHeight), half * (innerWidth / innerHeight), half, -half, 1, 500);
+  top.position.set(0, 200, 0);
+  top.up.set(0, 0, -1); // north (−z) at the top of the image
+  top.lookAt(0, 0, 0);
+  scene.fog.near = 1e4;
+  scene.fog.far = 2e4;
+  ambient.intensity = 3;
+  moon.intensity = 2.5;
+  renderer.toneMappingExposure = 1.4;
+  document.body.classList.add('plan');
+  setCamera(top);
+  const draw = () => {
+    carView.sync(car.read());
+    composer.render();
+    requestAnimationFrame(draw);
+  };
+  draw();
+  throw new Error('plan view'); // (stop here: no game loop, no menu)
+}
 // ?spawn=… or ?graj skips the menu (testing); otherwise the game starts in the main menu, the world paused behind it
 if (spawnArg?.length === 3 || new URLSearchParams(location.search).has('graj')) startMission(spawnArg?.length === 3);
 else {

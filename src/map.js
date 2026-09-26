@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { loadGltf } from './gltf.js';
+import { roadTiles, ROAD_TILE } from './roads.js';
 
 // The housing estate, built from a hand-made map file (src/maps/*.json: models, positions, turns) with Kenney kits
 // (CC0, see CREDITS.md): City Kit Roads (streets, lamps, dumpsters, road works), City Kit Commercial (blocks,
@@ -67,17 +68,9 @@ export async function createMap(scene, physics, map) {
   const jobs = [];
   const add = (...args) => jobs.push(put(...args));
 
-  // --- Street loop (flat road tiles on the asphalt; 4 cm kerbs, no collision) ---
-  const { half: LOOP, tile: TILE } = map.roadLoop;
-  const road = { fit: [TILE, 0.04, TILE], y: 0.005, tint: 0.6 }; // darker, so the tiles sit in the asphalt
-  for (let t = -LOOP + TILE; t <= LOOP - TILE; t += TILE) {
-    add('roads/road-straight', t, -LOOP, { ...road }); // the tile's road runs along local X
-    add('roads/road-straight', t, LOOP, { ...road });
-    add('roads/road-straight', -LOOP, t, { ...road, yaw: Math.PI / 2 });
-    add('roads/road-straight', LOOP, t, { ...road, yaw: Math.PI / 2 });
-  }
-  // (the bend tile joins its +X and −Z sides)
-  for (const [x, z, yaw] of [[-LOOP, -LOOP, -Math.PI / 2], [LOOP, -LOOP, Math.PI], [LOOP, LOOP, Math.PI / 2], [-LOOP, LOOP, 0]]) add('roads/road-bend', x, z, { ...road, yaw });
+  // --- Streets: flat road tiles on the asphalt (4 cm kerbs, no collision), picked per 10 m cell from its neighbours ---
+  const road = { fit: [ROAD_TILE, 0.04, ROAD_TILE], y: 0.005, tint: 0.6 }; // darker, so the tiles sit in the asphalt
+  for (const t of roadTiles(map.roads, map.crossings)) add(t.model, t.x, t.z, { ...road, yaw: t.yaw });
 
   // --- Objects from the map file ---
   for (const o of map.objects) {
@@ -96,16 +89,30 @@ export async function createMap(scene, physics, map) {
     }
   }
 
-  // --- The all-night shop's sign and light (the building is an object in the map) ---
-  let sign = null;
+  // --- Glowing signs (Żappka, Supersam) ---
+  const signs = (map.signs ?? []).map((sg) => {
+    const m = shopSign(sg.text, sg.colors);
+    m.position.set(...sg.at);
+    m.rotation.y = (sg.yaw ?? 0) * DEG;
+    scene.add(m);
+    return m;
+  });
+  // --- Own-geometry props: benches, carpet-beating frames, sandbox, swing, bus stop ---
+  for (const p of map.props ?? []) {
+    const { group, half, surface } = prop(p.type, p.name);
+    const yaw = (p.yaw ?? 0) * DEG;
+    group.position.set(p.x, 0, p.z);
+    group.rotation.y = yaw;
+    scene.add(group);
+    physics.addStaticBox({ x: p.x, y: half.y, z: p.z }, half, { rotation: yawQuat(yaw), surface });
+  }
+
+  // --- The all-night shop's light and save pad (the building is an object in the map) ---
   let pad = null;
   if (map.shop) {
-    sign = shopSign(map.shop.sign);
-    sign.position.set(...map.shop.signAt);
-    sign.rotation.y = map.shop.signYaw * DEG;
     const shopLight = new THREE.PointLight(0x7cffb0, 12, 20, 1);
     shopLight.position.set(...map.shop.light);
-    scene.add(sign, shopLight);
+    scene.add(shopLight);
     // The safe spot in front of the entrance (survival.js): a softly glowing, pulsing frame on the asphalt
     pad = safePad(map.shop.pad);
     scene.add(pad);
@@ -175,7 +182,7 @@ export async function createMap(scene, physics, map) {
         s.intensity = lights.lamp;
         s.distance = lights.lampRange;
       }
-      sign?.material.color.setScalar(lights.sign);
+      for (const sg of signs) sg.material.color.setScalar(lights.sign);
     },
   };
 }
@@ -215,6 +222,82 @@ function clipSlab(poly, lo, hi) {
     return res;
   };
   return clip(clip(poly, (y) => y >= lo, lo), (y) => y <= hi, hi);
+}
+
+// Small things built from boxes (no model needed): returns the group, the collider half extents and its surface
+function prop(type, name = '') {
+  const g = new THREE.Group();
+  const mat = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.85 });
+  const box = (w, h, d, x, y, z, m) => {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+    b.position.set(x, y, z);
+    g.add(b);
+    return b;
+  };
+  const steel = mat(0x6e7478), paint = mat(0x3d6b4a), wood = mat(0x7a5634), red = mat(0x9c3a2a), yellow = mat(0xd8b23a);
+  switch (type) {
+    case 'lawka': // park bench: concrete legs, wooden slats
+      for (const x of [-0.75, 0.75]) box(0.12, 0.45, 0.45, x, 0.22, 0, mat(0x8a8a86));
+      box(1.8, 0.07, 0.45, 0, 0.47, 0, wood);
+      box(1.8, 0.35, 0.06, 0, 0.75, -0.2, wood);
+      return { group: g, half: { x: 0.9, y: 0.45, z: 0.3 }, surface: 'tree' };
+    case 'trzepak': // carpet-beating frame: two posts, two bars
+      for (const x of [-1.25, 1.25]) box(0.08, 1.6, 0.08, x, 0.8, 0, paint);
+      box(2.6, 0.07, 0.07, 0, 1.55, 0, paint);
+      box(2.6, 0.07, 0.07, 0, 1.05, 0, paint);
+      return { group: g, half: { x: 1.3, y: 0.8, z: 0.08 }, surface: 'metal' };
+    case 'piaskownica': // sandbox: wooden frame with sand
+      box(3, 0.25, 3, 0, 0.12, 0, wood);
+      box(2.7, 0.26, 2.7, 0, 0.13, 0, mat(0xc9b27a));
+      return { group: g, half: { x: 1.5, y: 0.15, z: 1.5 }, surface: 'tree' };
+    case 'hustawka': // swing: A-frame of pipes, two seats on chains
+      for (const x of [-1.5, 1.5]) for (const z of [-0.7, 0.7]) {
+        const leg = box(0.07, 2.4, 0.07, x, 1.15, z * 0.5, red);
+        leg.rotation.x = z > 0 ? 0.3 : -0.3;
+      }
+      box(3.1, 0.08, 0.08, 0, 2.3, 0, red);
+      for (const x of [-0.6, 0.6]) {
+        for (const dx of [-0.2, 0.2]) box(0.02, 1.7, 0.02, x + dx, 1.4, 0, steel);
+        box(0.5, 0.05, 0.22, x, 0.55, 0, yellow);
+      }
+      return { group: g, half: { x: 1.6, y: 1.2, z: 0.9 }, surface: 'metal' };
+    case 'przystanek': { // bus shelter: roof, back and side glass, bench, sign pole
+      const glass = new THREE.MeshStandardMaterial({ color: 0x9fb8c8, transparent: true, opacity: 0.35, roughness: 0.2 });
+      for (const x of [-1.9, 1.9]) for (const z of [-0.7, 0.7]) box(0.08, 2.4, 0.08, x, 1.2, z, steel);
+      box(4.1, 0.1, 1.7, 0, 2.45, 0, steel);
+      box(3.8, 1.9, 0.03, 0, 1.3, -0.7, glass);
+      for (const x of [-1.9, 1.9]) box(0.03, 1.9, 1.3, x, 1.3, 0, glass);
+      box(2.4, 0.07, 0.4, 0, 0.48, -0.45, wood);
+      box(0.08, 2.8, 0.08, 2.4, 1.4, 0.8, steel);
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.6), new THREE.MeshBasicMaterial({ map: busStopSign(name), side: THREE.DoubleSide }));
+      sign.position.set(2.4, 2.6, 0.8);
+      g.add(sign);
+      return { group: g, half: { x: 2.05, y: 1.25, z: 0.85 }, surface: 'metal' };
+    }
+    default:
+      console.warn('unknown prop', type);
+      return { group: g, half: { x: 0.5, y: 0.5, z: 0.5 }, surface: 'concrete' };
+  }
+}
+
+function busStopSign(name) {
+  const c = document.createElement('canvas');
+  c.width = 96;
+  c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#e8c22a';
+  ctx.fillRect(0, 0, 96, 64);
+  ctx.fillStyle = '#1c5a2a';
+  ctx.fillRect(4, 4, 88, 56);
+  ctx.fillStyle = '#e8c22a';
+  ctx.font = 'bold 22px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('A', 48, 30);
+  ctx.font = 'bold 9px sans-serif';
+  ctx.fillText(name.slice(0, 20), 48, 50);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
 }
 
 function yawQuat(yaw) {
@@ -314,17 +397,17 @@ function safePad({ x, z, w, d }) {
 }
 
 // Glowing shop sign: canvas texture on an unlit plane (bloom picks it up; colour kept ≤ 1.4 so it doesn't blow out)
-function shopSign(text) {
+function shopSign(text, [bg, frame, ink] = ['#062d14', '#ffe14a', '#9dff6a']) {
   const c = document.createElement('canvas');
   c.width = 256;
   c.height = 64;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = '#062d14';
+  ctx.fillStyle = bg;
   ctx.fillRect(0, 0, 256, 64);
-  ctx.strokeStyle = '#ffe14a';
+  ctx.strokeStyle = frame;
   ctx.lineWidth = 4;
   ctx.strokeRect(4, 4, 248, 56);
-  ctx.fillStyle = '#9dff6a';
+  ctx.fillStyle = ink;
   ctx.font = 'bold 40px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';

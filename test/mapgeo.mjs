@@ -106,6 +106,7 @@ export function colliders(map) {
   for (const [x, z, yaw, double] of map.lamps) out.push({ ...place(double ? 'roads/light-square-double' : 'roads/light-square', x, z, { yaw: yaw * DEG, scale: 7 / 0.6 }), name: 'lamp' });
   if (map.locker) out.push({ path: 'locker', name: 'locker', cx: map.locker.x, cz: map.locker.z, hx: 1.6, hz: 0.4, yaw: map.locker.yaw * DEG, h: 2.2 });
   for (const [x, z, lx, lz] of map.walls) out.push({ path: 'wall', name: 'wall', cx: x, cz: z, hx: lx / 2, hz: lz / 2, yaw: 0, h: 1.2 });
+  out.push(...propColliders(map));
   for (const [x, z] of map.tyres) out.push({ path: 'tyres', name: 'tyres', cx: x, cz: z, hx: 0.65, hz: 0.65, yaw: 0, h: 1.6 });
   return out;
 }
@@ -125,4 +126,10 @@ export function overlaps(list, box) {
     }
     return true;
   });
+}
+
+// Own-geometry props (map.js prop()): collider half extents, same numbers as there
+const PROP_HALF = { lawka: [0.9, 0.3], trzepak: [1.3, 0.08], piaskownica: [1.5, 1.5], hustawka: [1.6, 0.9], przystanek: [2.05, 0.85] };
+export function propColliders(map) {
+  return (map.props ?? []).map((p) => ({ path: p.type, name: p.type, cx: p.x, cz: p.z, hx: PROP_HALF[p.type][0], hz: PROP_HALF[p.type][1], yaw: ((p.yaw ?? 0) * Math.PI) / 180, h: 1 }));
 }

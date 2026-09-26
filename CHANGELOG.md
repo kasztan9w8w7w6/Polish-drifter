@@ -2,6 +2,14 @@
 
 Każda wersja ma tag w git (`git checkout v0.4a` uruchamia dokładnie tę wersję). Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
 
+## v0.4c – logiczne osiedle
+- Plan osiedla w `docs/mapa.md` (szkic ASCII, strefy, zasady) i zbudowana z niego mapa 200 × 200 m.
+- Ulica główna z latarniami po obu stronach, przystankiem i pasami; uliczki osiedlowe; kafle skrzyżowań dobierane automatycznie.
+- Bloki równolegle / prostopadle wzdłuż uliczek, podwórko (plac zabaw, trzepaki, ławki, zieleń), parking przed blokiem,
+  rząd garaży, pawilony i Żappka 24h przy głównej, market „Supersam” z dużym placem do driftu, paczkomat przy wejściu do bloku.
+- Test: nic nie stoi na jezdni, każda ulica przejezdna, cele misji i plac do driftu wolne. Misja 1 przestawiona na nową mapę.
+- Widok `?plan` (cała mapa z góry).
+
 ## v0.4b – kamera, zegary, menu
 - Kamera Diorama niżej (35°) i obrócona 28° od osi mapy; piksele nadal przyciągane do siatki.
 - Rozmiar piksela z rozdzielczości ekranu: Drobne / Średnie / Grube (≈ 540 / 360 / 240 linii), domyślnie Średnie.

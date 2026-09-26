@@ -158,7 +158,7 @@ export function createDashboard(canvas) {
     disc(bx, by, 2, '#2a1d12');
     icons.battery(bx - 7, by - 1, AMBER_DIM);
     // Warning lamps
-    const ly = 68;
+    const ly = 70;
     lamp(100, ly, s.charging, '#6dff7a', icons.battery);
     lamp(115, ly, s.lightsOn, s.highBeam ? '#4aa8ff' : '#6dff7a', icons.light);
     lamp(130, ly, s.engineWarn, '#ffb020', icons.engine);
@@ -169,13 +169,14 @@ export function createDashboard(canvas) {
     ctx.fillStyle = '#e8dcc0';
     ctx.fillRect(197, 71, 15, 9);
     text(s.gear < 0 ? 'R' : s.gear, 204.5, 73, '#1a0e05', 'center');
+    // (drum counter in the middle column, under the lamps: the dials' own numbers stay free)
     const pts = String(Math.min(999999, Math.max(0, Math.round(s.points)))).padStart(6, '0');
     ctx.fillStyle = BEZEL;
-    ctx.fillRect(30, 70, 45, 11);
+    ctx.fillRect(106, 82, 45, 11);
     for (let i = 0; i < 6; i++) {
       ctx.fillStyle = i >= 4 ? '#e8dcc0' : '#1c1510';
-      ctx.fillRect(31 + i * 7, 71, 6, 9);
-      text(pts[i], 32.5 + i * 7, 73, i >= 4 ? '#1a0e05' : AMBER);
+      ctx.fillRect(107 + i * 7, 83, 6, 9);
+      text(pts[i], 108.5 + i * 7, 85, i >= 4 ? '#1a0e05' : AMBER);
     }
     // Needles last
     needle(52, 52, 38, needles.speed, 160);

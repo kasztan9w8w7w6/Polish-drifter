@@ -85,10 +85,9 @@ body.touch .lil-gui.root { max-height: 80vh; }
 #t-stick .back, #t-stick .front { border-radius: 0 !important; } /* pixel look for the nipplejs joystick */
 
 /* Dashboard (dashboard.js): a small canvas scaled up without smoothing */
-#dashboard { position: absolute; right: 16px; bottom: 26px; width: 512px; max-width: calc(100% - 32px); height: auto; image-rendering: pixelated;
+#dashboard { position: absolute; right: 16px; bottom: 26px; width: clamp(300px, 38vw, 512px); max-width: calc(100% - 32px); height: auto; image-rendering: pixelated;
   filter: drop-shadow(0 0 6px #ff9a3a22); }
 body.touch #dashboard { top: 4px; bottom: auto; right: max(8px, env(safe-area-inset-right)); width: 300px; }
-@media (max-width: 900px) { #dashboard { width: 384px; } }
 body.paused #hud, body.paused #touch, body.paused #help { visibility: hidden; }
 
 /* Menu (menu.js): dark, pixel font, warm amber */
@@ -123,3 +122,4 @@ body.paused #hud, body.paused #touch, body.paused #help { visibility: hidden; }
 .m-paints { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .m-paints button { display: flex; align-items: center; gap: 8px; font-size: 12px !important; padding: 8px !important; }
 .m-paints i { width: 18px; height: 18px; flex: none; border: 2px solid #0008; }
+body.plan #hud, body.plan #help, body.plan #menu, body.plan #touch { display: none !important; }

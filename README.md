@@ -110,6 +110,21 @@ W poślizgu nic nie trzyma kąta za ciebie:
 Presety (G → Preset, później w menu Ustawienia): **Normalny** (domyślny), **Pro** (wyższe progi, tył ucieka szybciej, obrót od 55°)
 i **Łatwy** – dawna jazda z asystą (kąt trzyma się sam, bez bączków), jako opcja dostępności.
 
+**Mapa:** Osiedle Kosmonautów ułożone jak prawdziwe osiedle z wielkiej płyty. Plan ze szkicem i strefami jest w
+[`docs/mapa.md`](docs/mapa.md), a sama mapa w `src/maps/osiedle.json` (edytowalny plik danych). Układ:
+- ulica główna z latarniami po obu stronach, przystankiem i pasami przy Żappce;
+- dwie uliczki osiedlowe na północ i jedna poprzeczna (kafle skrzyżowań i łuków dobierają się same);
+- Blok 1 i 2 równolegle, między nimi podwórko (plac zabaw, trzepaki, ławki, drzewa), za Lotników długi Blok 3 i punktowiec;
+- rząd garaży na skraju z placem przed wjazdami;
+- pawilony i Żappka 24h przy głównej z parkingiem;
+- market „Supersam” z wielkim placem do driftu;
+- paczkomat przy wejściu do Bloku 1, śmietniki przy blokach, auta tylko na parkingach i przy krawężnikach.
+
+Kolizja każdego obiektu to obrys jego geometrii na wysokości karoserii (drzewo zderza się pniem, latarnia słupem).
+`?plan` w adresie pokazuje całą mapę z góry.
+
+![Plan osiedla z góry](docs/mapa.png)
+
 **Uderzenia:** przeszkody zderzają się z karoserią auta (prostokąt 4,3 × 1,7 m) i mają kolizję dokładnie taką, jak wyglądają.
 Przejazd tuż obok lampy nic nie robi, a zahaczenie jej rogiem to uderzenie. Po uderzeniu auto zatrzymuje się na przeszkodzie
 i lekko odbija, zależnie od materiału: od drzewa najsłabiej, potem beton, metal (lampy, śmietniki, płoty), zaparkowane auta,

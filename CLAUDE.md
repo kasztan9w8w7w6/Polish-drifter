@@ -43,10 +43,13 @@ src/cars.js     – applyCar (masa, moc z prędkości maks., napęd → tuning),
 src/camera.ts   – kamera „Diorama” (orto, 35° w dół, obrócona 28° od osi mapy, przyciągana do siatki pikseli) i „Za autem” (port view.gd), klawisz C
 src/car.js      – wygląd auta: model Poloneza (koła = kości, kręcą się i skręcają), przechył, reflektory; zastępcze bryły
 src/track.js    – podłoże: asfalt, ściany, słupki opon, pachołki (pozycje z mapy)
-src/maps/*.json – ręcznie ułożona mapa (lista obiektów: model, x, z, yaw, rozmiar, kolizja, materiał; latarnie, dziury, parkingi,
-                  paczkomat, sklep, punkty misji). Edytuj tu, nie w kodzie. Opis pól w `_help` w pliku.
-src/map.js      – buduje mapę z pliku: pętla ulic, modele Kenneya, latarnie, dziury (tylko wygląd), linie parkingowe, paczkomat,
-                  szyld sklepu. Kolizja modelu = obrys jego geometrii na wysokości karoserii (0,1–2,2 m): drzewo = pień.
+src/maps/*.json – mapa w pliku danych (plan i strefy: docs/mapa.md): ulice jako odcinki (roads, crossings), obiekty (model, x, z, yaw,
+                  rozmiar, kolizja, materiał), props z własnej geometrii, latarnie, dziury, parkingi, szyldy, paczkomat, sklep, punkty
+                  misji. Edytuj tu, nie w kodzie; opis pól w `_help`. scripts/build-map.py wygenerował pierwszą wersję z planu.
+src/roads.js    – kafle ulic z odcinków: prosta / łuk / T / skrzyżowanie / pasy dobierane po sąsiadach na siatce 10 m
+src/map.js      – buduje mapę z pliku: ulice, modele Kenneya, latarnie, dziury (tylko wygląd), linie parkingowe, paczkomat,
+                  ławki / trzepaki / piaskownica / huśtawka / przystanek, szyldy. Kolizja modelu = obrys jego geometrii na wysokości
+                  karoserii (0,1–2,2 m): drzewo = pień. `?plan` w adresie: cała mapa z góry (docs/mapa.png).
 src/pixelart.js – pixel-art: RenderPixelatedPass (przykład three.js webgl_postprocessing_pixel), materiały toon z N stopniami,
                   posteryzacja jasności, mgła radialna wokół auta (podmienione chunki fog_*), opcjonalne drżenie PS1
 src/survival.js – pętla przetrwania (logika bez DOM, testy w Node): bateria (rozładowanie, ładowanie driftem jak punkty),
