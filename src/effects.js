@@ -44,6 +44,7 @@ export function createSkidMarks(scene, max = 4000) {
 }
 
 // Tyre smoke: a pool of billboard sprites with a soft radial texture.
+// Smoke colour is dark: sprites are unlit and would glow at night.
 export function createSmoke(scene, max = 300) {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
@@ -57,7 +58,7 @@ export function createSmoke(scene, max = 300) {
 
   const pool = [];
   for (let i = 0; i < max; i++) {
-    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: 0xdddddd, transparent: true, depthWrite: false }));
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: 0x3a3c40, transparent: true, depthWrite: false }));
     s.visible = false;
     scene.add(s);
     pool.push({ sprite: s, life: 0, vel: new THREE.Vector3() });
@@ -86,7 +87,7 @@ export function createSmoke(scene, max = 300) {
         p.sprite.position.addScaledVector(p.vel, dt);
         const size = 1 + (1 - p.life) * 5;
         p.sprite.scale.set(size, size, 1);
-        p.sprite.material.opacity = p.life * 0.45 * p.intensity;
+        p.sprite.material.opacity = p.life * 0.35 * p.intensity;
       }
     },
   };

@@ -1,15 +1,23 @@
-# Agro Drifter 🇵🇱 (v0.2a)
+# Agro Drifter 🇵🇱 (v0.2b)
 
 Przeglądarkowa gra o driftowaniu starym polskim sedanem z napędem na tył. Docelowo: noc, osiedle,
 estetyka PS1 i ucieczka przed „promieniowaniem 5G” (opis projektu i roadmapa w [`CLAUDE.md`](CLAUDE.md)).
+
+![Drift nocą](docs/screenshot-drift.png)
+![Nocny sklep „Żappka 24h”](docs/screenshot-sklep.png)
+
+*Zrzuty z headless Chromium (renderer programowy SwiftShader); na prawdziwej karcie graficznej obraz może się nieco różnić.*
 
 Zasada projektu: **składamy gotowe klocki zamiast pisać własne**.
 
 | Warstwa | Gotowiec | Co z niego bierzemy |
 |---|---|---|
 | Render | [three.js](https://threejs.org) | scena, cienie, materiały PBR |
-| Niebo | `three/addons/objects/Sky.js` | shader nieba + oświetlenie środowiskowe (PMREM) |
-| Post-process | `three/addons/postprocessing` | bloom (`UnrealBloomPass`), tone mapping (`OutputPass`) |
+| Noc | `THREE.FogExp2`, `SpotLight`, `PointLight` | czarna mgła, reflektory, latarnie, świecący szyld |
+| Wygląd PS1 | `three/addons/postprocessing` | `RenderPixelatedPass` (niska rozdzielczość + obrysy), `UnrealBloomPass`, `OutputPass`, `ShaderPass` (15-bit kolor + dithering); drżenie wierzchołków przez `onBeforeCompile` |
+| Modele | [Kenney Starter Kit City Builder](https://github.com/KenneyNL/Starter-Kit-City-Builder) (CC0) | garaże, pawilony, sklep, drzewa (`GLTFLoader`) |
+| Dźwięk | [Howler.js](https://howlerjs.com) + dźwięki z Kenney Starter Kit Racing (CC0) | silnik, pisk opon, uderzenia |
+| Czcionka HUD | [Silkscreen](https://fonts.google.com/specimen/Silkscreen) przez `@fontsource/silkscreen` (OFL) | pikselowy licznik |
 | Fizyka | [Rapier](https://rapier.rs) (`@dimforge/rapier3d-compat`) | świat, kolizje, raycast, debug render |
 | Model jazdy i kamera | [Kenney Starter Kit Racing](https://github.com/KenneyNL/Starter-Kit-Racing) (MIT) | auto jako toczona kula + model podążający za nią, kamera z opóźnieniem (przeniesione z GDScript do TypeScript) |
 | Tuning | [lil-gui](https://lil-gui.georgealways.com) | suwaki, presety, eksport/import JSON (klawisz **G**) |
@@ -40,6 +48,8 @@ npm run build    # statyczny build do dist/
 | Panel tuningu | G | Start |
 | Podgląd kolizji (Rapier debug render) | F | — |
 
+Dźwięk startuje po pierwszym klawiszu/kliknięciu (wymóg przeglądarek). Parametr `?spawn=x,z,kąt` w adresie ustawia auto w innym miejscu.
+
 ## Jak jeździć driftem (preset „Łatwy”)
 
 1. **Wejście** (od ~30 km/h):
@@ -59,9 +69,13 @@ Presety w panelu (G):
 - **Łatwy:** domyślny, drift wchodzi też z samego ostrego skrętu.
 - **Pro:** tylko z ręcznego, większy zakres kąta od kierownicy, szybsza reakcja, większa utrata prędkości.
 
+W panelu są też foldery **Grafika (noc, PS1)** (mgła, reflektory, latarnie, bloom, rozmiar piksela, drżenie wierzchołków, dithering) i **Dźwięk**.
+
 Przycisk **Eksport ustawień (JSON)** kopiuje wszystkie parametry do schowka (i pokazuje je w okienku), a **Wczytaj JSON** wczytuje wklejone.
 
 ## Punktacja
+
+HUD w prawym dolnym rogu: prędkość, wirtualny bieg, obrotomierz i punkty. Biegi są tylko na pokaz i do dźwięku, fizyka ich nie ma.
 
 Punkty rosną z kątem poślizgu × prędkością, a mnożnik co 2 s ciągłego driftu. Po ~1,2 s bez driftu punkty trafiają do wyniku.
 Uderzenie w przeszkodę (od ~20 km/h) w trakcie driftu = punkty przepadają. Rekord zapisywany w `localStorage`.
@@ -80,6 +94,8 @@ Workflow `.github/workflows/pages.yml` publikuje build na GitHub Pages po pushu 
 
 - Bundle ma ~5 MB (1,8 MB gzip), bo `rapier3d-compat` wbudowuje WASM w JS. Do optymalizacji później (wariant bez `-compat` + ładowanie `.wasm`).
 - Kolizja auta to kula r = 1 m, więc przeszkody mają niewidoczną „skorupę” grubszą o 1 m; bokiem auto zatrzymuje się ~1 m przed ścianą.
-- Auto to na razie bryły z prymitywów.
+- Auto to na razie bryły z prymitywów (sedan z Kenney Car Kit nie został pobrany, patrz CREDITS).
+- Dźwięki są w `.ogg`: starsze Safari ich nie odtworzy.
+- Bez GPU sprawdzone tylko zrzutami (SwiftShader); płynność i jasność na prawdziwej karcie trzeba ocenić samemu.
 
 Assety i licencje: [`CREDITS.md`](CREDITS.md).

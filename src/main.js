@@ -1,10 +1,7 @@
 import * as THREE from 'three';
 import GUI from 'lil-gui';
-import { Sky } from 'three/addons/objects/Sky.js';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import '@fontsource/silkscreen/400.css';
+import '@fontsource/silkscreen/700.css';
 
 import { initPhysics, createPhysics } from './physics.js';
 import { createVehicle } from './vehicle.ts';
@@ -15,61 +12,69 @@ import { createTrack } from './track.js';
 import { createSkidMarks, createSmoke } from './effects.js';
 import { createInput } from './input.js';
 import { createDriftScorer } from './drift.js';
+import { createDistrict, lights } from './district.js';
+import { createPS1Composer, ps1ifyScene, ps1 } from './ps1.js';
+import { headlightSettings } from './car.js';
+import { createAudio, audioSettings } from './audio.js';
+import { createGearbox, RED_RPM } from './gearbox.js';
 
-// ---------- Renderer / scene ----------
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+// ---------- Renderer / scene: night on the estate ----------
+const renderer = new THREE.WebGLRenderer({ antialias: false }); // PS1: no AA, the pixel pass does the rest
+renderer.setPixelRatio(1);
 renderer.setSize(innerWidth, innerHeight);
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.5;
+renderer.toneMappingExposure = 1.0;
 document.body.appendChild(renderer.domElement);
 
+const NIGHT = 0x040406;
+const night = { visibility: 50, exposure: 1.0, ambient: 0.45, moon: 0.25, carLight: 22 };
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0xb8c4d0, 120, 400);
-const camera = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.1, 2000);
+scene.background = new THREE.Color(NIGHT);
+// Exponential fog: at `visibility` metres only ~5% of the object is left (exp(-(d·ρ)²) = 0.05 → ρ = 1.73 / d)
+scene.fog = new THREE.FogExp2(NIGHT, 1.73 / night.visibility);
+const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 400);
 
-// Sky shader from three/addons. Sun at 25° elevation with a small halo, so it doesn't glare into the chase camera.
-const sky = new Sky();
-sky.scale.setScalar(10000);
-scene.add(sky);
-const sunDir = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(65), THREE.MathUtils.degToRad(200));
-sky.material.uniforms.turbidity.value = 6;
-sky.material.uniforms.rayleigh.value = 1.5;
-sky.material.uniforms.mieCoefficient.value = 0.002; // smaller, dimmer sun halo
-sky.material.uniforms.sunPosition.value.copy(sunDir);
-const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(sky).texture;
-scene.environmentIntensity = 0.25; // the HDR sky is very bright
+const ambient = new THREE.HemisphereLight(0x2a3450, 0x0a0806, night.ambient);
+const moon = new THREE.DirectionalLight(0x8090c0, night.moon);
+moon.position.set(-40, 80, 30);
+scene.add(ambient, moon);
+// Weak light riding with the camera, so the car stays readable in the dark (like a PS1 "player light")
+const fill = new THREE.PointLight(0xb0c0ff, night.carLight, 18, 1.5);
+camera.add(fill);
+scene.add(camera);
 
-scene.add(new THREE.HemisphereLight(0xbfd4ff, 0x404030, 0.6));
-const sun = new THREE.DirectionalLight(0xffe2b8, 2);
-sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
-Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 200 });
-sun.shadow.bias = -0.0005;
-scene.add(sun, sun.target);
-
-// Post-processing: high threshold so only emissive lamps bloom, not sunlit paint
-const composer = new EffectComposer(renderer);
-composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.5, 0.4, 2.5);
-composer.addPass(bloom);
-composer.addPass(new OutputPass());
+const { composer, bloom, apply: applyPS1 } = createPS1Composer(renderer, scene, camera);
+function applyNight() {
+  scene.fog.density = 1.73 / night.visibility;
+  renderer.toneMappingExposure = night.exposure;
+  ambient.intensity = night.ambient;
+  moon.intensity = night.moon;
+  fill.intensity = night.carLight;
+}
 
 // ---------- Physics ----------
 await initPhysics();
 const physics = createPhysics();
 const track = createTrack(scene, physics);
-const car = createVehicle(physics);
+// ?spawn=x,z,yawDeg – start somewhere else (handy for screenshots and testing a spot)
+const spawnArg = new URLSearchParams(location.search).get('spawn')?.split(',').map(Number);
+const car = createVehicle(physics, spawnArg?.length === 3 ? { spawn: { x: spawnArg[0], y: 1, z: spawnArg[1] }, spawnYaw: (spawnArg[2] * Math.PI) / 180 } : {});
 const carView = createCarView(scene);
 const skids = createSkidMarks(scene);
 const smoke = createSmoke(scene);
+const district = await createDistrict(scene, physics);
+ps1ifyScene(scene);
+const audio = createAudio();
+const gearbox = createGearbox();
+// Browsers only allow sound after a user gesture
+for (const ev of ['keydown', 'pointerdown']) addEventListener(ev, () => audio.start(), { once: true });
 
 // ---------- HUD / scoring ----------
 const $ = (id) => document.getElementById(id);
-const hud = { telemetry: $('telemetry'), speed: $('speed'), drift: $('drift'), points: $('drift-points'), combo: $('drift-combo'), score: $('score'), best: $('best') };
+const hud = { telemetry: $('telemetry'), speed: $('speed'), gear: $('gear'), tach: $('tach'), rpm: $('rpm'), drift: $('drift'), points: $('drift-points'), combo: $('drift-combo'), score: $('score'), best: $('best') };
+const TACH_SEGMENTS = 20;
+hud.tach.innerHTML = '<i></i>'.repeat(TACH_SEGMENTS);
+const tachCells = [...hud.tach.children];
 let hudFlashTimer = 0;
 const scorer = createDriftScorer((event, s) => {
   hud.score.textContent = s.total.toLocaleString('pl-PL');
@@ -119,8 +124,29 @@ for (const [title, keys] of Object.entries(groups)) {
     if (title === 'Kula (Kenney)') c.onChange(() => car.applyParams());
   }
 }
-const debugFolder = gui.addFolder('Grafika').close();
-debugFolder.add(bloom, 'strength', 0, 2, 0.01).name('bloom');
+const gfx = gui.addFolder('Grafika (noc, PS1)').close();
+gfx.add(night, 'visibility', 20, 150, 1).name('widoczność mgły (m)').onChange(applyNight);
+gfx.add(night, 'exposure', 0.3, 3, 0.05).name('ekspozycja').onChange(applyNight);
+gfx.add(night, 'ambient', 0, 2, 0.01).name('światło otoczenia').onChange(applyNight);
+gfx.add(night, 'moon', 0, 2, 0.01).name('księżyc').onChange(applyNight);
+gfx.add(night, 'carLight', 0, 30, 0.5).name('światło przy aucie').onChange(applyNight);
+gfx.add(headlightSettings, 'intensity', 0, 400, 1).name('reflektory').onChange(() => carView.applyHeadlights());
+gfx.add(headlightSettings, 'range', 10, 120, 1).name('zasięg reflektorów').onChange(() => carView.applyHeadlights());
+gfx.add(lights, 'lamp', 0, 300, 1).name('latarnie').onChange(() => district.applyLights());
+gfx.add(lights, 'lampRange', 5, 60, 1).name('zasięg latarni').onChange(() => district.applyLights());
+gfx.add(lights, 'sign', 0.2, 3, 0.05).name('jasność szyldu').onChange(() => district.applyLights());
+gfx.add(bloom, 'strength', 0, 2, 0.01).name('bloom');
+gfx.add(bloom, 'threshold', 0, 1.5, 0.01).name('próg bloomu');
+gfx.add(ps1, 'pixelSize', 1, 8, 1).name('rozmiar piksela').onChange(applyPS1);
+gfx.add(ps1, 'snap', 0, 480, 10).name('drżenie wierzchołków (0 = off)').onChange(applyPS1);
+gfx.add(ps1, 'dither', 0, 2, 0.05).name('dithering').onChange(applyPS1);
+gfx.add(ps1, 'colorBits', 3, 8, 1).name('bity koloru').onChange(applyPS1);
+gfx.add(ps1, 'edges', 0, 1, 0.05).name('obrysy krawędzi').onChange(applyPS1);
+const snd = gui.addFolder('Dźwięk').close();
+snd.add(audioSettings, 'volume', 0, 1, 0.01).name('głośność');
+snd.add(audioSettings, 'engine', 0, 2, 0.01).name('silnik');
+snd.add(audioSettings, 'skid', 0, 2, 0.01).name('pisk opon');
+snd.add(audioSettings, 'impact', 0, 2, 0.01).name('uderzenia');
 gui.hide();
 
 function exportTuning() {
@@ -208,8 +234,17 @@ function tick(time) {
   const v = state.velocity;
   if (state.impact > CRASH_FORCE) scorer.crash();
   rig.hit(state.impact);
+  audio.hit(state.impact);
   scorer.update(dt, fwd, v, state.grounded);
-  hud.speed.innerHTML = `${Math.round(state.speed * 3.6)} <small>km/h</small>`;
+
+  // Dashboard: speed, virtual gear, rev counter
+  const { gear, rpm } = gearbox.update(dt, state, controls.throttle);
+  audio.update(dt, state, rpm, controls.throttle);
+  hud.speed.textContent = Math.round(state.speed * 3.6);
+  hud.gear.textContent = gear < 0 ? 'R' : gear;
+  hud.rpm.textContent = Math.round(rpm / 100) * 100;
+  const lit = Math.round((rpm / RED_RPM) * TACH_SEGMENTS);
+  tachCells.forEach((c, i) => (c.className = i < lit ? (i >= TACH_SEGMENTS - 3 ? 'on red' : 'on') : ''));
   hud.telemetry.textContent = `kąt ${Math.round(Math.abs(state.slipAngle))}° · ${panel.preset}${input.gamepadConnected ? ' · pad' : ''}`;
   if (hudFlashTimer > 0 && (hudFlashTimer -= dt) <= 0) {
     hud.points.textContent = '';
@@ -228,10 +263,6 @@ function tick(time) {
 
   rig.update(dt, state);
 
-  // Keep the shadow frustum around the car
-  sun.position.copy(state.position).addScaledVector(sunDir, 80);
-  sun.target.position.copy(state.position);
-
   composer.render();
   requestAnimationFrame(tick);
 }
@@ -241,6 +272,7 @@ addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
   composer.setSize(innerWidth, innerHeight);
+  applyPS1();
 });
 
 camera.position.set(-10, 5, 0);

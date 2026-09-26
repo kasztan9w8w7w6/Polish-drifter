@@ -24,9 +24,9 @@ gracz ucieka przed „promieniowaniem 5G”.
 |---|---|---|
 | v0.1 | jazda | zrobione |
 | v0.1.5 | Rapier + model opon (RaycastVehicle) | zastąpione przez v0.2a |
-| v0.2a | fizyka arcade: kula Kenneya + drift na wierzchu, nowa kamera | **zrobione** |
-| v0.2b | noc + PS1 + assety + dźwięk | następne |
-| v0.3 | bateria + sklep + misja | |
+| v0.2a | fizyka arcade: kula Kenneya + drift na wierzchu, nowa kamera | zrobione |
+| v0.2b | noc + PS1 + assety + dźwięk + HUD | **zrobione** (bez City Kit/Car Kit – kenney.nl niedostępny) |
+| v0.3 | bateria + sklep + misja | następne |
 | v0.4 | MVP | |
 
 ## Zasady pracy
@@ -49,10 +49,15 @@ src/tuning.ts   – wszystkie parametry jazdy i kamery + presety „Łatwy” (d
 src/camera.ts   – kamera pościgowa (port view.gd + wyprzedzanie, FOV, drżenie)
 src/car.js      – wyłącznie wygląd auta (bryły) z wizualnym przechyłem, synchronizowany ze state
 src/track.js    – plac manewrowy; przeszkody statyczne mają kolizję grubszą o promień kuli (PAD)
+src/district.js – osiedle wokół placu: garaże, pawilony, sklep „Żappka 24h”, latarnie (GLB Kenneya, CC0)
+src/ps1.js      – wygląd PS1: RenderPixelatedPass + bloom + 15-bit dithering, snapping wierzchołków, NearestFilter
+src/audio.js    – Howler.js: silnik (pitch z obrotów), pisk opon (z kąta), uderzenia
+src/gearbox.js  – wirtualne biegi/obroty dla HUD i dźwięku (fizyka nie ma biegów)
 src/input.js    – klawiatura (płynna rampa) + pad (Gamepad API, standard mapping)
 src/drift.js    – punktacja driftu
 src/effects.js  – dym i ślady opon
-src/main.js     – scena, HUD, lil-gui (G), debug kolizji (F), pętla
+src/main.js     – scena nocna (FogExp2), HUD, lil-gui (G), debug kolizji (F), pętla
+public/assets/  – assety (Kenney CC0); każdy wpisany w CREDITS.md
 test/           – testy scenariuszy jazdy (`npm test`, node:test, bez przeglądarki; Node ≥ 22.18 czyta .ts)
 ```
 

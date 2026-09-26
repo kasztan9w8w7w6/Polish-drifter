@@ -2,6 +2,7 @@ import * as THREE from 'three';
 
 // Visual side of the car only. Physics lives in vehicle.js; this module just mirrors its state.
 const WHEEL_RADIUS = 0.3;
+export const headlightSettings = { intensity: 70, range: 50 };
 
 export function createCarView(scene, wheelCount = 4) {
   const chassisMesh = buildChassisMesh();
@@ -23,7 +24,22 @@ export function createCarView(scene, wheelCount = 4) {
     });
   }
 
-  return { chassisMesh, wheelMeshes, sync };
+  // Headlights: two spot lights on the bonnet, aimed a bit down the road
+  const headlights = [0.6, -0.6].map((z) => {
+    const l = new THREE.SpotLight(0xfff1d0, headlightSettings.intensity, headlightSettings.range, 0.38, 0.5, 1.2);
+    l.position.set(2.1, 0.15, z);
+    l.target.position.set(20, -0.9, z * 3);
+    chassisMesh.add(l, l.target);
+    return l;
+  });
+  function applyHeadlights() {
+    for (const l of headlights) {
+      l.intensity = headlightSettings.intensity;
+      l.distance = headlightSettings.range;
+    }
+  }
+
+  return { chassisMesh, wheelMeshes, sync, applyHeadlights };
 }
 
 // Boxy 80s Polish sedan silhouette built from primitives (placeholder for a GLTF model).

@@ -6,7 +6,9 @@ Wszystkie zewnętrzne elementy gry: biblioteki, assety, dźwięki, fonty. Każdy
 
 | Paczka | Do czego | Licencja |
 |---|---|---|
-| [three](https://threejs.org) (+ `three/addons`: Sky, EffectComposer, UnrealBloomPass, OutputPass) | renderowanie, niebo, post-process | MIT |
+| [three](https://threejs.org) (+ `three/addons`: GLTFLoader, EffectComposer, RenderPixelatedPass, UnrealBloomPass, ShaderPass, OutputPass) | renderowanie, modele, post-process PS1 | MIT |
+| [howler](https://howlerjs.com) | dźwięk | MIT |
+| [@fontsource/silkscreen](https://fontsource.org/fonts/silkscreen) (font Silkscreen, Jason Kottke) | pikselowa czcionka HUD | OFL-1.1 |
 | [@dimforge/rapier3d-compat](https://rapier.rs) | fizyka, kolizje, raycast, debug render | Apache-2.0 |
 | [lil-gui](https://lil-gui.georgealways.com) | panel tuningu | MIT |
 | [Vite](https://vite.dev) | dev server i build | MIT |
@@ -20,7 +22,25 @@ Wszystkie zewnętrzne elementy gry: biblioteki, assety, dźwięki, fonty. Każdy
 
 ## Assety
 
-Na razie brak zewnętrznych assetów. Auto, tor, bloki, tekstury asfaltu i okien, dym są generowane w kodzie.
+Pliki w `public/assets/kenney/`, licencja kitów: `public/assets/kenney/LICENSE-starter-kits.txt`.
+
+| Plik(i) | Źródło | Autor | Licencja |
+|---|---|---|---|
+| `racing/audio/engine.ogg`, `impact.ogg` | [Starter Kit Racing](https://github.com/KenneyNL/Starter-Kit-Racing) `audio/` | Kenney | CC0 |
+| `racing/audio/skid.ogg` | jw. | [Landeplage](https://github.com/Landeplage) | CC0 |
+| `city/building-garage.glb`, `building-small-a…d.glb`, `grass-trees*.glb`, `Textures/colormap.png` | [Starter Kit City Builder](https://github.com/KenneyNL/Starter-Kit-City-Builder) `models/` | Kenney | CC0 |
+
+Generowane w kodzie: auto (bryły), asfalt, bloki (tekstura okien), latarnie, szyld „Żappka 24h” (fikcyjna nazwa), dym.
+
+### Do pobrania ręcznie (kenney.nl był niedostępny z sesji)
+
+Rozpakuj do podanych folderów, a potem dopisz pliki do tabeli powyżej:
+
+- [City Kit (Roads)](https://kenney.nl/assets/city-kit-roads) → `public/assets/kenney/city-roads/`
+- [City Kit (Suburban)](https://kenney.nl/assets/city-kit-suburban) → `public/assets/kenney/city-suburban/`
+- [City Kit (Commercial)](https://kenney.nl/assets/city-kit-commercial) → `public/assets/kenney/city-commercial/`
+- [Car Kit](https://kenney.nl/assets/car-kit) (sedan) → `public/assets/kenney/car-kit/`
+- [Kenney Fonts](https://kenney.nl/assets/kenney-fonts) (CC0, zamiennik Silkscreen) → `public/assets/kenney/fonts/`
 
 ## Inspiracje i techniki (bez kopiowania kodu)
 
