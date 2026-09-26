@@ -62,8 +62,9 @@ Dźwięk startuje po pierwszym klawiszu/kliknięciu (wymóg przeglądarek). Para
 2. Trzymaj **gaz**: podtrzymuje drift; drift traci mało prędkości.
 3. Kąt zmienia się płynnie, bez skoków:
    - im dłużej trzymasz skręt w stronę zakrętu, tym głębszy kąt (do ~42°);
-   - kierownica prosto = ~20–25°;
-   - lekka kontra zmniejsza kąt stopniowo.
+   - lekki skręt w zakręt trzyma drift (~20°);
+   - puszczony skręt = auto samo się delikatnie prostuje w ~2 s, jak wracająca kierownica;
+   - lekka kontra zmniejsza kąt szybciej.
 
    Na klawiaturze skręt narasta przez ~0,4 s. Pad działa proporcjonalnie do wychylenia gałki. Kąt ma twardy limit, bączka nie da się zrobić.
 4. **Przekładka:** mocna, przytrzymana kontra przeprowadza auto płynnie przez zero na drugą stronę.

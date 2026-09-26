@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { loadGltf } from './gltf.js';
 
 // Visual side of the car only. Physics lives in vehicle.ts; this module just mirrors its state.
 // Model: "1993 FSO Polonez MR93 (LP)" by KrStolorz (Sketchfab, see CREDITS.md), converted by
@@ -22,7 +22,7 @@ export async function createCarView(scene) {
   let wheels = []; // { bone, rest, up, axle, front } for the model, or meshes for the fallback
   let fallbackWheels = null;
   try {
-    const gltf = await new GLTFLoader().loadAsync(MODEL_URL);
+    const gltf = await loadGltf(MODEL_URL);
     wheels = fitPolonez(gltf.scene, body);
     if (new URLSearchParams(location.search).has('debugcar')) {
       root.updateMatrixWorld(true);

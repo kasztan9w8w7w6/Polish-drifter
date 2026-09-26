@@ -73,7 +73,7 @@ test('drift: rozkład kątów – pośrednie kąty, nie tylko skrajne (klawiatur
 test('drift: im dłużej trzymam skręt, tym głębszy kąt; lekka kontra zmniejsza go stopniowo', async (t) => {
   const sim = await simAt(60);
   const t0 = sim.time;
-  sim.run(1.6, keyboard((time) => (time - t0 < 0.6 ? { left: 1, hb: 1, gas: 1 } : { gas: 0.7 })));
+  sim.run(1.6, (s, time) => (time - t0 < 0.6 ? { steer: 1, handbrake: 1, throttle: 1 } : { throttle: 0.7, steer: 0.2 }));
   const a0 = Math.abs(sim.car.state.slipAngle);
   const t1 = sim.time;
   const into = [];
@@ -82,7 +82,7 @@ test('drift: im dłużej trzymam skręt, tym głębszy kąt; lekka kontra zmniej
   const t2 = sim.time;
   const counter = [];
   sim.run(1.2, (s) => ({ throttle: 1, steer: -0.35 }), (x) => counter.push([x.t - t2, Math.abs(x.slip)]));
-  t.diagnostic(`neutralnie ${fmt(a0)}° → trzymam skręt: po 0,2 s ${fmt(at(into, 0.2))}°, 0,5 s ${fmt(at(into, 0.5))}°, 1,0 s ${fmt(at(into, 1.0))}°`);
+  t.diagnostic(`lekki skręt ${fmt(a0)}° → trzymam skręt: po 0,2 s ${fmt(at(into, 0.2))}°, 0,5 s ${fmt(at(into, 0.5))}°, 1,0 s ${fmt(at(into, 1.0))}°`);
   t.diagnostic(`lekka kontra (−0,35): po 0,2 s ${fmt(at(counter, 0.2))}°, 0,5 s ${fmt(at(counter, 0.5))}°, 1,0 s ${fmt(at(counter, 1.0))}°`);
   assert.ok(at(into, 0.2) < at(into, 0.5) && at(into, 0.5) < at(into, 1.0), 'kąt rośnie z czasem trzymania');
   assert.ok(at(into, 0.2) < 38, 'nie skacze od razu do limitu');
@@ -92,14 +92,14 @@ test('drift: im dłużej trzymam skręt, tym głębszy kąt; lekka kontra zmniej
 
 test('pad (analog): kąt driftu rośnie proporcjonalnie ze skrętem', async (t) => {
   const angles = [];
-  for (const steer of [-0.6, -0.3, 0, 0.3, 0.6]) {
+  for (const steer of [0.1, 0.25, 0.4, 0.55, 0.7]) {
     const sim = await simAt(60);
     const t0 = sim.time;
     sim.run(3.5, (s, time) => (time - t0 < 0.6 ? { steer: 1, handbrake: 1, throttle: 1 } : { throttle: 0.8, steer }));
     angles.push(Math.abs(sim.car.state.slipAngle));
   }
   const d = angles.slice(1).map((a, i) => a - angles[i]);
-  t.diagnostic(`skręt −0,6 / −0,3 / 0 / 0,3 / 0,6 → ${angles.map((a) => fmt(a)).join('° / ')}°`);
+  t.diagnostic(`skręt 0,1 / 0,25 / 0,4 / 0,55 / 0,7 → ${angles.map((a) => fmt(a)).join('° / ')}°`);
   assert.ok(d.every((x) => x > 2.5), 'każdy krok skrętu zmienia kąt');
   assert.ok(Math.max(...d) / Math.min(...d) < 3, 'mniej więcej liniowo');
 });
@@ -223,4 +223,30 @@ test('zaklinowanie (kula w wąskiej szparze / na krawędzi): wypchnięcie po ~1 
   sim.run(0.2, {});
   const r = sim.car.body.translation();
   assert.ok(Math.hypot(r.x, r.z) < 0.5, 'R wraca na start');
+});
+
+test('puszczenie skrętu w drifcie: auto delikatnie się prostuje (jak wracająca kierownica)', async (t) => {
+  const sim = await simAt(60);
+  const t0 = sim.time;
+  // Drift held with the key, then the steering key is released; gas stays on
+  sim.run(2, keyboard((time) => (time - t0 < 0.6 ? { left: 1, hb: 1, gas: 1 } : { left: time - t0 < 1.3, gas: 1 })));
+  const a0 = Math.abs(sim.car.state.slipAngle);
+  const t1 = sim.time;
+  const pts = [];
+  let maxRate = 0, prev = a0, ended = null;
+  sim.run(5, keyboard(() => ({ gas: 1 })), (x) => {
+    const a = Math.abs(x.slip);
+    maxRate = Math.max(maxRate, Math.abs(a - prev) * 60);
+    prev = a;
+    pts.push([x.t - t1, a]);
+    if (ended === null && !x.drifting) ended = x.t - t1;
+  });
+  const at = (s) => pts.find(([tt]) => tt >= s)[1];
+  const below5 = pts.find(([, a]) => a < 5)?.[0];
+  t.diagnostic(`puszczony skręt przy ${fmt(a0)}°: po 0,5 s ${fmt(at(0.5))}°, 1 s ${fmt(at(1))}°, 2 s ${fmt(at(2))}°; < 5° po ${below5 === undefined ? '—' : fmt(below5, 2) + ' s'}, koniec driftu po ${ended === null ? '—' : fmt(ended, 2) + ' s'}, najszybsza zmiana ${fmt(maxRate, 0)}°/s`);
+  assert.ok(a0 > 20, 'był drift');
+  assert.ok(at(0.5) < a0 && at(1) < at(0.5) && at(2) < at(1), 'kąt stale maleje');
+  assert.ok(below5 !== undefined && below5 > 1 && below5 < 4, 'delikatnie, ale do końca');
+  assert.ok(ended !== null, 'drift się kończy');
+  assert.ok(maxRate < 45, 'bez szarpnięcia');
 });

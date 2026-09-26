@@ -80,6 +80,7 @@ export function createVehicle(
   let driftSide = 0; // +1 left drift, −1 right drift
   let driftBlend = 0;
   let sharpTimer = 0;
+  let hold = 1; // 0..1 how much of the base drift angle is still held (see self-aligning below)
   let noThrottleTimer = 0;
   let grounded = false;
   let impact = 0;
@@ -167,11 +168,19 @@ export function createVehicle(
     //   side·(base + throttle + handbrake)·speedScale + steer·driftAngleSteer·speedScale
     // Steering into the slide deepens it, counter-steer reduces it gradually. Counter-steer beyond
     // `transitionSteer` blends the target over to the other side and the angle sweeps through zero.
+    // Self-aligning: the "base" part of the angle only holds while the player steers into the slide (or pulls the
+    // handbrake). Let go of the steering and it fades out gently (`selfAlign`), like a steering wheel returning
+    // to centre on its own – the car straightens and the drift ends.
+    const intoNow = steer * driftSide;
+    // How much is held follows the steering continuously: full from 0.6 into the slide, nothing at centre
+    const holdTarget = inp.handbrake > 0.5 ? 1 : MathUtils.clamp(intoNow / 0.6, 0, 1);
+    if (!drifting) hold = 1;
+    else hold = approach(hold, holdTarget, holdTarget > hold ? 4 : t.selfAlign, h);
     let target = 0;
     if (drifting) {
       const speedScale = MathUtils.lerp(t.driftAngleLowSpeed, 1, MathUtils.clamp((speed - t.driftMinSpeed) / t.driftMinSpeed, 0, 1));
       const sideTarget = (side: number) =>
-        MathUtils.clamp(side * (t.driftAngleBase + throttle * t.driftAngleThrottle + inp.handbrake * t.driftAngleHandbrake) + steer * t.driftAngleSteer, -t.driftAngleMax, t.driftAngleMax) *
+        MathUtils.clamp(side * (t.driftAngleBase + throttle * t.driftAngleThrottle + inp.handbrake * t.driftAngleHandbrake) * (side === driftSide ? hold : 1) + steer * t.driftAngleSteer, -t.driftAngleMax, t.driftAngleMax) *
         speedScale;
       const same = driftSide * Math.max(0, driftSide * sideTarget(driftSide)); // never past zero on its own
       const counter = -steer * driftSide;
@@ -181,7 +190,11 @@ export function createVehicle(
     const prevAngle = angle;
     angle = approach(angle, target, drifting ? t.driftAngleRate : t.straightenRate, h);
     angle = MathUtils.clamp(angle, -t.driftAngleMax * DEG, t.driftAngleMax * DEG);
-    if (drifting && Math.sign(angle) === -driftSide && Math.sign(prevAngle) !== -driftSide) driftSide = -driftSide; // crossed zero
+    if (drifting && Math.sign(angle) === -driftSide && Math.sign(prevAngle) !== -driftSide) {
+      driftSide = -driftSide; // crossed zero: now sliding the other way
+      hold = 1;
+    }
+    if (drifting && hold < 0.15 && Math.abs(angle) < 3 * DEG) drifting = false; // straightened out
     // --- Line of travel (Kenney: steering_grip = clamp(speed), target_angular = -input.x * 4, lerp delta*4) ---
     const dir = Math.abs(forwardSpeed) > 0.5 ? Math.sign(forwardSpeed) : throttle >= inp.brake ? 1 : -1;
     const speedFactor = MathUtils.clamp(Math.abs(forwardSpeed) / t.steerFullSpeed, 0, 1);
@@ -356,6 +369,7 @@ export function createVehicle(
     angle = turnRate = engine = driftBlend = sharpTimer = noThrottleTimer = accel = prevForwardSpeed = stuckTimer = 0;
     drifting = false;
     driftSide = 0;
+    hold = 1;
     visY = body.translation().y;
     modelQ.setFromAxisAngle(Y, yaw);
     state.bodyRoll = state.bodyPitch = state.steerAngle = 0;

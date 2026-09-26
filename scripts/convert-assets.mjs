@@ -6,7 +6,8 @@
 //   fictional one (assets-src/plate-agro.png), unused data pruned.
 // - Kenney kits (the .zip files as downloaded from kenney.nl, CC0) → public/assets/kenney/<kit>/<model>.gltf
 //   + Textures/colormap.png. Only the models listed below are extracted.
-// Output is .gltf with the buffers embedded as base64 (the artifact host doesn't serve .glb/.bin).
+// Output is .gltf with the geometry buffer embedded as base64 (the artifact host doesn't serve .glb/.bin) and
+// textures as .png files; src/gltf.js turns the buffer back into a GLB in memory.
 // Needs the `unzip` command.
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -73,7 +74,14 @@ for (const mat of root.listMaterials()) {
 await doc.transform(prune());
 const { json, resources } = await io.writeJSON(doc, { format: 0 });
 for (const b of json.buffers ?? []) b.uri = b64(resources[b.uri], 'application/octet-stream');
-for (const img of json.images ?? []) if (img.uri) img.uri = b64(resources[img.uri], img.mimeType ?? 'image/png');
+mkdirSync(`${OUT}/models/polonez/textures`, { recursive: true });
+// Textures as separate files (the game can't fetch data: URIs inside the artifact page)
+(json.images ?? []).forEach((img, i) => {
+  if (!img.uri) return;
+  const name = `textures/image-${i}.png`;
+  writeFileSync(`${OUT}/models/polonez/${name}`, resources[img.uri]);
+  img.uri = name;
+});
 json.asset.extras = { ...json.asset.extras, modified: 'FSO logo removed, registration plate replaced with a fictional one (Agro Drifter)' };
 mkdirSync(`${OUT}/models/polonez`, { recursive: true });
 writeFileSync(`${OUT}/models/polonez/polonez.gltf`, JSON.stringify(json));

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { loadGltf } from './gltf.js';
 import { BALL_RADIUS } from './vehicle.ts';
 
 // The housing estate around and inside the lot, built from Kenney kits (CC0, see CREDITS.md):
@@ -17,10 +17,9 @@ const TILE = 10; // m per road tile
 export const lights = { lamp: 22, lampRange: 30, sign: 1.4 };
 
 export async function createDistrict(scene, physics) {
-  const loader = new GLTFLoader();
   const cache = new Map();
   const load = (path) => {
-    if (!cache.has(path)) cache.set(path, loader.loadAsync(`${KENNEY}${path}.gltf`).then((g) => g.scene).catch((e) => (console.warn('missing model', path, e), null)));
+    if (!cache.has(path)) cache.set(path, loadGltf(`${KENNEY}${path}.gltf`).then((g) => g.scene).catch((e) => (console.warn('missing model', path, e), null)));
     return cache.get(path);
   };
   const occluders = []; // objects that go see-through when they hide the car

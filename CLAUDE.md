@@ -83,12 +83,16 @@ Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości n
   - kąt docelowy to funkcja ciągła: `strona·(driftAngleBase + gaz·driftAngleThrottle + ręczny·driftAngleHandbrake) + skręt·driftAngleSteer`,
     razy skala prędkości (`driftAngleLowSpeed`), z twardym limitem `driftAngleMax` (bez bączków);
     kąt dochodzi do celu z `driftAngleRate` (trzymanie skrętu dłużej = głębszy kąt);
+  - samoczynne prostowanie: część „base + gaz + ręczny” działa tylko przy skręcie w stronę poślizgu (pełna od 0,6);
+    po puszczeniu skrętu wygasa z `selfAlign` (jak wracająca kierownica), auto się prostuje i drift się kończy;
   - kontra powyżej `transitionSteer` przesuwa cel na drugą stronę, kąt przechodzi płynnie przez zero;
   - tor zakręca z `driftTurnRate` proporcjonalnie do kąta;
   - wyjście: brak gazu dłużej niż `driftExitDelay`; auto prostuje się z `straightenRate`.
 - **Kontakt:** kula ma restitution 0; prędkość „od podłoża” jest tłumiona (`landingDamping`), model podąża za wysokością
   kuli z opóźnieniem (`suspension`). Pedał wciśnięty bez ruchu przez `unstuckTime` → wypchnięcie w najbliższe wolne miejsce.
 - **Klawiatura:** skręt narasta 0→1 w 0,4 s (`KEY_RAMP` w input.js), pad działa wprost proporcjonalnie.
+- **Modele:** `.gltf` z buforem w base64 wczytuje `src/gltf.js` (sam składa GLB w pamięci), bo CSP strony artefaktu
+  blokuje fetch adresów `data:`; tekstury są osobnymi plikami `.png`.
 - **Kamera** patrzy wzdłuż wektora prędkości, nie maski. Diorama: środek kadru = auto + wyprzedzenie (bez opóźnienia przy
   stałej prędkości), zoom w skokach (każda zmiana skali przesuwa siatkę pikseli).
 - **Światło nocą:** ciemność robi mgła (czarno dalej niż `visibility` od auta), światła mają `decay` 1 (szerokie plamy).

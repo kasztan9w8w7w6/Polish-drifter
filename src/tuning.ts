@@ -35,6 +35,7 @@ const base = {
   driftAngleSteer: 26, // degrees per full steering lock (into the turn: deeper, counter-steer: shallower)
   driftAngleThrottle: 8, // + at full throttle
   driftAngleHandbrake: 8, // + while the handbrake is held
+  selfAlign: 0.9, // 1/s – with the steering released the drift angle fades out this fast (wheel returning to centre)
   driftAngleLowSpeed: 0.6, // angle multiplier at driftMinSpeed (reaches 1 at twice that speed)
   driftAngleMax: 42, // hard limit on the angle – no spin-outs possible
   driftAngleRate: 2, // 1/s how fast the angle follows its target (lower = hold steering longer for a deeper angle)

@@ -58,12 +58,12 @@ test('zakręt z ręcznym przy ~60 km/h: kąt 20–45°, bez pełnego obrotu w 3 
   assert.ok(Math.abs(yaw.total) < 360, 'mniej niż pełny obrót');
 });
 
-test('drift da się utrzymać gazem i lekką kontrą przez min. 3 s', async (t) => {
+test('drift da się utrzymać gazem i lekkim skrętem w zakręt przez min. 3 s', async (t) => {
   const sim = await simAt(60);
   const t0 = sim.time;
   let driftTime = 0, best = 0, minSpeed = Infinity;
   const slips = [];
-  sim.run(6, (s, time) => (time - t0 < 0.6 ? { steer: 1, handbrake: 1, throttle: 0.5 } : { throttle: 1, steer: -0.2 }), (x) => {
+  sim.run(6, (s, time) => (time - t0 < 0.6 ? { steer: 1, handbrake: 1, throttle: 0.5 } : { throttle: 1, steer: 0.25 }), (x) => {
     if (x.t - t0 < 0.6) return;
     if (Math.abs(x.slip) > 15) {
       driftTime += 1 / 60;
@@ -86,12 +86,12 @@ test('kontra zmniejsza kąt, skręt w zakręt i gaz go zwiększają', async (t) 
     return Math.abs(sim.car.state.slipAngle);
   };
   const counter = await angleWith({ throttle: 0.6, steer: -0.6 });
-  const neutral = await angleWith({ throttle: 0.6, steer: 0 });
+  const light = await angleWith({ throttle: 0.6, steer: 0.3 });
   const into = await angleWith({ throttle: 0.6, steer: 1 });
-  const lessGas = await angleWith({ throttle: 0.3, steer: 0 });
-  t.diagnostic(`kąt po 3 s: kontra ${fmt(counter)}°, kierownica prosto ${fmt(neutral)}°, w zakręt ${fmt(into)}°; mniej gazu ${fmt(lessGas)}°`);
-  assert.ok(counter < neutral && neutral < into, 'kierownica reguluje kąt');
-  assert.ok(lessGas < neutral, 'gaz reguluje kąt');
+  const lessGas = await angleWith({ throttle: 0.2, steer: 0.3 });
+  t.diagnostic(`kąt po 3 s: kontra ${fmt(counter)}°, lekki skręt w zakręt ${fmt(light)}°, pełny skręt ${fmt(into)}°; lekki skręt z mniejszym gazem ${fmt(lessGas)}°`);
+  assert.ok(counter < light && light < into, 'kierownica reguluje kąt');
+  assert.ok(lessGas < light, 'gaz reguluje kąt');
   assert.ok(into <= 46, 'nie przekracza limitu');
 });
 
