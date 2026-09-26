@@ -8,7 +8,8 @@ import { BALL_RADIUS } from './vehicle.ts';
 const BASE = `${import.meta.env.BASE_URL}assets/kenney/city/`;
 const PAD = BALL_RADIUS;
 
-export const lights = { lamp: 60, lampRange: 28, sign: 1.4 };
+// Lamps use decay 1 (not the physical 2): wide pools of light instead of bright dots
+export const lights = { lamp: 22, lampRange: 30, sign: 1.4 };
 
 export async function createDistrict(scene, physics) {
   const loader = new GLTFLoader();
@@ -17,6 +18,7 @@ export async function createDistrict(scene, physics) {
   const models = Object.fromEntries(await Promise.all(names.map(async (n) => [n, await load(n).catch(() => null)])));
 
   // Place a model scaled to a footprint (sx × sz) and height sy, standing on the ground, rotated by yaw.
+  const occluders = []; // objects that go see-through when they hide the car
   const box = new THREE.Box3();
   const size = new THREE.Vector3();
   function place(name, x, z, sx, sy, sz, yaw = 0, collide = true) {
@@ -30,6 +32,7 @@ export async function createDistrict(scene, physics) {
     m.position.set(x, -box.min.y, z);
     m.rotation.y = yaw;
     scene.add(m);
+    if (collide) occluders.push(m);
     return m;
   }
 
@@ -66,14 +69,16 @@ export async function createDistrict(scene, physics) {
     arm.position.set(x + 0.6, 6.9, z);
     const bulb = new THREE.Mesh(bulbGeo, bulbMat);
     bulb.position.set(x + 1.1, 6.78, z);
-    const spot = new THREE.SpotLight(0xff9a3c, lights.lamp, lights.lampRange, 1.0, 0.6, 1.6);
+    const spot = new THREE.SpotLight(0xffa04a, lights.lamp, lights.lampRange, 1.1, 0.7, 1);
     spot.position.set(x + 1.1, 6.7, z);
     spot.target.position.set(x + 1.6, 0, z);
     scene.add(post, arm, bulb, spot, spot.target);
+    occluders.push(post, arm);
     spots.push(spot);
   }
 
   return {
+    occluders,
     applyLights() {
       for (const s of spots) {
         s.intensity = lights.lamp;

@@ -5,7 +5,7 @@
 ## O grze
 
 **Agro Drifter** to mroczna, groteskowa gra fabularna o jeździe starym polskim autem
-(Polonez-podobne, napęd na tył) nocą po osiedlu. Estetyka PS1 / polish doomer, satyra:
+(Polonez, napęd na tył) nocą po osiedlu. Estetyka: czysty pixel-art 3D jak diorama (kamera 3/4), polish doomer, satyra:
 gracz ucieka przed „promieniowaniem 5G”.
 
 - **Jazda:** arcade. Drift ma być łatwy, płynny i widowiskowy, a auto nie dachuje.
@@ -27,6 +27,7 @@ gracz ucieka przed „promieniowaniem 5G”.
 | v0.2a | fizyka arcade: kula Kenneya + drift na wierzchu, nowa kamera | zrobione |
 | v0.2b | noc + PS1 + assety + dźwięk + HUD | zrobione |
 | v0.2c | poprawki jazdy: płynny kąt, power oversteer w Pro, bez odbić, bez utykania | zrobione |
+| v0.2d | kamera Diorama + pixel-art (toon, obrysy, mgła radialna) | zrobione |
 | v0.3 | bateria + sklep + misja | następne |
 | v0.4 | MVP | |
 
@@ -47,17 +48,19 @@ src/vehicle.ts  – auto arcade (port Kenney Starter Kit Racing, vehicle.gd): to
                   Wyjście: vehicle.state { position, quaternion, velocity, speed, slipAngle, driftAngle, drifting,
                   bodyRoll, bodyPitch, wheels[] }
 src/tuning.ts   – wszystkie parametry jazdy i kamery + presety „Łatwy” (domyślny), „Pro”
-src/camera.ts   – kamera pościgowa (port view.gd + wyprzedzanie, FOV, drżenie)
+src/camera.ts   – kamera „Diorama” (orto 3/4, przyciągana do siatki pikseli) i „Za autem” (port view.gd), klawisz C
 src/car.js      – wyłącznie wygląd auta (bryły) z wizualnym przechyłem, synchronizowany ze state
 src/track.js    – plac manewrowy; przeszkody statyczne mają kolizję grubszą o promień kuli (PAD)
 src/district.js – osiedle wokół placu: garaże, pawilony, sklep „Żappka 24h”, latarnie (GLB Kenneya, CC0)
-src/ps1.js      – wygląd PS1: RenderPixelatedPass + bloom + 15-bit dithering, snapping wierzchołków, NearestFilter
+src/pixelart.js – pixel-art: RenderPixelatedPass (przykład three.js webgl_postprocessing_pixel), materiały toon z N stopniami,
+                  posteryzacja jasności, mgła radialna wokół auta (podmienione chunki fog_*), opcjonalne drżenie PS1
+src/occlusion.js – obiekty zasłaniające auto robią się półprzezroczyste
 src/audio.js    – Howler.js: silnik (pitch z obrotów), pisk opon (z kąta), uderzenia
 src/gearbox.js  – wirtualne biegi/obroty dla HUD i dźwięku (fizyka nie ma biegów)
 src/input.js    – klawiatura (płynna rampa) + pad (Gamepad API, standard mapping)
 src/drift.js    – punktacja driftu
 src/effects.js  – dym i ślady opon
-src/main.js     – scena nocna (FogExp2), HUD, lil-gui (G), debug kolizji (F), pętla
+src/main.js     – scena nocna (mgła radialna), HUD, lil-gui (G), debug kolizji (F), pętla
 public/assets/  – assety (Kenney CC0); każdy wpisany w CREDITS.md
 test/           – testy scenariuszy jazdy (`npm test`, node:test, bez przeglądarki; Node ≥ 22.18 czyta .ts)
 ```
@@ -84,4 +87,6 @@ Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości n
 - **Kontakt:** kula ma restitution 0; prędkość „od podłoża” jest tłumiona (`landingDamping`), model podąża za wysokością
   kuli z opóźnieniem (`suspension`). Pedał wciśnięty bez ruchu przez `unstuckTime` → wypchnięcie w najbliższe wolne miejsce.
 - **Klawiatura:** skręt narasta 0→1 w 0,4 s (`KEY_RAMP` w input.js), pad działa wprost proporcjonalnie.
-- **Kamera** patrzy wzdłuż wektora prędkości, nie maski.
+- **Kamera** patrzy wzdłuż wektora prędkości, nie maski. Diorama: środek kadru = auto + wyprzedzenie (bez opóźnienia przy
+  stałej prędkości), zoom w skokach (każda zmiana skali przesuwa siatkę pikseli).
+- **Światło nocą:** ciemność robi mgła (czarno dalej niż `visibility` od auta), światła mają `decay` 1 (szerokie plamy).

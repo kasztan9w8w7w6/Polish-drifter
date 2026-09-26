@@ -13,44 +13,47 @@ import { createSkidMarks, createSmoke } from './effects.js';
 import { createInput } from './input.js';
 import { createDriftScorer } from './drift.js';
 import { createDistrict, lights } from './district.js';
-import { createPS1Composer, ps1ifyScene, ps1 } from './ps1.js';
+import { createPixelComposer, installRadialFog, pixelizeScene, pixelArt } from './pixelart.js';
+import { createOcclusion, occlusionSettings } from './occlusion.js';
 import { headlightSettings } from './car.js';
 import { createAudio, audioSettings } from './audio.js';
 import { createGearbox, RED_RPM } from './gearbox.js';
 
 // ---------- Renderer / scene: night on the estate ----------
-const renderer = new THREE.WebGLRenderer({ antialias: false }); // PS1: no AA, the pixel pass does the rest
+installRadialFog(); // before any material compiles
+const renderer = new THREE.WebGLRenderer({ antialias: false }); // pixel art: no AA, the pixel pass does the rest
 renderer.setPixelRatio(1);
 renderer.setSize(innerWidth, innerHeight);
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
+renderer.toneMapping = THREE.NeutralToneMapping; // keeps colours flat (ACES darkened the mid-tones)
 document.body.appendChild(renderer.domElement);
 
-const NIGHT = 0x040406;
-const night = { visibility: 50, exposure: 1.0, ambient: 0.45, moon: 0.25, carLight: 22 };
+// The darkness comes from the fog (black beyond `visibility` around the car), not from dim lights:
+// near the car everything is lit enough to read.
+const NIGHT = 0x020203;
+const night = { visibility: 45, exposure: 1.1, ambient: 0.9, moon: 0.8, carLight: 6 };
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(NIGHT);
-// Exponential fog: at `visibility` metres only ~5% of the object is left (exp(-(d·ρ)²) = 0.05 → ρ = 1.73 / d)
-scene.fog = new THREE.FogExp2(NIGHT, 1.73 / night.visibility);
-const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 400);
+scene.fog = new THREE.Fog(NIGHT, 100, night.visibility); // radial fog, see pixelart.js
+const chaseCam = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 400);
+const dioCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 300);
 
-const ambient = new THREE.HemisphereLight(0x2a3450, 0x0a0806, night.ambient);
-const moon = new THREE.DirectionalLight(0x8090c0, night.moon);
-moon.position.set(-40, 80, 30);
-scene.add(ambient, moon);
-// Weak light riding with the camera, so the car stays readable in the dark (like a PS1 "player light")
-const fill = new THREE.PointLight(0xb0c0ff, night.carLight, 18, 1.5);
-camera.add(fill);
-scene.add(camera);
+const ambient = new THREE.HemisphereLight(0x7c86a4, 0x2a2622, night.ambient);
+const moon = new THREE.DirectionalLight(0x9aa8d8, night.moon); // gives the toon shading its direction
+moon.position.set(-30, 80, 45);
+scene.add(ambient, moon, moon.target);
+// Soft light riding above the car so it always reads (placed in the loop)
+const fill = new THREE.PointLight(0xc8d4ff, night.carLight, 14, 1);
+scene.add(fill, chaseCam, dioCam);
 
-const { composer, bloom, apply: applyPS1 } = createPS1Composer(renderer, scene, camera);
+const { composer, bloom, apply: applyPixel, setCamera } = createPixelComposer(renderer, scene, dioCam);
 function applyNight() {
-  scene.fog.density = 1.73 / night.visibility;
+  scene.fog.far = night.visibility;
   renderer.toneMappingExposure = night.exposure;
   ambient.intensity = night.ambient;
   moon.intensity = night.moon;
   fill.intensity = night.carLight;
 }
+applyNight();
 
 // ---------- Physics ----------
 await initPhysics();
@@ -63,7 +66,9 @@ const carView = createCarView(scene);
 const skids = createSkidMarks(scene);
 const smoke = createSmoke(scene);
 const district = await createDistrict(scene, physics);
-ps1ifyScene(scene);
+pixelizeScene(scene);
+const occlusion = createOcclusion();
+for (const o of district.occluders) occlusion.add(o);
 const audio = createAudio();
 const gearbox = createGearbox();
 // Browsers only allow sound after a user gesture
@@ -112,7 +117,7 @@ gui.add(panel, 'export').name('Eksport ustawień (JSON)');
 gui.add(panel, 'import').name('Wczytaj JSON');
 const RANGES = {
   mass: [300, 3000], gravityScale: [0.5, 3], sharpSteer: [0.5, 1.01], sharpThrottle: [0, 1], transitionSteer: [0.3, 1.01], driftAngleLowSpeed: [0.2, 1],
-  driftAngleMax: [20, 60], driftSpeedLoss: [0, 0.5], fovBase: [40, 90], fovFast: [40, 110], shakeSpeed: [0, 1],
+  driftAngleMax: [20, 60], dioPitch: [20, 80], dioYaw: [-180, 180], dioYawFollow: [0, 2], driftSpeedLoss: [0, 0.5], fovBase: [40, 90], fovFast: [40, 110], shakeSpeed: [0, 1],
 };
 const groups = {
   'Kula (Kenney)': ['mass', 'gravityScale', 'angularDamping', 'coastDamping', 'linearDamping'],
@@ -121,7 +126,8 @@ const groups = {
   'Wejście w drift': ['driftMinSpeed', 'sharpSteer', 'sharpThrottle', 'sharpSpeed', 'sharpTime', 'driftExitDelay', 'transitionSteer'],
   'Kąt driftu': ['driftAngleBase', 'driftAngleSteer', 'driftAngleThrottle', 'driftAngleHandbrake', 'driftAngleLowSpeed', 'driftAngleMax', 'driftAngleRate', 'straightenRate', 'driftTurnRate', 'driftTurnSteer', 'driftSpeedLoss'],
   'Wygląd jazdy i kontakt': ['bodyRoll', 'bodyPitch', 'suspension', 'landingDamping', 'unstuckTime'],
-  Kamera: ['camDistance', 'camDistanceFast', 'camHeight', 'camFollow', 'camYawFollow', 'camLead', 'fovBase', 'fovFast', 'shakeSpeed', 'shakeImpact'],
+  'Kamera Diorama': ['dioPitch', 'dioYaw', 'dioYawFollow', 'dioZoom', 'dioZoomFast', 'dioLead', 'dioFollow', 'shakeSpeed', 'shakeImpact'],
+  'Kamera Za autem': ['camDistance', 'camDistanceFast', 'camHeight', 'camFollow', 'camYawFollow', 'camLead', 'fovBase', 'fovFast'],
 };
 for (const [title, keys] of Object.entries(groups)) {
   const folder = gui.addFolder(title).close();
@@ -132,24 +138,27 @@ for (const [title, keys] of Object.entries(groups)) {
     if (title === 'Kula (Kenney)') c.onChange(() => car.applyParams());
   }
 }
-const gfx = gui.addFolder('Grafika (noc, PS1)').close();
-gfx.add(night, 'visibility', 20, 150, 1).name('widoczność mgły (m)').onChange(applyNight);
+const gfx = gui.addFolder('Grafika (noc, pixel-art)').close();
+gfx.add(pixelArt, 'pixelSize', 1, 8, 1).name('rozmiar piksela').onChange(applyPixel);
+gfx.add(pixelArt, 'edges', 0, 1.5, 0.05).name('obrysy (normalne)').onChange(applyPixel);
+gfx.add(pixelArt, 'depthEdges', 0, 1.5, 0.05).name('obrysy (głębia)').onChange(applyPixel);
+gfx.add(pixelArt, 'steps', 2, 8, 1).name('stopnie jasności').onChange(applyPixel);
+gfx.add(pixelArt, 'posterize', 0, 1, 0.05).name('siła stopni na obrazie').onChange(applyPixel);
+gfx.add(pixelArt, 'dither', 0, 1, 0.05).name('dithering').onChange(applyPixel);
+gfx.add(pixelArt, 'snap', 0, 480, 10).name('drżenie PS1 (0 = off)').onChange(applyPixel);
 gfx.add(night, 'exposure', 0.3, 3, 0.05).name('ekspozycja').onChange(applyNight);
-gfx.add(night, 'ambient', 0, 2, 0.01).name('światło otoczenia').onChange(applyNight);
-gfx.add(night, 'moon', 0, 2, 0.01).name('księżyc').onChange(applyNight);
+gfx.add(night, 'visibility', 15, 150, 1).name('mgła: widoczność (m)').onChange(applyNight);
+gfx.add(night, 'ambient', 0, 3, 0.05).name('światło otoczenia').onChange(applyNight);
+gfx.add(night, 'moon', 0, 3, 0.05).name('księżyc').onChange(applyNight);
 gfx.add(night, 'carLight', 0, 30, 0.5).name('światło przy aucie').onChange(applyNight);
-gfx.add(headlightSettings, 'intensity', 0, 400, 1).name('reflektory').onChange(() => carView.applyHeadlights());
+gfx.add(headlightSettings, 'intensity', 0, 200, 1).name('reflektory').onChange(() => carView.applyHeadlights());
 gfx.add(headlightSettings, 'range', 10, 120, 1).name('zasięg reflektorów').onChange(() => carView.applyHeadlights());
-gfx.add(lights, 'lamp', 0, 300, 1).name('latarnie').onChange(() => district.applyLights());
+gfx.add(lights, 'lamp', 0, 200, 1).name('latarnie').onChange(() => district.applyLights());
 gfx.add(lights, 'lampRange', 5, 60, 1).name('zasięg latarni').onChange(() => district.applyLights());
 gfx.add(lights, 'sign', 0.2, 3, 0.05).name('jasność szyldu').onChange(() => district.applyLights());
 gfx.add(bloom, 'strength', 0, 2, 0.01).name('bloom');
 gfx.add(bloom, 'threshold', 0, 1.5, 0.01).name('próg bloomu');
-gfx.add(ps1, 'pixelSize', 1, 8, 1).name('rozmiar piksela').onChange(applyPS1);
-gfx.add(ps1, 'snap', 0, 480, 10).name('drżenie wierzchołków (0 = off)').onChange(applyPS1);
-gfx.add(ps1, 'dither', 0, 2, 0.05).name('dithering').onChange(applyPS1);
-gfx.add(ps1, 'colorBits', 3, 8, 1).name('bity koloru').onChange(applyPS1);
-gfx.add(ps1, 'edges', 0, 1, 0.05).name('obrysy krawędzi').onChange(applyPS1);
+gfx.add(occlusionSettings, 'opacity', 0, 1, 0.05).name('przezroczystość zasłaniających').onChange(() => occlusion.applySettings());
 const snd = gui.addFolder('Dźwięk').close();
 snd.add(audioSettings, 'volume', 0, 1, 0.01).name('głośność');
 snd.add(audioSettings, 'engine', 0, 2, 0.01).name('silnik');
@@ -209,7 +218,7 @@ function updateDebugLines() {
 }
 
 // ---------- Input / camera ----------
-const rig = createCameraRig(camera);
+const rig = createCameraRig(chaseCam, dioCam, scene.fog);
 
 const input = createInput({
   reset: () => {
@@ -274,19 +283,22 @@ function tick(time) {
   });
   smoke.update(dt);
 
-  rig.update(dt, state);
+  const px = Math.max(1, Math.round(pixelArt.pixelSize));
+  const cam = rig.update(dt, state, { pixelsWide: Math.floor(innerWidth / px), pixelsHigh: Math.floor(innerHeight / px) });
+  setCamera(cam);
+  fill.position.copy(state.position).y += 5;
+  occlusion.update(cam, state.position, state.quaternion);
 
   composer.render();
   requestAnimationFrame(tick);
 }
 
 addEventListener('resize', () => {
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
+  chaseCam.aspect = innerWidth / innerHeight;
+  chaseCam.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
   composer.setSize(innerWidth, innerHeight);
-  applyPS1();
+  applyPixel();
 });
 
-camera.position.set(-10, 5, 0);
 tick();

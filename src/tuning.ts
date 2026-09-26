@@ -54,7 +54,16 @@ const base = {
   bodyRoll: 5, // degrees of body lean at 1 g sideways
   bodyPitch: 3, // degrees of nose lift at 1 g acceleration
 
-  // Camera (Kenney view.gd: position lerp delta*4, zoom 10 → 20 with speed)
+  // Diorama camera (default): high 3/4 orthographic view
+  dioPitch: 45, // degrees down
+  dioYaw: 35, // degrees – fixed viewing direction (0 = looking along +X)
+  dioYawFollow: 0, // 1/s – slow swing behind the direction of travel (0 = fixed angle)
+  dioZoom: 11, // m – half the visible height at a standstill…
+  dioZoomFast: 16, // …and at top speed
+  dioLead: 8, // m the view runs ahead along the velocity at top speed
+  dioFollow: 4, // 1/s position smoothing
+
+  // Chase camera "Za autem" (Kenney view.gd: position lerp delta*4, zoom 10 → 20 with speed)
   camDistance: 6.5, // m behind the car at a standstill…
   camDistanceFast: 8.5, // …and at top speed
   camHeight: 2.6,
