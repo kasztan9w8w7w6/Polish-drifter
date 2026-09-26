@@ -71,7 +71,7 @@ for (const ev of ['keydown', 'pointerdown']) addEventListener(ev, () => audio.st
 
 // ---------- HUD / scoring ----------
 const $ = (id) => document.getElementById(id);
-const hud = { telemetry: $('telemetry'), speed: $('speed'), gear: $('gear'), tach: $('tach'), rpm: $('rpm'), drift: $('drift'), points: $('drift-points'), combo: $('drift-combo'), score: $('score'), best: $('best') };
+const hud = { toast: $('toast'), telemetry: $('telemetry'), speed: $('speed'), gear: $('gear'), tach: $('tach'), rpm: $('rpm'), drift: $('drift'), points: $('drift-points'), combo: $('drift-combo'), score: $('score'), best: $('best') };
 const TACH_SEGMENTS = 20;
 hud.tach.innerHTML = '<i></i>'.repeat(TACH_SEGMENTS);
 const tachCells = [...hud.tach.children];
@@ -90,6 +90,14 @@ const scorer = createDriftScorer((event, s) => {
 });
 hud.best.textContent = scorer.state.best.toLocaleString('pl-PL');
 
+// Short message in the middle of the screen (feedback for R / C / auto-unstick)
+let toastTimer = 0;
+function toast(text) {
+  hud.toast.textContent = text;
+  hud.toast.className = 'on';
+  toastTimer = 1.2;
+}
+
 const CRASH_FORCE = 300000; // N – sphere contact force counted as a crash (measured in Node: 10 km/h = 79 kN, 25 km/h = 463 kN)
 
 // ---------- Tuning panel (lil-gui, key G / pad Start) ----------
@@ -103,16 +111,16 @@ gui.add(panel, 'preset', Object.keys(presets)).name('Preset').onChange((name) =>
 gui.add(panel, 'export').name('Eksport ustawień (JSON)');
 gui.add(panel, 'import').name('Wczytaj JSON');
 const RANGES = {
-  mass: [300, 3000], gravityScale: [0.5, 3], sharpSteer: [0.5, 1.01], transitionSteer: [0.3, 1.01],
+  mass: [300, 3000], gravityScale: [0.5, 3], sharpSteer: [0.5, 1.01], sharpThrottle: [0, 1], transitionSteer: [0.3, 1.01], driftAngleLowSpeed: [0.2, 1],
   driftAngleMax: [20, 60], driftSpeedLoss: [0, 0.5], fovBase: [40, 90], fovFast: [40, 110], shakeSpeed: [0, 1],
 };
 const groups = {
   'Kula (Kenney)': ['mass', 'gravityScale', 'angularDamping', 'coastDamping', 'linearDamping'],
   'Silnik i hamulce': ['power', 'throttleResponse', 'reversePower', 'brakePower', 'handbrakeDrag', 'sideGrip'],
   Kierownica: ['steerRate', 'steerRateHigh', 'steerFullSpeed', 'turnSmoothing'],
-  'Wejście w drift': ['driftMinSpeed', 'sharpSteer', 'sharpSpeed', 'driftExitDelay', 'transitionSteer'],
-  'Kąt driftu': ['driftAngleBase', 'driftAngleSteer', 'driftAngleThrottle', 'driftAngleHandbrake', 'driftAngleMax', 'driftAngleRate', 'straightenRate', 'driftTurnRate', 'driftTurnSteer', 'driftSpeedLoss'],
-  'Wygląd jazdy': ['bodyRoll', 'bodyPitch'],
+  'Wejście w drift': ['driftMinSpeed', 'sharpSteer', 'sharpThrottle', 'sharpSpeed', 'sharpTime', 'driftExitDelay', 'transitionSteer'],
+  'Kąt driftu': ['driftAngleBase', 'driftAngleSteer', 'driftAngleThrottle', 'driftAngleHandbrake', 'driftAngleLowSpeed', 'driftAngleMax', 'driftAngleRate', 'straightenRate', 'driftTurnRate', 'driftTurnSteer', 'driftSpeedLoss'],
+  'Wygląd jazdy i kontakt': ['bodyRoll', 'bodyPitch', 'suspension', 'landingDamping', 'unstuckTime'],
   Kamera: ['camDistance', 'camDistanceFast', 'camHeight', 'camFollow', 'camYawFollow', 'camLead', 'fovBase', 'fovFast', 'shakeSpeed', 'shakeImpact'],
 };
 for (const [title, keys] of Object.entries(groups)) {
@@ -207,14 +215,16 @@ const input = createInput({
   reset: () => {
     car.reset();
     rig.reset();
+    toast('Reset');
   },
-  camera: () => rig.nextMode(),
+  camera: () => toast(`Kamera: ${rig.nextMode()}`),
   gui: () => gui.show(gui._hidden),
   debug: () => (debugLines.visible = !debugLines.visible),
 });
 
 // ---------- Loop ----------
 const timer = new THREE.Timer();
+let lastUnstuck = 0;
 
 function tick(time) {
   timer.update(time);
@@ -228,6 +238,9 @@ function tick(time) {
 
   // Auto-reset if it falls off the world (the sphere can't end up on its roof)
   if (state.position.y < -5) car.reset();
+  if (state.unstuck !== lastUnstuck) toast('Wypchnięto z przeszkody');
+  lastUnstuck = state.unstuck;
+  if (toastTimer > 0 && (toastTimer -= dt) <= 0) hud.toast.className = '';
 
   // Drift scoring
   const fwd = new THREE.Vector3(1, 0, 0).applyQuaternion(state.quaternion);

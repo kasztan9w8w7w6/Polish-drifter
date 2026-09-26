@@ -1,34 +1,42 @@
-// Keyboard + gamepad (Gamepad API, "standard" mapping) merged into one analog control state:
+// Keyboard + gamepad (Gamepad API) merged into one analog control state:
 // { throttle 0..1, brake 0..1, steer -1..1 (+ = left), handbrake 0..1 }.
 // Keyboard keys are digital, so their values ramp smoothly (Unity-style sensitivity/gravity)
-// instead of jumping 0 → 1; gamepad triggers and stick are used as-is (with a stick deadzone).
+// instead of jumping 0 → 1; gamepad triggers and stick are used as-is (proportional, with a stick deadzone).
 
-const KEY_RAMP_UP = 5; // units per second
-const KEY_RAMP_DOWN = 8;
+// units per second: steering 0 → 1 in 0.4 s, back to centre in 0.25 s; pedals a bit quicker
+export const KEY_RAMP = { steerUp: 2.5, steerDown: 4, pedalUp: 4, pedalDown: 6 };
 const STEER_DEADZONE = 0.12;
 
 // Gamepad buttons (standard mapping): 0 A, 1 B, 2 X, 3 Y, 4 LB, 5 RB, 6 LT, 7 RT, 9 Start
 const PAD_ACTIONS = { 3: 'reset', 2: 'camera', 9: 'gui' };
+// Actions match the physical key (e.code) and, as a fallback, the character (e.key) – some remote
+// desktops / virtual keyboards send an empty `code`.
 const KEY_ACTIONS = { KeyR: 'reset', KeyC: 'camera', KeyG: 'gui', KeyF: 'debug' };
+const CHAR_ACTIONS = { r: 'reset', c: 'camera', g: 'gui', f: 'debug' };
+
+// Move `value` towards `target` at `up` units/s when pushing further out, `down` when returning or reversing
+export function rampValue(value, target, dt, up, down) {
+  const rate = Math.abs(target) > Math.abs(value) && Math.sign(target) !== -Math.sign(value) ? up : down;
+  return value + Math.max(-rate * dt, Math.min(rate * dt, target - value));
+}
 
 export function createInput(actions = {}) {
   const down = new Set();
   addEventListener('keydown', (e) => {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return; // typing in lil-gui
-    const action = KEY_ACTIONS[e.code];
-    if (!down.has(e.code) && action) actions[action]?.();
-    down.add(e.code);
+    const action = KEY_ACTIONS[e.code] ?? CHAR_ACTIONS[e.key?.toLowerCase()];
+    // e.repeat instead of "was it already down": a keyup lost to a focus change can't block the key any more
+    if (action && !e.repeat) actions[action]?.();
+    down.add(e.code || e.key);
     if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
   });
-  addEventListener('keyup', (e) => down.delete(e.code));
+  addEventListener('keyup', (e) => down.delete(e.code || e.key));
   addEventListener('blur', () => down.clear());
+  document.addEventListener('visibilitychange', () => down.clear());
 
   const any = (...codes) => codes.some((c) => down.has(c));
   const keys = { throttle: 0, brake: 0, steer: 0, handbrake: 0 };
-  const ramp = (value, target, dt) => {
-    const rate = Math.abs(target) > Math.abs(value) && Math.sign(target) !== -Math.sign(value) ? KEY_RAMP_UP : KEY_RAMP_DOWN;
-    return value + Math.max(-rate * dt, Math.min(rate * dt, target - value));
-  };
+  const ramp = (value, target, dt, up, down) => rampValue(value, target, dt, up, down);
   let padButtons = [];
   let padConnected = false;
 
@@ -54,10 +62,10 @@ export function createInput(actions = {}) {
       return padConnected;
     },
     read(dt) {
-      keys.throttle = ramp(keys.throttle, any('KeyW', 'ArrowUp') ? 1 : 0, dt);
-      keys.brake = ramp(keys.brake, any('KeyS', 'ArrowDown') ? 1 : 0, dt);
-      keys.steer = ramp(keys.steer, (any('KeyA', 'ArrowLeft') ? 1 : 0) - (any('KeyD', 'ArrowRight') ? 1 : 0), dt);
-      keys.handbrake = any('Space') ? 1 : 0; // handbrake stays instant – it's a yank, not a pedal
+      keys.throttle = ramp(keys.throttle, any('KeyW', 'ArrowUp', 'w') ? 1 : 0, dt, KEY_RAMP.pedalUp, KEY_RAMP.pedalDown);
+      keys.brake = ramp(keys.brake, any('KeyS', 'ArrowDown', 's') ? 1 : 0, dt, KEY_RAMP.pedalUp, KEY_RAMP.pedalDown);
+      keys.steer = ramp(keys.steer, (any('KeyA', 'ArrowLeft', 'a') ? 1 : 0) - (any('KeyD', 'ArrowRight', 'd') ? 1 : 0), dt, KEY_RAMP.steerUp, KEY_RAMP.steerDown);
+      keys.handbrake = any('Space', ' ') ? 1 : 0; // handbrake stays instant – it's a yank, not a pedal
       const pad = readPad();
       if (!pad) return { ...keys };
       // Whichever device gives the bigger value wins, so both can be used at once

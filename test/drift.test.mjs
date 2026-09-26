@@ -63,7 +63,7 @@ test('drift da się utrzymać gazem i lekką kontrą przez min. 3 s', async (t) 
   const t0 = sim.time;
   let driftTime = 0, best = 0, minSpeed = Infinity;
   const slips = [];
-  sim.run(6, (s, time) => (time - t0 < 0.6 ? { steer: 1, handbrake: 1, throttle: 0.5 } : { throttle: 1, steer: -0.4 }), (x) => {
+  sim.run(6, (s, time) => (time - t0 < 0.6 ? { steer: 1, handbrake: 1, throttle: 0.5 } : { throttle: 1, steer: -0.2 }), (x) => {
     if (x.t - t0 < 0.6) return;
     if (Math.abs(x.slip) > 15) {
       driftTime += 1 / 60;

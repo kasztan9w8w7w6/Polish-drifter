@@ -25,7 +25,8 @@ gracz ucieka przed „promieniowaniem 5G”.
 | v0.1 | jazda | zrobione |
 | v0.1.5 | Rapier + model opon (RaycastVehicle) | zastąpione przez v0.2a |
 | v0.2a | fizyka arcade: kula Kenneya + drift na wierzchu, nowa kamera | zrobione |
-| v0.2b | noc + PS1 + assety + dźwięk + HUD | **zrobione** (bez City Kit/Car Kit – kenney.nl niedostępny) |
+| v0.2b | noc + PS1 + assety + dźwięk + HUD | zrobione |
+| v0.2c | poprawki jazdy: płynny kąt, power oversteer w Pro, bez odbić, bez utykania | zrobione |
 | v0.3 | bateria + sklep + misja | następne |
 | v0.4 | MVP | |
 
@@ -72,9 +73,15 @@ Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości n
 - **Model auta** to osobny obiekt: pozycja kuli − promień, obrót = kurs, nachylenie do normalnej z raycastu w dół (lerp 0,2). Nie może dachować.
 - **Dwa kąty:** `travel` (tor ruchu) i kurs maski = `travel + angle`. W przyczepności `angle` = 0.
 - **Drift:**
-  - wejście: ręczny + skręt powyżej `driftMinSpeed` albo ostry skręt (`sharpSteer`) z gazem powyżej `sharpSpeed`;
-  - kąt dąży do `driftAngleBase ± driftAngleSteer (w zakręt / kontra) + driftAngleThrottle·gaz + driftAngleHandbrake`,
-    z twardym limitem `driftAngleMax` (bez bączków);
-  - tor zakręca z `driftTurnRate`; mocna kontra (> `transitionSteer`) przerzuca drift na drugą stronę;
+  - wejście: ręczny + skręt powyżej `driftMinSpeed` albo gaz w ostrym zakręcie (power oversteer:
+    `sharpSteer`, `sharpThrottle`, `sharpSpeed`, `sharpTime`; w Pro trudniej);
+  - kąt docelowy to funkcja ciągła: `strona·(driftAngleBase + gaz·driftAngleThrottle + ręczny·driftAngleHandbrake) + skręt·driftAngleSteer`,
+    razy skala prędkości (`driftAngleLowSpeed`), z twardym limitem `driftAngleMax` (bez bączków);
+    kąt dochodzi do celu z `driftAngleRate` (trzymanie skrętu dłużej = głębszy kąt);
+  - kontra powyżej `transitionSteer` przesuwa cel na drugą stronę, kąt przechodzi płynnie przez zero;
+  - tor zakręca z `driftTurnRate` proporcjonalnie do kąta;
   - wyjście: brak gazu dłużej niż `driftExitDelay`; auto prostuje się z `straightenRate`.
+- **Kontakt:** kula ma restitution 0; prędkość „od podłoża” jest tłumiona (`landingDamping`), model podąża za wysokością
+  kuli z opóźnieniem (`suspension`). Pedał wciśnięty bez ruchu przez `unstuckTime` → wypchnięcie w najbliższe wolne miejsce.
+- **Klawiatura:** skręt narasta 0→1 w 0,4 s (`KEY_RAMP` w input.js), pad działa wprost proporcjonalnie.
 - **Kamera** patrzy wzdłuż wektora prędkości, nie maski.

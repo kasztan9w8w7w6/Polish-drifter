@@ -26,20 +26,29 @@ const base = {
 
   // Drift on top (arcade: the body rotates away from the line of travel, no tyre model)
   driftMinSpeed: 8, // m/s ≈ 29 km/h
-  sharpSteer: 0.9, // |steer| that starts a drift without the handbrake…
-  sharpSpeed: 15, // …above this speed (m/s ≈ 54 km/h), held for 0.15 s with throttle
-  driftAngleBase: 20, // angle with neutral steering
-  driftAngleSteer: 14, // ± steering into the turn / counter-steer
-  driftAngleThrottle: 12, // + at full throttle
-  driftAngleHandbrake: 10, // + while the handbrake is held
-  driftAngleMax: 42, // hard limit on the commanded angle (the real one lags ~3° behind) – no spin-outs possible
-  driftAngleRate: 3, // 1/s how fast the angle follows its target
+  sharpSteer: 0.85, // power oversteer: |steer| above this…
+  sharpThrottle: 0.5, // …with at least this much throttle…
+  sharpSpeed: 13, // …above this speed (m/s ≈ 47 km/h)…
+  sharpTime: 0.15, // …held this long (s) starts a drift without the handbrake
+  // Target angle (continuous): side·(base + throttle·gaz + handbrake·ręczny) + steer·driftAngleSteer, × speed scale
+  driftAngleBase: 15, // angle with neutral steering and no throttle
+  driftAngleSteer: 26, // degrees per full steering lock (into the turn: deeper, counter-steer: shallower)
+  driftAngleThrottle: 8, // + at full throttle
+  driftAngleHandbrake: 8, // + while the handbrake is held
+  driftAngleLowSpeed: 0.6, // angle multiplier at driftMinSpeed (reaches 1 at twice that speed)
+  driftAngleMax: 42, // hard limit on the angle – no spin-outs possible
+  driftAngleRate: 2, // 1/s how fast the angle follows its target (lower = hold steering longer for a deeper angle)
   straightenRate: 3, // 1/s how fast the car straightens after the drift
-  driftTurnRate: 0.75, // rad/s the line of travel curves in a drift
+  driftTurnRate: 0.75, // rad/s the line of travel curves at a 30° angle (deeper = tighter)
   driftTurnSteer: 0.5, // ± of that from steering
-  transitionSteer: 0.85, // counter-steer above this flips the drift to the other side (>1 = off)
+  transitionSteer: 0.8, // counter-steer above this swings the car over to the other side (>1 = off)
   driftExitDelay: 0.3, // s without throttle before the drift ends
   driftSpeedLoss: 0.08, // fraction of engine power lost while drifting
+
+  // Contact / recovery
+  landingDamping: 30, // 1/s – how fast bouncing off the ground dies out
+  suspension: 18, // 1/s – how quickly the model follows the sphere's height (visual suspension)
+  unstuckTime: 1, // s of pedal without movement before the car is pushed free
 
   // Visual only
   bodyRoll: 5, // degrees of body lean at 1 g sideways
@@ -64,11 +73,15 @@ export const presets: Record<string, Tuning> = {
   Łatwy: { ...base },
   Pro: {
     ...base,
-    sharpSteer: 1.01, // handbrake or nothing
-    driftAngleBase: 15,
-    driftAngleSteer: 20,
-    driftAngleThrottle: 15,
-    driftAngleRate: 4,
+    // Power oversteer works, but needs more speed, full throttle and a longer, sharper input
+    sharpSteer: 0.95,
+    sharpThrottle: 0.9,
+    sharpSpeed: 17,
+    sharpTime: 0.35,
+    driftAngleBase: 10,
+    driftAngleSteer: 32,
+    driftAngleThrottle: 12,
+    driftAngleRate: 2.6,
     driftTurnSteer: 0.8,
     driftExitDelay: 0.15,
     driftSpeedLoss: 0.15,
