@@ -44,14 +44,14 @@ export function createPhysics() {
       }
     },
 
-    // Static box, `half` = half extents. Returns the collider handle.
-    addStaticBox(pos, half, { friction = 0.5, restitution = 0.1 } = {}) {
-      const c = world.createCollider(
-        RAPIER.ColliderDesc.cuboid(half.x, half.y, half.z)
-          .setTranslation(pos.x, pos.y, pos.z)
-          .setFriction(friction)
-          .setRestitution(restitution),
-      );
+    // Static box, `half` = half extents, optional `rotation` quaternion {x,y,z,w}. Returns the collider handle.
+    addStaticBox(pos, half, { friction = 0.5, restitution = 0.1, rotation } = {}) {
+      const desc = RAPIER.ColliderDesc.cuboid(half.x, half.y, half.z)
+        .setTranslation(pos.x, pos.y, pos.z)
+        .setFriction(friction)
+        .setRestitution(restitution);
+      if (rotation) desc.setRotation(rotation);
+      const c = world.createCollider(desc);
       return c.handle;
     },
 

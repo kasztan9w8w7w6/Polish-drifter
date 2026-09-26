@@ -1,9 +1,9 @@
 // Headless driving harness shared by the tests (no browser, no rendering).
 import { initPhysics, createPhysics } from '../src/physics.js';
-import { createVehicle } from '../src/vehicle.js';
-import { presets, DEFAULT_PRESET } from '../src/tuning.js';
+import { createVehicle } from '../src/vehicle.ts';
+import { presets, DEFAULT_PRESET } from '../src/tuning.ts';
 
-export async function createSim({ preset = DEFAULT_PRESET, walls = false } = {}) {
+export async function createSim({ preset = DEFAULT_PRESET, walls = false, ramps = false } = {}) {
   await initPhysics();
   const physics = createPhysics();
   physics.addStaticBox({ x: 0, y: -1, z: 0 }, { x: 5000, y: 1, z: 5000 }, { friction: 0.8 });
@@ -12,6 +12,12 @@ export async function createSim({ preset = DEFAULT_PRESET, walls = false } = {})
     for (const [x, z, hx, hz] of [[0, 20, 20, 0.5], [0, -20, 20, 0.5], [20, 0, 0.5, 20], [-20, 0, 0.5, 20]]) {
       physics.addStaticBox({ x, y: 0.6, z }, { x: hx, y: 0.6, z: hz });
     }
+  }
+  if (ramps) {
+    // Kerbs and a jump ramp across the +X axis (tilted boxes), to check the model follows the ground
+    const tilt = (deg, axis) => { const a = (deg * Math.PI) / 360; return axis === 'z' ? { x: 0, y: 0, z: Math.sin(a), w: Math.cos(a) } : { x: Math.sin(a), y: 0, z: 0, w: Math.cos(a) }; };
+    physics.addStaticBox({ x: 30, y: 0, z: 0 }, { x: 6, y: 0.8, z: 8 }, { rotation: tilt(12, 'z') });
+    physics.addStaticBox({ x: 60, y: -0.2, z: 3 }, { x: 10, y: 0.5, z: 3 }, { rotation: tilt(10, 'x') });
   }
   const tuning = { ...presets[preset] };
   const car = createVehicle(physics, { tuning });
@@ -26,7 +32,7 @@ export async function createSim({ preset = DEFAULT_PRESET, walls = false } = {})
       physics.step(1 / 60, (h) => car.update({ throttle: 0, brake: 0, steer: 0, handbrake: 0, ...inp }, h), () => car.afterStep());
       time += 1 / 60;
       const s = car.read();
-      const sample = { t: time, speed: s.speed * 3.6, slip: s.slipAngle, yaw: yawOf(s), upY: upY(s), x: s.position.x, z: s.position.z, drifting: s.drifting, impact: s.impact };
+      const sample = { t: time, speed: s.speed * 3.6, slip: s.slipAngle, yaw: yawOf(s), upY: upY(s), x: s.position.x, y: s.position.y, z: s.position.z, drifting: s.drifting, impact: s.impact };
       log.push(sample);
       onSample?.(sample, s);
     }

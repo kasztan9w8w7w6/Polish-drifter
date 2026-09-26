@@ -12,9 +12,11 @@ export function createCarView(scene, wheelCount = 4) {
     return m;
   });
 
+  const body = chassisMesh.children[0];
   function sync(state) {
     chassisMesh.position.copy(state.position);
     chassisMesh.quaternion.copy(state.quaternion);
+    body.rotation.set(state.bodyRoll ?? 0, 0, state.bodyPitch ?? 0); // visual lean only
     state.wheels.forEach((w, i) => {
       wheelMeshes[i].position.copy(w.position);
       wheelMeshes[i].quaternion.copy(w.quaternion);
@@ -26,7 +28,9 @@ export function createCarView(scene, wheelCount = 4) {
 
 // Boxy 80s Polish sedan silhouette built from primitives (placeholder for a GLTF model).
 function buildChassisMesh() {
-  const g = new THREE.Group();
+  const root = new THREE.Group();
+  const g = new THREE.Group(); // leaning body inside the root that follows the physics
+  root.add(g);
   const paint = new THREE.MeshStandardMaterial({ color: 0xc8102e, metalness: 0.4, roughness: 0.35 });
   const white = new THREE.MeshStandardMaterial({ color: 0xf2f2f2, metalness: 0.3, roughness: 0.4 });
   const glass = new THREE.MeshStandardMaterial({ color: 0x223344, metalness: 0.9, roughness: 0.1 });
@@ -48,7 +52,7 @@ function buildChassisMesh() {
     add(new THREE.BoxGeometry(0.05, 0.18, 0.4), lamp, 2.16, 0.14, z);
     add(new THREE.BoxGeometry(0.05, 0.16, 0.45), tail, -2.16, 0.18, z);
   }
-  return g;
+  return root;
 }
 
 function buildWheelMesh() {

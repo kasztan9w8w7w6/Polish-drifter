@@ -8,7 +8,7 @@
 (Polonez-podobne, napęd na tył) nocą po osiedlu. Estetyka PS1 / polish doomer, satyra:
 gracz ucieka przed „promieniowaniem 5G”.
 
-- **Jazda:** zręcznościowa/simcade. Drift ma być łatwy, płynny i widowiskowy, a auto nie dachuje.
+- **Jazda:** arcade. Drift ma być łatwy, płynny i widowiskowy, a auto nie dachuje.
 - **Klimat:** noc, czarna mgła, bloki z wielkiej płyty, dziurawe drogi, garaże, nocne sklepy z fikcyjnymi nazwami.
 - **Przyszłe mechaniki:**
   - bateria ładowana TYLKO driftem,
@@ -23,8 +23,9 @@ gracz ucieka przed „promieniowaniem 5G”.
 | Wersja | Zakres | Stan |
 |---|---|---|
 | v0.1 | jazda | zrobione |
-| v0.1.5 | nowa fizyka (Rapier) i dobry drift | **zrobione** |
-| v0.2 | noc + PS1 + assety + dźwięk | następne |
+| v0.1.5 | Rapier + model opon (RaycastVehicle) | zastąpione przez v0.2a |
+| v0.2a | fizyka arcade: kula Kenneya + drift na wierzchu, nowa kamera | **zrobione** |
+| v0.2b | noc + PS1 + assety + dźwięk | następne |
 | v0.3 | bateria + sklep + misja | |
 | v0.4 | MVP | |
 
@@ -36,42 +37,39 @@ gracz ucieka przed „promieniowaniem 5G”.
 4. **Każdy asset** (model, tekstura, dźwięk, font) wpisz do `CREDITS.md` ze źródłem i licencją.
 5. Nie przepisuj niezwiązanego kodu. Dostosowuj go do zmian.
 
-## Architektura (v0.1.5)
+## Architektura (v0.2a)
 
 ```
-src/physics.js  – jedyne miejsce z Rapierem poza vehicle.js: świat, stały krok 60 Hz, przeszkody, debugRender
-src/vehicle.js  – fizyka auta: Rapier DynamicRayCastVehicleController + asysty driftu.
+src/physics.js  – jedyne miejsce z Rapierem poza vehicle.ts: świat, stały krok 60 Hz, przeszkody, debugRender
+src/vehicle.ts  – auto arcade (port Kenney Starter Kit Racing, vehicle.gd): toczona KULA r = 1 m + drift na wierzchu.
                   Wejście: { throttle, brake, steer (+ = lewo), handbrake } 0..1 / -1..1
-                  Wyjście: vehicle.state { position, quaternion, velocity, speed, slipAngle, drifting, wheels[] }
-src/tuning.js   – wszystkie parametry jazdy + presety „Przyczepny”, „Drift łatwy” (domyślny), „Drift pro”
-src/car.js      – wyłącznie wygląd auta (bryły), synchronizowany ze state
-src/track.js    – plac manewrowy (wygląd + przeszkody przez physics.js)
+                  Wyjście: vehicle.state { position, quaternion, velocity, speed, slipAngle, driftAngle, drifting,
+                  bodyRoll, bodyPitch, wheels[] }
+src/tuning.ts   – wszystkie parametry jazdy i kamery + presety „Łatwy” (domyślny), „Pro”
+src/camera.ts   – kamera pościgowa (port view.gd + wyprzedzanie, FOV, drżenie)
+src/car.js      – wyłącznie wygląd auta (bryły) z wizualnym przechyłem, synchronizowany ze state
+src/track.js    – plac manewrowy; przeszkody statyczne mają kolizję grubszą o promień kuli (PAD)
 src/input.js    – klawiatura (płynna rampa) + pad (Gamepad API, standard mapping)
 src/drift.js    – punktacja driftu
 src/effects.js  – dym i ślady opon
-src/main.js     – scena, kamera, HUD, lil-gui (G), debug kolizji (F), pętla
-test/           – testy scenariuszy jazdy (`npm test`, node:test, bez przeglądarki)
+src/main.js     – scena, HUD, lil-gui (G), debug kolizji (F), pętla
+test/           – testy scenariuszy jazdy (`npm test`, node:test, bez przeglądarki; Node ≥ 22.18 czyta .ts)
 ```
 
-Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości na lewo od maski.
+TypeScript tylko przez usuwanie typów (bez enumów itp.), importy z rozszerzeniem `.ts`; `npm run typecheck` = `tsc`.
+Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości na lewo od maski (drift w lewo daje ujemny).
 
-## Model driftu (skrót)
+## Model jazdy (skrót)
 
-- **Utrata przyczepności tyłu** (`rearLoss`, 0..1, płynnie). Sposoby wejścia, każdy od ~25 km/h:
-  - ręczny,
-  - gaz + skręt (`powerOversteer`),
-  - muśnięcie hamulca w zakręcie (`brakeDrift`),
-  - puszczenie gazu w zakręcie (`liftOffLoss`).
-
-  Gaz w trwającym poślizgu go podtrzymuje. Przy wejściu działa `entryKick`.
-- **Tryb driftu z histerezą:** wejście powyżej 12°, wyjście po puszczeniu gazu albo gdy kąt jest < 4° dłużej niż `transitionGrace`, dzięki czemu przekładka przez 0° nie gasi driftu.
-- **Kierownica w drifcie** wybiera docelowy kąt poślizgu:
-  - w zakręt → max,
-  - puszczona → środek,
-  - lekka kontra → min,
-  - mocna kontra (powyżej `counterSteerSwitch`) → cel po drugiej stronie, czyli przekładka.
-
-  Kątem steruje regulator PD obrotu (`driftAngleControl`/`driftAngleDamping`).
-- **Asysta kontry:** przednie koła podążają za kierunkiem jazdy (`counterSteerAssist`), a limit kontry (`counterSteerLimit`) nie pozwala im odbić auta.
-- **Anty-bączek** powyżej `driftAngleMax − 5°` (`angleHold`), `speedKeep` ogranicza utratę prędkości w drifcie.
-- **Niski środek masy** i asysta pionu (`uprightAssist`), żeby auto nie dachowało.
+- **Kula (Kenney):** masa 1000, gravity scale 1,5, tarcie 5. Gaz dodaje obrót kuli wokół osi prostopadłej do kierunku jazdy;
+  prędkość maks. ≈ `power / angularDamping`. Bez gazu działa `coastDamping` (hamowanie silnikiem).
+  `sideGrip` wygasza ruch w bok, więc kula trzyma się toru.
+- **Model auta** to osobny obiekt: pozycja kuli − promień, obrót = kurs, nachylenie do normalnej z raycastu w dół (lerp 0,2). Nie może dachować.
+- **Dwa kąty:** `travel` (tor ruchu) i kurs maski = `travel + angle`. W przyczepności `angle` = 0.
+- **Drift:**
+  - wejście: ręczny + skręt powyżej `driftMinSpeed` albo ostry skręt (`sharpSteer`) z gazem powyżej `sharpSpeed`;
+  - kąt dąży do `driftAngleBase ± driftAngleSteer (w zakręt / kontra) + driftAngleThrottle·gaz + driftAngleHandbrake`,
+    z twardym limitem `driftAngleMax` (bez bączków);
+  - tor zakręca z `driftTurnRate`; mocna kontra (> `transitionSteer`) przerzuca drift na drugą stronę;
+  - wyjście: brak gazu dłużej niż `driftExitDelay`; auto prostuje się z `straightenRate`.
+- **Kamera** patrzy wzdłuż wektora prędkości, nie maski.

@@ -7,8 +7,9 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 import { initPhysics, createPhysics } from './physics.js';
-import { createVehicle } from './vehicle.js';
-import { tuning, presets, applyPreset, DEFAULT_PRESET } from './tuning.js';
+import { createVehicle } from './vehicle.ts';
+import { tuning, presets, applyPreset, DEFAULT_PRESET } from './tuning.ts';
+import { createCameraRig } from './camera.ts';
 import { createCarView } from './car.js';
 import { createTrack } from './track.js';
 import { createSkidMarks, createSmoke } from './effects.js';
@@ -61,7 +62,7 @@ composer.addPass(new OutputPass());
 await initPhysics();
 const physics = createPhysics();
 const track = createTrack(scene, physics);
-const car = createVehicle(physics, { spawn: { x: 0, y: 1.2, z: 0 } });
+const car = createVehicle(physics);
 const carView = createCarView(scene);
 const skids = createSkidMarks(scene);
 const smoke = createSmoke(scene);
@@ -84,26 +85,30 @@ const scorer = createDriftScorer((event, s) => {
 });
 hud.best.textContent = scorer.state.best.toLocaleString('pl-PL');
 
-const CRASH_FORCE = 300000; // N – chassis contact force counted as a crash (~15 km/h into a wall; measured in Node)
+const CRASH_FORCE = 300000; // N – sphere contact force counted as a crash (measured in Node: 10 km/h = 79 kN, 25 km/h = 463 kN)
 
 // ---------- Tuning panel (lil-gui, key G / pad Start) ----------
 const gui = new GUI({ title: 'Tuning (G)' });
 const panel = { preset: DEFAULT_PRESET, export: exportTuning, import: () => showJson('', true) };
 gui.add(panel, 'preset', Object.keys(presets)).name('Preset').onChange((name) => {
   applyPreset(name);
-  car.applyChassisParams();
+  car.applyParams();
   gui.controllersRecursive().forEach((c) => c.updateDisplay());
 });
 gui.add(panel, 'export').name('Eksport ustawień (JSON)');
 gui.add(panel, 'import').name('Wczytaj JSON');
-const RANGES = { mass: [500, 2500], driftAngleMin: [0, 40], driftAngleMax: [20, 90], counterSteerAssist: [0, 1], speedKeep: [0, 1], driftSteerAuthority: [0, 1], yawInertiaScale: [0.3, 2] };
+const RANGES = {
+  mass: [300, 3000], gravityScale: [0.5, 3], sharpSteer: [0.5, 1.01], transitionSteer: [0.3, 1.01],
+  driftAngleMax: [20, 60], driftSpeedLoss: [0, 0.5], fovBase: [40, 90], fovFast: [40, 110], shakeSpeed: [0, 1],
+};
 const groups = {
-  'Silnik i hamulce': ['engineForce', 'maxSpeed', 'reverseForce', 'brakeForce', 'handbrakeBrake'],
-  Kierownica: ['steerMaxLow', 'steerMaxHigh', 'steerFadeSpeed', 'steerRate', 'steerReturnRate'],
-  Przyczepność: ['frontGrip', 'rearGrip', 'frontSideStiffness', 'rearSideStiffness', 'rearGripDrift', 'rearSideStiffnessDrift', 'gripBlendIn', 'gripBlendOut'],
-  'Wejście w drift': ['handbrakeLoss', 'powerOversteer', 'brakeDrift', 'liftOffLoss', 'driftSustain', 'entryKick'],
-  Asysty: ['counterSteerAssist', 'counterSteerLimit', 'counterSteerSwitch', 'transitionGrace', 'driftSteerAuthority', 'driftAngleMin', 'driftAngleMax', 'driftAngleControl', 'driftAngleDamping', 'angleHold', 'speedKeep', 'uprightAssist'],
-  Podwozie: ['mass', 'comHeight', 'yawInertiaScale', 'suspensionStiffness', 'suspensionCompression', 'suspensionRelaxation', 'suspensionRestLength', 'maxSuspensionTravel'],
+  'Kula (Kenney)': ['mass', 'gravityScale', 'angularDamping', 'coastDamping', 'linearDamping'],
+  'Silnik i hamulce': ['power', 'throttleResponse', 'reversePower', 'brakePower', 'handbrakeDrag', 'sideGrip'],
+  Kierownica: ['steerRate', 'steerRateHigh', 'steerFullSpeed', 'turnSmoothing'],
+  'Wejście w drift': ['driftMinSpeed', 'sharpSteer', 'sharpSpeed', 'driftExitDelay', 'transitionSteer'],
+  'Kąt driftu': ['driftAngleBase', 'driftAngleSteer', 'driftAngleThrottle', 'driftAngleHandbrake', 'driftAngleMax', 'driftAngleRate', 'straightenRate', 'driftTurnRate', 'driftTurnSteer', 'driftSpeedLoss'],
+  'Wygląd jazdy': ['bodyRoll', 'bodyPitch'],
+  Kamera: ['camDistance', 'camDistanceFast', 'camHeight', 'camFollow', 'camYawFollow', 'camLead', 'fovBase', 'fovFast', 'shakeSpeed', 'shakeImpact'],
 };
 for (const [title, keys] of Object.entries(groups)) {
   const folder = gui.addFolder(title).close();
@@ -111,7 +116,7 @@ for (const [title, keys] of Object.entries(groups)) {
     const v = presets[DEFAULT_PRESET][key];
     const [min, max] = RANGES[key] ?? (v < 0 ? [v * 3, 0] : [0, Math.max(v * 3, 1)]);
     const c = folder.add(tuning, key, min, max);
-    if (title === 'Podwozie') c.onFinishChange(() => car.applyChassisParams());
+    if (title === 'Kula (Kenney)') c.onChange(() => car.applyParams());
   }
 }
 const debugFolder = gui.addFolder('Grafika').close();
@@ -140,7 +145,7 @@ function showJson(text, editable) {
       try {
         const data = JSON.parse(area.value);
         for (const k of Object.keys(tuning)) if (typeof data[k] === 'number') tuning[k] = data[k];
-        car.applyChassisParams();
+        car.applyParams();
         gui.controllersRecursive().forEach((c) => c.updateDisplay());
       } catch (err) {
         area.value = `Błędny JSON: ${err.message}\n\n${area.value}`;
@@ -169,27 +174,21 @@ function updateDebugLines() {
   debugLines.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 4));
 }
 
-// ---------- Input / camera modes ----------
-const cameraModes = [
-  { offset: new THREE.Vector3(-7, 2.8, 0), look: new THREE.Vector3(2, 0.8, 0), lerp: 5 },
-  { offset: new THREE.Vector3(-12, 6, 0), look: new THREE.Vector3(3, 0, 0), lerp: 3 },
-  { offset: new THREE.Vector3(0.3, 1.2, 0), look: new THREE.Vector3(10, 0.9, 0), lerp: 30 },
-];
-let camMode = 0;
+// ---------- Input / camera ----------
+const rig = createCameraRig(camera);
 
 const input = createInput({
-  reset: () => car.reset(),
-  camera: () => (camMode = (camMode + 1) % cameraModes.length),
+  reset: () => {
+    car.reset();
+    rig.reset();
+  },
+  camera: () => rig.nextMode(),
   gui: () => gui.show(gui._hidden),
   debug: () => (debugLines.visible = !debugLines.visible),
 });
 
 // ---------- Loop ----------
 const timer = new THREE.Timer();
-const tmp = new THREE.Vector3();
-const camTarget = new THREE.Vector3();
-const lookTarget = new THREE.Vector3();
-const lookSmoothed = new THREE.Vector3();
 
 function tick(time) {
   timer.update(time);
@@ -201,14 +200,14 @@ function tick(time) {
   track.sync();
   if (debugLines.visible) updateDebugLines();
 
-  // Auto-reset if it somehow ends up on its side / roof, or falls off the world
-  const up = tmp.set(0, 1, 0).applyQuaternion(state.quaternion);
-  if (state.position.y < -5 || (up.y < 0.3 && state.speed < 1)) car.reset();
+  // Auto-reset if it falls off the world (the sphere can't end up on its roof)
+  if (state.position.y < -5) car.reset();
 
   // Drift scoring
   const fwd = new THREE.Vector3(1, 0, 0).applyQuaternion(state.quaternion);
   const v = state.velocity;
   if (state.impact > CRASH_FORCE) scorer.crash();
+  rig.hit(state.impact);
   scorer.update(dt, fwd, v, state.grounded);
   hud.speed.innerHTML = `${Math.round(state.speed * 3.6)} <small>km/h</small>`;
   hud.telemetry.textContent = `kąt ${Math.round(Math.abs(state.slipAngle))}° · ${panel.preset}${input.gamepadConnected ? ' · pad' : ''}`;
@@ -227,17 +226,7 @@ function tick(time) {
   });
   smoke.update(dt);
 
-  // Chase camera
-  const mode = cameraModes[camMode];
-  // Use yaw only, so the camera doesn't roll with the body
-  const yaw = Math.atan2(-fwd.z, fwd.x);
-  const yawQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-  camTarget.copy(mode.offset).applyQuaternion(yawQ).add(state.position);
-  lookTarget.copy(mode.look).applyQuaternion(yawQ).add(state.position);
-  const k = 1 - Math.exp(-mode.lerp * dt);
-  camera.position.lerp(camTarget, k);
-  lookSmoothed.lerp(lookTarget, k);
-  camera.lookAt(lookSmoothed);
+  rig.update(dt, state);
 
   // Keep the shadow frustum around the car
   sun.position.copy(state.position).addScaledVector(sunDir, 80);
