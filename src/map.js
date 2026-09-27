@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { loadGltf } from './gltf.js';
 import { createGround } from './ground.js';
-import { buildBlock, blockLayout } from './blocks.js';
+import { buildBlock, blockLayout, buildMast } from './blocks.js';
 
 // The housing estate, built from a hand-made map file (src/maps/*.json: models, positions, turns): the ground (streets,
 // sidewalks, lots, yards) is one pixel texture (ground.js), the blocks of flats are built in code (blocks.js), the rest
@@ -106,6 +106,15 @@ export async function createMap(scene, physics, map) {
         surface: o.surface,
       });
     }
+  }
+
+  // --- Free-standing 5G masts (fiveg.js makes them felt): a tall lattice tower on a concrete base ---
+  for (const m of map.masty ?? []) {
+    const { group, blink } = buildMast(m.h ?? 26, 1.6);
+    group.position.set(m.x, 0, m.z);
+    scene.add(group);
+    blinks.push(blink);
+    physics.addStaticBox({ x: m.x, y: 0.6, z: m.z }, { x: 1.2, y: 0.6, z: 1.2 }, { surface: 'metal' });
   }
 
   // --- Glowing signs (Żappka, Supersam) ---

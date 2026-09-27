@@ -21,6 +21,7 @@ import { createAudio, audioSettings } from './audio.js';
 import { applyCar, carDrivetrain } from './cars.js';
 import { driveSettings } from './engine.js';
 import { createEconomy, economySettings } from './economy.js';
+import { createFiveG, fivegSettings, mastsOf } from './fiveg.js';
 import { createNarrator, narratorSettings } from './narrator.js';
 import { createMission, formatTime } from './mission.js';
 import { createMarkers } from './marker.js';
@@ -68,7 +69,7 @@ scene.add(ambient, moon, moon.target);
 const fill = new THREE.PointLight(0xc8d4ff, night.carLight, 14, 1);
 scene.add(fill, chaseCam, dioCam);
 
-const { composer, bloom, apply: applyPixel, setCamera } = createPixelComposer(renderer, scene, dioCam);
+const { composer, bloom, apply: applyPixel, setCamera, setGlitch } = createPixelComposer(renderer, scene, dioCam);
 function applyNight() {
   scene.fog.far = night.visibility;
   renderer.toneMappingExposure = night.exposure;
@@ -188,6 +189,7 @@ let pushing = false; // empty tank: the player pushes the car
 let pending = null; // the next mission, waiting for enough respect
 const storyFlags = {}; // flags set in conversations (dialogue choices `set`), for later conditions
 let offerTimer = 0;
+const fiveg = createFiveG(mastsOf(map)); // 5G as atmosphere near the masts (fiveg.js)
 const narrator = createNarrator();
 let mission = createMission(mdef, points, teksty);
 const dialogue = createDialogueUI({ people: PEOPLE, texts: teksty.rozmowa });
@@ -486,6 +488,14 @@ snd.add(audioSettings, 'skid', 0, 2, 0.01).name('pisk opon');
 snd.add(audioSettings, 'impact', 0, 2, 0.01).name('uderzenia');
 snd.add(audioSettings, 'warning', 0, 2, 0.01).name('ostrzeżenie (rezerwa)');
 snd.add(audioSettings, 'typing', 0, 2, 0.01).name('pisanie (narrator)');
+snd.add(audioSettings, 'static', 0, 2, 0.01).name('szum 5G');
+const g5f = gui.addFolder('5G (klimat)').close();
+g5f.add(fivegSettings, 'radius', 5, 120, 1).name('zasięg masztu (m)');
+g5f.add(fivegSettings, 'lights', 0, 1, 0.05).name('mruganie świateł');
+g5f.add(fivegSettings, 'noise', 0, 1, 0.05).name('szum i trzaski');
+g5f.add(fivegSettings, 'engine', 0, 1, 0.05).name('przerywanie silnika');
+g5f.add(fivegSettings, 'image', 0, 1, 0.05).name('zakłócenia obrazu');
+g5f.add(fivegSettings, 'comment', 5, 600, 5).name('narrator: co najmniej co (s)');
 const bat = gui.addFolder('Paliwo, kasa, szacun i misja').close();
 bat.add(economySettings, 'fuelScale', 1, 80, 1).name('paliwo: przyspieszenie spalania (×)');
 bat.add(economySettings, 'driftFuel', 1, 3, 0.05).name('paliwo: drift pali (×)');
@@ -691,7 +701,7 @@ const menu = createMenu({
   },
 });
 applySettings(settings);
-if (new URLSearchParams(location.search).has('debug')) window.agro = { economy, points, scorer, choice, get mission() { return mission; }, people, dialogue, get race() { return race; }, startMission, narrator, car, menu, settings, perf: () => perf, paused: () => paused, resume: () => setPaused(false), tt: () => turntable, carYaw: () => { const f = new THREE.Vector3(1, 0, 0).applyQuaternion(carView.root.quaternion); return Math.atan2(-f.z, f.x); } }; // for testing from the console
+if (new URLSearchParams(location.search).has('debug')) window.agro = { economy, points, fiveg, scorer, choice, get mission() { return mission; }, people, dialogue, get race() { return race; }, startMission, narrator, car, menu, settings, perf: () => perf, paused: () => paused, resume: () => setPaused(false), tt: () => turntable, carYaw: () => { const f = new THREE.Vector3(1, 0, 0).applyQuaternion(carView.root.quaternion); return Math.atan2(-f.z, f.x); } }; // for testing from the console
 // ?plan – the whole map from straight above, lit like daytime (docs/mapa.md screenshot, checking the layout)
 const PLAN = new URLSearchParams(location.search).has('plan');
 if (PLAN) {
@@ -775,6 +785,9 @@ function tick(time) {
     if (car.state.forwardSpeed < 0.5) controls.brake = 0;
   }
   if (pushIt) car.push(1.2 * dt);
+  // 5G: near a mast the engine misfires now and then (the throttle drops out for a moment)
+  const g5 = fiveg.update(dt, car.state.position);
+  controls.throttle *= g5.throttle;
   physics.step(dt, (h) => car.update(controls, h), () => car.afterStep());
   const state = car.read();
   carView.sync(state);
@@ -841,7 +854,10 @@ function tick(time) {
     }
   } else if (!onPad) atShop = false;
   // Headlights: always on (the lamp and battery business is gone); an empty tank leaves only the parking lights
-  carView.setLights(economy.state.empty ? 0.25 : 1, 1, lightsState.high);
+  carView.setLights((economy.state.empty ? 0.25 : 1) * g5.lights, 1, lightsState.high); // (5G: they flicker near a mast)
+  audio.setStatic(g5.noise, g5.crackle);
+  setGlitch(g5.glitch, timer.getElapsed());
+  if (g5.say && !dialogue.open) narrator.say(teksty['5g'][Math.floor(Math.random() * teksty['5g'].length)]);
   district.update(timer.getElapsed(), onPad && stopped);
   // A mission waiting for respect: offered when there is enough
   if (pending && !choice.open && !dialogue.open && economy.state.respect >= needed(pending) && (offerTimer -= dt) <= 0) offerMission();

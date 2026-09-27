@@ -21,7 +21,12 @@ Wersje po kolei. Szczegóły modułów: [`CLAUDE.md`](CLAUDE.md), zmiany w każd
 | v0.5a | szybkie poprawki: skalowanie obrazu, piksele, pisk przy cofaniu, jeden obrót, garaż z przeciąganiem, narrator z maszyną do pisania | zrobione |
 | v0.5b | MVP: postacie, rozmowy z wyborami, misja 2 „Pokaz”, misja 3 „Wyścig z sąsiadem”, kolejność misji i zapis | zrobione |
 | v0.5c | prawdziwe osiedle: bloki z wielkiej płyty z kodu, ulice w pętlach, podwórka, podłoże jako pikselowa tekstura | zrobione |
-| v0.6 | teksty docelowe od scenarzysty, kolejne misje, radio (mgła/przyczepność), uszkodzenia | następne |
+| v0.6a | wszystko bez klawiatury: telefon i pad (panel wyboru, podsumowanie z przyciskami) | zrobione |
+| v0.6b | drift: strefa balansu (stopniowy kąt, ostrzeżenie, obrót dopiero po błędzie) | zrobione |
+| v0.6c | napęd z realnych danych (Polonez Caro 1.6 GLE, silniki pod swapy, lakiery FSO), docs/fizyka-aut.md | zrobione |
+| v0.6d | paliwo, kasa, szacun zamiast baterii; stacja „Kometa”, Żappka ze sklepem, warunki w rozmowach | zrobione |
+| v0.6e | 5G jako klimat przy masztach | zrobione |
+| v0.7 | teksty docelowe od scenarzysty, kolejne misje, swapy silników i lakiery w garażu (UI), radio, uszkodzenia | następne |
 | v0.15 | dopracowanie sterowania mobilnego (po testach na telefonach) | planowane |
 
 ## Sterowanie mobilne

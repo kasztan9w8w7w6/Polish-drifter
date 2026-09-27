@@ -238,29 +238,38 @@ export function buildBlock(spec, { detail = 1 } = {}) {
       group.add(p);
     }
   }
-  // The 5G mast: a lattice tower on the roof, dishes, a blinking red light
+  // The 5G mast on the roof (buildMast): a lattice tower, antenna panels, a blinking red light
   let blink = null;
   if (spec.maszt) {
-    const m = [];
-    const H0 = L.height, h = 16;
-    for (const [sx, sz] of [[-0.8, -0.8], [0.8, -0.8], [0.8, 0.8], [-0.8, 0.8]]) box(m, 0.14, h, 0.14, sx * (1 - 0.5), H0 + h / 2, sz * 0.5);
-    for (let y = 1.5; y < h; y += 1.6) {
-      box(m, 1.0, 0.08, 0.08, 0, H0 + y, -0.4);
-      box(m, 1.0, 0.08, 0.08, 0, H0 + y, 0.4);
-      box(m, 0.08, 0.08, 1.0, -0.4, H0 + y, 0);
-      box(m, 0.08, 0.08, 1.0, 0.4, H0 + y, 0);
-    }
-    for (const [x, z, r] of [[0.9, 0, 0], [-0.9, 0, Math.PI], [0, 0.9, Math.PI / 2]]) {
-      const panel = new THREE.BoxGeometry(0.25, 1.6, 0.6).rotateY(r).translate(x, H0 + h - 2, z);
-      m.push(panel);
-    }
-    group.add(new THREE.Mesh(mergeGeometries(m), new THREE.MeshStandardMaterial({ color: 0x9a9a9e, roughness: 0.6 })));
-    blink = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.35), new THREE.MeshBasicMaterial({ color: 0xff2a1a }));
-    blink.position.set(0, H0 + h + 0.3, 0);
-    blink.material.userData.pixel = true;
-    group.add(blink);
+    const m = buildMast(16);
+    m.group.position.y = L.height;
+    group.add(m.group);
+    blink = m.blink;
   }
   return { group, layout: L, blink };
+}
+
+// A 5G mast: a four-legged lattice tower `h` m tall (standing at y = 0 of its group), antenna panels at the top and a
+// blinking red light (map.js blinks it). On a block's roof or free-standing (map `masty`).
+export function buildMast(h = 16, width = 0.8) {
+  const m = [];
+  const leg = (x, z) => m.push(new THREE.BoxGeometry(0.14, h, 0.14).translate(x, h / 2, z));
+  const w = width / 2;
+  for (const [x, z] of [[-w, -w], [w, -w], [w, w], [-w, w]]) leg(x, z);
+  for (let y = 1.5; y < h; y += 1.6) {
+    m.push(new THREE.BoxGeometry(width + 0.2, 0.08, 0.08).translate(0, y, -w));
+    m.push(new THREE.BoxGeometry(width + 0.2, 0.08, 0.08).translate(0, y, w));
+    m.push(new THREE.BoxGeometry(0.08, 0.08, width + 0.2).translate(-w, y, 0));
+    m.push(new THREE.BoxGeometry(0.08, 0.08, width + 0.2).translate(w, y, 0));
+  }
+  for (const [x, z, r] of [[w + 0.5, 0, 0], [-w - 0.5, 0, Math.PI], [0, w + 0.5, Math.PI / 2]]) m.push(new THREE.BoxGeometry(0.25, 1.6, 0.6).rotateY(r).translate(x, h - 2, z));
+  const group = new THREE.Group();
+  group.add(new THREE.Mesh(mergeGeometries(m), new THREE.MeshStandardMaterial({ color: 0x9a9a9e, roughness: 0.6 })));
+  const blink = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.35), new THREE.MeshBasicMaterial({ color: 0xff2a1a }));
+  blink.position.set(0, h + 0.3, 0);
+  blink.material.userData.pixel = true;
+  group.add(blink);
+  return { group, blink };
 }
 
 let pool = null;
