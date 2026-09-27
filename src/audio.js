@@ -45,8 +45,10 @@ export function createAudio() {
       // reversing is not a slide) and wheelspin on a full-throttle launch.
       const slide = state.grounded && state.speed > 4 ? Math.min(1, Math.max(0, (state.sideSlip - 8) / 30)) : 0;
       const intensity = Math.max(slide, (state.wheelspin ?? 0) * 0.55);
-      skidVol = lerp(skidVol, intensity > 0 ? dbToGain(-10 + 10 * intensity) : 0, Math.min(1, dt * 10));
-      skidRate = lerp(skidRate, 0.8 + Math.min(1, state.speed / 25) * 0.5, 0.1);
+      // on the edge of a spin (vehicle state.spinWarning): louder and higher – the tyres give up
+      const warn = state.spinWarning ?? 0;
+      skidVol = lerp(skidVol, intensity > 0 ? dbToGain(-10 + 10 * intensity + 5 * warn) : 0, Math.min(1, dt * 10));
+      skidRate = lerp(skidRate, 0.8 + Math.min(1, state.speed / 25) * 0.5 + 0.35 * warn, 0.1);
       skid.volume(skidVol * audioSettings.skid, skidId);
       skid.rate(skidRate, skidId);
       impactCooldown -= dt;

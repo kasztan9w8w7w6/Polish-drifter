@@ -63,7 +63,11 @@ const base = {
   proGrowHandbrake: 20, // °/s more on the handbrake
   proSteer: 90, // °/s the angle drops per full counter-steer lock
   proSteerInto: 40, // °/s the angle grows per full lock into the slide (too much → spin)
-  proSpinAngle: 75, // ° past this the car spins out
+  proSpinAngle: 75, // ° past this the car spins out at once (the hard limit)
+  // Balance zone (v0.6b): above proDangerAngle the car is on the edge – held there proSpinDelay s without counter-steer
+  // and without backing off the throttle, it spins; until then it warns (louder squeal, camera shake) and can be saved
+  proDangerAngle: 60,
+  proSpinDelay: 1,
   proSpinTime: 1.2, // s the spin lasts (engine off, speed scrubbed)
 
   // Contact / recovery
@@ -98,6 +102,7 @@ const base = {
   fovFast: 78,
   shakeSpeed: 0.25, // shake at top speed (0..1)
   shakeImpact: 1, // shake from hits
+  shakeWarning: 0.55, // camera rumble at the edge of a spin (drift balance zone, v0.6b)
 };
 
 export type Tuning = typeof base;
@@ -118,13 +123,16 @@ const normal: Tuning = {
   sharpSpeed: 17, // ≈ 61 km/h
   sharpTime: 0.3,
   realCounter: 1,
-  proGrow: 4,
-  proGrowThrottle: 45,
-  proThrottleNeutral: 0.45,
-  proGrowHandbrake: 25,
+  // (v0.6b: full throttle deepens the angle gradually, ~half throttle holds it, backing off reduces it)
+  proGrow: 0,
+  proGrowThrottle: 24, // full throttle: +12 °/s
+  proThrottleNeutral: 0.5,
+  proGrowHandbrake: 20,
   proSteer: 80,
-  proSteerInto: 45,
-  proSpinAngle: 65,
+  proSteerInto: 35,
+  proDangerAngle: 50,
+  proSpinDelay: 1.1,
+  proSpinAngle: 72,
   proSpinTime: 1.4,
   transitionSteer: 0.55,
   driftExitDelay: 1.2, // the angle dynamics end the drift (caught / spun), not a timer
@@ -149,12 +157,14 @@ export const presets: Record<string, Tuning> = {
     sharpThrottle: 0.95,
     sharpSpeed: 19,
     sharpTime: 0.4,
-    proGrow: 8,
-    proGrowThrottle: 55,
+    proGrow: 0,
+    proGrowThrottle: 30, // full throttle: +15 °/s
     proThrottleNeutral: 0.5,
     proSteer: 75,
-    proSteerInto: 55,
-    proSpinAngle: 55,
+    proSteerInto: 45,
+    proDangerAngle: 45,
+    proSpinDelay: 0.85,
+    proSpinAngle: 65,
     proSpinTime: 1.6,
     transitionSteer: 0.45,
     driftSpeedLoss: 0.15,

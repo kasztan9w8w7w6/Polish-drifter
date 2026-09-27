@@ -3,6 +3,20 @@
 Wersje do v0.4c mają lokalne tagi w git (serwer odrzuca wypychanie tagów); od v0.5 wersję znajdziesz po commicie „v0.5a – …”.
 Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
 
+## v0.6b – drift: strefa balansu (Normalny, Pro)
+- **Kąt:** pełny gaz pogłębia kąt stopniowo (Normalny +12°/s, Pro +15°/s; wcześniej ok. 29°/s); ok. pół gazu trzyma kąt,
+  odpuszczenie go zmniejsza; kontra reguluje.
+- **Obrót** dopiero po dłuższym błędzie. Powyżej 50° (Pro 45°) liczy się czas bez kontry i bez odpuszczenia gazu:
+  po 1,1 s (Pro 0,85 s) auto się obraca. Każda korekta cofa licznik dwa razy szybciej.
+  Twardy limit 72° (Pro 65°) zostaje na skrajne przypadki.
+- **Ostrzeżenie przed obrotem:** mocniejszy i wyższy pisk opon, drżenie kamery (`shakeWarning` w panelu G).
+- **Zmierzone** (od wejścia ręcznym przy 60 km/h, pełny gaz bez korekt):
+  - Normalny: 35° po 1,45 s, strefa po 2,8 s, obrót po 3,9 s (1,08 s w strefie);
+  - Pro: 35° po 1,0 s, strefa po 1,8 s, obrót po 2,6 s (0,83 s w strefie);
+  - kontra lub odpuszczenie gazu przy 60% ostrzeżenia ratuje auto w obu presetach; pół gazu trzyma 30,1° → 30,1° przez 1,5 s.
+- Nowy test `test/balance.test.mjs`; stare testy dopasowane (zaniedbany drift obserwowany 6 s zamiast 3 s, kontra testowego
+  kierowcy dobrana do nowego tempa).
+
 ## v0.6a – wszystko bez klawiatury (telefon, pad)
 - **Błąd blokujący:** podsumowanie misji znikało po 20 s i na telefonie nie było już jak przejść do następnej misji.
   Teraz podsumowanie to panel z przyciskami „Dalej” / „Jeszcze raz” (po ostatniej misji „Wolna jazda”), który czeka na wybór.

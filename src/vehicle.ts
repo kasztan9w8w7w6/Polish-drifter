@@ -109,6 +109,7 @@ export function createVehicle(
   let spinTimer = 0; // s left of a spin-out (Pro: over-rotated drift)
   let spinRate = 0; // rad/s the body still rotates in a spin-out (damped)
   let spinCool = 0; // s left before a slide can start again after a spin
+  let danger = 0; // s spent over proDangerAngle without correcting (the balance zone)
   let spins = 0;
   const maxAngle = () => (t.realCounter > 0.5 ? t.proSpinAngle : t.driftAngleMax); // degrees
   let crashTimer = 0; // s left without engine power towards the obstacle after a hit
@@ -140,6 +141,7 @@ export function createVehicle(
     yawRate: 0,
     drifting: false,
     spinning: false, // Pro: spun out after over-rotating a drift
+    spinWarning: 0, // 0..1: how close the balance zone is to a spin (squeal, camera shake)
     spins: 0,
     driftFactor: 0,
     steerAngle: 0, // visual front-wheel angle (rad)
@@ -256,7 +258,14 @@ export function createVehicle(
           // caught it: grip again (nearly straight, not pushing it any more); the rest straightens at straightenRate
           drifting = false;
         }
-      } else if (Math.abs(angle) > t.proSpinAngle * DEG) {
+      }
+      // Balance zone: over proDangerAngle the clock runs while the player neither counter-steers nor backs off; any
+      // correction winds it back twice as fast. The warning (state.spinWarning) grows with it.
+      const over = drifting && Math.abs(angle) > t.proDangerAngle * DEG;
+      const correcting = u < -0.25 || throttle < t.proThrottleNeutral - 0.05;
+      danger = over && !correcting ? danger + h * (u > 0.3 ? 1.4 : 1) : Math.max(0, danger - 2 * h);
+      if (drifting && (Math.abs(angle) > t.proSpinAngle * DEG || danger >= t.proSpinDelay)) {
+        danger = 0;
         drifting = false; // too much: spin
         spinTimer = t.proSpinTime;
         spinRate = (SPIN_TURN * SPIN_DECAY) / Math.max(t.proSpinTime, 0.1) / (1 - Math.exp(-SPIN_DECAY));
@@ -565,6 +574,7 @@ export function createVehicle(
     state.yawRate = turnRate;
     state.drifting = drifting;
     state.spinning = spinTimer > 0;
+    state.spinWarning = spinTimer > 0 || !drifting ? 0 : Math.min(1, danger / Math.max(t.proSpinDelay, 0.1));
     state.spins = spins;
     state.driftFactor = driftBlend;
     state.grounded = grounded;
@@ -608,7 +618,7 @@ export function createVehicle(
     body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     body.setAngvel({ x: 0, y: 0, z: 0 }, true);
     travel = yaw;
-    angle = turnRate = engine = driftBlend = sharpTimer = noThrottleTimer = recentThrottle = accel = prevForwardSpeed = stuckTimer = crashTimer = spinTimer = spinRate = spinCool = 0;
+    angle = turnRate = engine = driftBlend = sharpTimer = noThrottleTimer = recentThrottle = accel = prevForwardSpeed = stuckTimer = crashTimer = spinTimer = spinRate = spinCool = danger = 0;
     drifting = false;
     driftSide = 0;
     hold = 1;

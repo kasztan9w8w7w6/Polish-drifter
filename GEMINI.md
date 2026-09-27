@@ -146,8 +146,12 @@ Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości n
 - **Kontra:** w drifcie przednie koła same pokazują kontrę (`counterSteerVisual` × kąt driftu), niezależnie od wejścia.
   Normalny/Pro (`realCounter` = 1): kąt nie goni celu, tylko sam rośnie (`proGrow` + (gaz − `proThrottleNeutral`) · `proGrowThrottle`
   + ręczny `proGrowHandbrake`; za mało gazu = kąt maleje i auto łapie przyczepność poniżej 4°);
-  kontra go zmniejsza (`proSteer` °/s na pełny skręt), skręt w zakręt pogłębia (`proSteerInto`), powyżej `proSpinAngle`
-  obrót (`proSpinTime`: bez gazu, obrót tłumiony – dokłada ~250°, najwyżej jeden – auto staje; 1 s bez nowego poślizgu). Łatwy: bez zmian.
+  kontra go zmniejsza (`proSteer` °/s na pełny skręt), skręt w zakręt pogłębia (`proSteerInto`).
+  **Strefa balansu (v0.6b):** pełny gaz pogłębia kąt stopniowo (Normalny +12°/s, Pro +15°/s), ok. pół gazu trzyma, odpuszczenie
+  zmniejsza. Powyżej `proDangerAngle` (50° / 45°) liczy się czas bez korekty (bez kontry i bez odpuszczenia gazu); po
+  `proSpinDelay` (1,1 s / 0,85 s) obrót, a wcześniej ostrzeżenie `state.spinWarning` 0..1 (głośniejszy i wyższy pisk,
+  drżenie kamery `shakeWarning`); korekta cofa licznik 2× szybciej. `proSpinAngle` (72° / 65°) = twardy limit, obrót od razu.
+  Obrót (`proSpinTime`: bez gazu, tłumiony – dokłada ~250°, najwyżej jeden – auto staje; 1 s bez nowego poślizgu). Łatwy: bez zmian.
 - **Kontakt:** kula ma restitution 0; prędkość „od podłoża” jest tłumiona (`landingDamping`), model podąża za wysokością
   kuli z opóźnieniem (`suspension`).
 - **Przeszkody** (kolidery z `surface`, grupa kolizji OBSTACLE_GROUP) mają kolizję dokładnie taką, jak wyglądają. Kula ich
