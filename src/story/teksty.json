@@ -1,11 +1,7 @@
 {
-  "_help": "Teksty systemowe gry (nie z misji ani rozmów): powrót po „Kontynuuj”, plansza rozładowanej baterii, wyścig, podsumowanie. Etykiety przycisków menu są w src/menu.js.",
+  "_help": "Teksty systemowe gry (nie z misji ani rozmów): powrót po „Kontynuuj”, paliwo i stacja, pusty bak, Żappka, poziomy szacunu, wyścig, podsumowanie. Etykiety przycisków menu są w src/menu.js.",
   "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
-  "powrot": "PLACEHOLDER: Wracasz. Mgła ta sama, maszt ten sam, bateria prawie ta sama.",
-  "bateriaPadla": {
-    "tytul": "Bateria padła",
-    "tekst": "PLACEHOLDER: Maszt buczy coraz głośniej. Wracasz do ostatniego zapisu…"
-  },
+  "powrot": "PLACEHOLDER: Wracasz. Mgła ta sama, maszt ten sam, paliwa mniej niż było.",
   "rozmowa": {
     "podpowiedz": "rozmowa",
     "dalej": "dalej",
@@ -35,5 +31,59 @@
     "dalej": "Dalej",
     "wolnaJazda": "Wolna jazda",
     "jeszczeRaz": "Jeszcze raz"
-  }
+  },
+  "szacun": [
+    {
+      "od": 0,
+      "nazwa": "PLACEHOLDER: Frajer z parteru"
+    },
+    {
+      "od": 50,
+      "nazwa": "PLACEHOLDER: Ziomek z klatki"
+    },
+    {
+      "od": 150,
+      "nazwa": "PLACEHOLDER: Kierowca z osiedla"
+    },
+    {
+      "od": 300,
+      "nazwa": "PLACEHOLDER: Drifter spod Żappki"
+    },
+    {
+      "od": 600,
+      "nazwa": "PLACEHOLDER: Legenda Kosmonautów"
+    }
+  ],
+  "hud": {
+    "kasa": "zł",
+    "szacun": "szacun",
+    "dlug": "dług"
+  },
+  "stacja": {
+    "nazwa": "PLACEHOLDER: Stacja paliw „Kometa”",
+    "tekst": "PLACEHOLDER: Pan Józek wyciera ręce w szmatę. — Ile?",
+    "doPelna": "Do pełna",
+    "zaKwote": "Za {zl} zł",
+    "anuluj": "Nic",
+    "cena": "Cena",
+    "wBaku": "W baku",
+    "naZeszyt": "PLACEHOLDER: Na zeszyt, ostatni raz."
+  },
+  "pusty": {
+    "tytul": "PLACEHOLDER: Bak pusty",
+    "tekst": "PLACEHOLDER: Silnik gaśnie. Możesz pchać albo zadzwonić po kumpla, który doholuje cię na stację.",
+    "pchaj": "Pchaj",
+    "kumpel": "Zadzwoń po kumpla ({zl} zł)",
+    "brakKasy": "PLACEHOLDER: Kumpel nie odbiera. Pewnie przez te długi."
+  },
+  "zappka": {
+    "tytul": "PLACEHOLDER: Żappka 24h",
+    "tekst": "PLACEHOLDER: Zapisano. Pani ekspedientka patrzy znad krzyżówki.",
+    "energetyk": "Energetyk „Tygrys 5G” ({zl} zł)",
+    "opisEnergetyka": "PLACEHOLDER: Przez minutę szacun rośnie dwa razy szybciej.",
+    "wyjdz": "Wyjdź",
+    "wypity": "PLACEHOLDER: Serce bije jak dwusuw. Szacun ×2 przez minutę."
+  },
+  "szacunWzrost": "PLACEHOLDER: Nowy poziom szacunu: {nazwa}",
+  "zarobek": "+{zl} zł"
 }

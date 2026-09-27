@@ -1,9 +1,12 @@
 {
-  "_help": "Misja: kroki po kolei. type: reach (point z mapy, stop: true = trzeba stanąć), battery (min %), wait (time s), talk (npc, dialog, result = jak ma się skończyć rozmowa, refuse = narrator, gdy inaczej), score (point = strefa, min = punkty, time = s od wjazdu, fail = narrator po porażce), race (route z mapy, laps, rival = postać, fail). goal = tekst celu na HUD, say = narrator na początku kroku, done = na końcu.",
+  "_help": "Misja: kroki po kolei. type: reach (point z mapy, stop: true = trzeba stanąć), wait (time s), talk (npc, dialog, result = jak ma się skończyć rozmowa, refuse = narrator, gdy inaczej), score (point = strefa, min = punkty, time = s od wjazdu, fail = narrator po porażce), race (route z mapy, laps, rival = postać, fail), money (min zł), refuel (min % baku). start.paliwo = % baku przy nowej grze; reward = kasa i szacun za ukończenie. goal = tekst celu na HUD, say = narrator na początku kroku, done = na końcu.",
   "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
   "id": "pokaz",
   "title": "PLACEHOLDER: Pokaz",
-  "start": { "point": "shop", "battery": 80 },
+  "start": {
+    "point": "shop",
+    "paliwo": 60
+  },
   "intro": [
     "PLACEHOLDER: Hot-dog zjedzony. Na placu pod Supersamem ktoś się śmieje. Kilku ktosiów.",
     "PLACEHOLDER: Chłopaki z osiedla. Oni wiedzą, kto umie jeździć, a kto tylko myśli, że umie."
@@ -16,8 +19,12 @@
       "dialog": "pokaz-start",
       "result": "zgoda",
       "goal": "PLACEHOLDER: Pogadaj z Sebą przy placu pod Supersamem",
-      "say": ["PLACEHOLDER: Seba stoi przy placu. Podjedź i stań obok – porozmawiacie."],
-      "refuse": ["PLACEHOLDER: Seba wzrusza ramionami. Chłopaki też. Poczekają, i tak nie mają nic do roboty."]
+      "say": [
+        "PLACEHOLDER: Seba stoi przy placu. Podjedź i stań obok – porozmawiacie."
+      ],
+      "refuse": [
+        "PLACEHOLDER: Seba wzrusza ramionami. Chłopaki też. Poczekają, i tak nie mają nic do roboty."
+      ]
     },
     {
       "id": "drift",
@@ -26,9 +33,15 @@
       "min": 3000,
       "time": 60,
       "goal": "PLACEHOLDER: Pokaz na placu",
-      "say": ["PLACEHOLDER: Wjedź na plac. Zegar rusza, kiedy przekroczysz linię latarń. Szeroko, bokiem, bez obijania."],
-      "fail": ["PLACEHOLDER: Czas minął. Chłopaki kręcą głowami. Masz jeszcze jedną szansę. I jeszcze jedną. Oni tu stoją do rana."],
-      "done": ["PLACEHOLDER: Kamil upuszcza papierosa. Dawid przestaje nagrywać. Seba kiwa głową. Raz. Powoli."]
+      "say": [
+        "PLACEHOLDER: Wjedź na plac. Zegar rusza, kiedy przekroczysz linię latarń. Szeroko, bokiem, bez obijania."
+      ],
+      "fail": [
+        "PLACEHOLDER: Czas minął. Chłopaki kręcą głowami. Masz jeszcze jedną szansę. I jeszcze jedną. Oni tu stoją do rana."
+      ],
+      "done": [
+        "PLACEHOLDER: Kamil upuszcza papierosa. Dawid przestaje nagrywać. Seba kiwa głową. Raz. Powoli."
+      ]
     },
     {
       "id": "gratulacje",
@@ -36,13 +49,31 @@
       "npc": "seba",
       "dialog": "pokaz-koniec",
       "goal": "PLACEHOLDER: Podjedź do Seby",
-      "say": ["PLACEHOLDER: Seba chce ci coś powiedzieć."]
+      "say": [
+        "PLACEHOLDER: Seba chce ci coś powiedzieć."
+      ]
     }
   ],
-  "outro": ["PLACEHOLDER: Szacunek na osiedlu to waluta twardsza niż złotówka. Masz go trochę więcej."],
+  "outro": [
+    "PLACEHOLDER: Szacunek na osiedlu to waluta twardsza niż złotówka. Masz go trochę więcej."
+  ],
   "hints": [
-    { "on": "warn", "once": true, "say": ["PLACEHOLDER: Bateria piszczy. Na placu naładujesz ją w dwie minuty, jak nie będziesz się obijał."] },
-    { "on": "dead", "say": ["PLACEHOLDER: Cisza. Chłopaki klaszczą. Ironicznie."] },
-    { "on": "respawn", "say": ["PLACEHOLDER: Znowu w aucie. Plac czeka."] }
-  ]
+    {
+      "on": "rezerwa",
+      "once": true,
+      "say": [
+        "PLACEHOLDER: Rezerwa. Na placu da się zarobić na paliwo, a stacja jest przy głównej."
+      ]
+    },
+    {
+      "on": "pusty",
+      "say": [
+        "PLACEHOLDER: Bak pusty. Pchaj albo dzwoń po kumpla – i tak wszyscy patrzą."
+      ]
+    }
+  ],
+  "reward": {
+    "kasa": 80,
+    "szacun": 120
+  }
 }

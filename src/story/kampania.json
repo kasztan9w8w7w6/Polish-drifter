@@ -1,9 +1,21 @@
 {
-  "_help": "Kolejność misji (id z src/missions/*.json). „Kontynuuj” w menu wraca do ostatniej rozpoczętej misji. koniec = narrator po ostatniej misji.",
+  "_help": "Kolejność misji (id z src/missions/*.json). wymagania: szacun potrzebny, żeby zacząć misję (po poprzedniej trzeba go uzbierać: misje, drift przy ludziach). „Kontynuuj” w menu wraca do ostatniej rozpoczętej misji. koniec = narrator po ostatniej misji.",
   "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
-  "misje": ["paczka", "pokaz", "wyscig"],
+  "misje": [
+    "paczka",
+    "pokaz",
+    "wyscig"
+  ],
   "koniec": [
     "PLACEHOLDER: To wszystko na tę noc. Osiedle śpi, maszt buczy, Polonez stygnie.",
     "PLACEHOLDER: Dalsze misje w kolejnej wersji. Możesz jeździć dalej."
-  ]
+  ],
+  "wymagania": {
+    "pokaz": 50,
+    "wyscig": 150
+  },
+  "brakSzacunu": [
+    "PLACEHOLDER: Chłopaki jeszcze cię nie znają. Pojeźdź bokiem tam, gdzie ktoś patrzy – szacun sam przyjdzie."
+  ],
+  "nowaMisja": "PLACEHOLDER: Na osiedlu coś się dzieje."
 }

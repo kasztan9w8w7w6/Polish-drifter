@@ -1,6 +1,6 @@
 // Dashboard in the style of 70s/80s Eastern Bloc cars (drawn from scratch, no original artwork copied): two round
-// analogue dials with needles (speedometer, rev counter), a battery gauge like an old fuel gauge, a row of warning
-// lamps (charging, lights, engine, handbrake), a gear window and a drum counter for the points. Warm amber backlight.
+// analogue dials with needles (speedometer, rev counter), a fuel gauge, a row of warning
+// lamps (fuel reserve, lights, engine, handbrake), a gear window and a drum counter for the points. Warm amber backlight.
 // It is drawn on a small canvas at low resolution and scaled up without smoothing (image-rendering: pixelated), so every
 // line, digit and needle is made of big square pixels like the rest of the game.
 const W = 256;
@@ -24,7 +24,7 @@ export function createDashboard(canvas) {
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d');
-  const needles = { speed: 0, rpm: 0, battery: 1 };
+  const needles = { speed: 0, rpm: 0, fuel: 1 };
 
   const px = (x, y, c) => {
     ctx.fillStyle = c;
@@ -113,17 +113,18 @@ export function createDashboard(canvas) {
       ctx.fillRect(x + 7, y + 5, 3, 1);
       ctx.fillRect(x + 8, y + 4, 1, 3);
     },
+    fuel: (x, y, c) => { ctx.fillStyle = c; ctx.fillRect(x + 3, y + 2, 5, 6); ctx.fillRect(x + 4, y + 3, 3, 1); ctx.fillRect(x + 8, y + 3, 1, 1); ctx.fillRect(x + 9, y + 4, 1, 3); ctx.fillRect(x + 2, y + 8, 7, 1); },
     light: (x, y, c) => { ctx.fillStyle = c; ctx.fillRect(x + 2, y + 2, 3, 5); ctx.fillRect(x + 5, y + 3, 1, 3); for (let i = 0; i < 3; i++) ctx.fillRect(x + 7, y + 2 + i * 2, 4, 1); },
     engine: (x, y, c) => { ctx.fillStyle = c; ctx.fillRect(x + 3, y + 3, 7, 4); ctx.fillRect(x + 5, y + 2, 3, 1); ctx.fillRect(x + 2, y + 4, 1, 2); ctx.fillRect(x + 10, y + 4, 1, 2); },
     brake: (x, y, c) => { text('P', x + 5, y + 2, c); ctx.fillStyle = c; ctx.fillRect(x + 2, y + 2, 1, 5); ctx.fillRect(x + 10, y + 2, 1, 5); },
   };
 
-  // s: { speedKmh, rpm, redRpm, gear, battery (0..100), charging, highBeam, lightsOn, engineWarn, handbrake, points }
+  // s: { speedKmh, rpm, redRpm, gear, fuel (0..100), reserve, highBeam, lightsOn, engineWarn, handbrake, points }
   function draw(s, dt) {
     const k = 1 - Math.exp(-12 * dt); // needles swing, not jump
     needles.speed += (s.speedKmh - needles.speed) * k;
     needles.rpm += (s.rpm - needles.rpm) * k;
-    needles.battery += (s.battery / 100 - needles.battery) * (1 - Math.exp(-4 * dt));
+    needles.fuel += (s.fuel / 100 - needles.fuel) * (1 - Math.exp(-2 * dt)); // (a fuel needle is lazy)
     ctx.clearRect(0, 0, W, H);
     // Panel
     ctx.fillStyle = '#0a0705';
@@ -136,7 +137,7 @@ export function createDashboard(canvas) {
     // Rev counter 0–7 × 1000, red from the redline
     const redK = Math.floor((s.redRpm ?? 6000) / 500) / 2;
     dial(204, 52, 44, 7, 0.5, 1, 1, redK, 'x1000');
-    // Battery gauge (like an old fuel gauge): 0 – ½ – 1 over the top of the middle
+    // Fuel gauge: 0 – ½ – 1 over the top of the middle, red at the bottom quarter
     const bx = 128, by = 44, br = 22;
     disc(bx, by, br + 2, BEZEL);
     disc(bx, by, br, FACE);
@@ -152,14 +153,14 @@ export function createDashboard(canvas) {
     text('0', bx - br + 3, by - 12, '#ff3a2a');
     text('½', bx, by - br + 7, AMBER, 'center');
     text('1', bx + br - 6, by - 12, AMBER);
-    const ga = g0 + Math.max(0, Math.min(1, needles.battery)) * gs;
+    const ga = g0 + Math.max(0, Math.min(1, needles.fuel)) * gs;
     const [nx, ny] = at(bx, by, br - 3, ga);
     line(bx, by, nx, ny, NEEDLE, 2);
     disc(bx, by, 2, '#2a1d12');
-    icons.battery(bx - 7, by - 1, AMBER_DIM);
+    icons.fuel(bx - 6, by - 1, AMBER_DIM);
     // Warning lamps
     const ly = 70;
-    lamp(100, ly, s.charging, '#6dff7a', icons.battery);
+    lamp(100, ly, s.reserve, '#ffb020', icons.fuel); // fuel reserve
     lamp(115, ly, s.lightsOn, s.highBeam ? '#4aa8ff' : '#6dff7a', icons.light);
     lamp(130, ly, s.engineWarn, '#ffb020', icons.engine);
     lamp(145, ly, s.handbrake, '#ff3a2a', icons.brake);

@@ -11,7 +11,7 @@ gracz ucieka przed „promieniowaniem 5G”.
 - **Jazda:** arcade. Drift ma być łatwy, płynny i widowiskowy, a auto nie dachuje.
 - **Klimat:** noc, czarna mgła, bloki z wielkiej płyty, dziurawe drogi, garaże, nocne sklepy z fikcyjnymi nazwami.
 - **Przyszłe mechaniki:**
-  - (zrobione w v0.3: bateria ładowana TYLKO driftem, reflektory zależne od baterii, sklep jako punkt zapisu, misja z narratorem),
+  - (zrobione: v0.3 narrator i misje; v0.6d pętla paliwo → drift → kasa → wydatki → szacun odblokowuje misje, zamiast baterii),
   - kolejne misje i dialogi,
   - radio zmieniające mgłę i przyczepność,
   - uszkodzenia.
@@ -65,8 +65,10 @@ src/map.js      – buduje mapę z pliku: podłoże (ground.js), bloki (blocks.j
                   karoserii (0,1–2,2 m): drzewo = pień. `?plan` w adresie: cała mapa z góry (docs/mapa.png).
 src/pixelart.js – pixel-art: RenderPixelatedPass (przykład three.js webgl_postprocessing_pixel), materiały toon z N stopniami,
                   posteryzacja jasności, mgła radialna wokół auta (podmienione chunki fog_*), opcjonalne drżenie PS1
-src/survival.js – pętla przetrwania (logika bez DOM, testy w Node): bateria (rozładowanie, ładowanie driftem jak punkty),
-                  reflektory (headlightLevel), 0% → gaśnięcie → ciemny ekran → restart z punktu zapisu, pole przed Żappką = 100% + zapis
+src/economy.js  – paliwo, kasa, szacun (logika bez DOM, testy w Node): spalanie z prawdziwych obrotów i obciążenia (bsfc
+                  silnika × fuelScale), rezerwa, pusty bak (pchanie / holowanie), stacja, dług (bez blokady gry), kasa za drift
+                  w misji i pokazie, szacun za drift przy ludziach, poziomy, energetyk; zapis (snapshot/restore)
+src/panel.js    – (patrz niżej) panele stacji „Kometa”, pustego baku, sklepu w Żappce
 src/typewriter.js – pisanie jak na maszynie (przerwy po znakach interpunkcyjnych, `keys` = litery do kliknięć); narrator i dialogi
 src/narrator.js – narrator: tekst u góry, pisany typewriter.js, kliknięcie na literę (audio.type), znika po kilku sekundach, nie pauzuje gry
 src/mission.js  – wykonawca misji z plików danych; src/missions/*.json – kroki (reach / battery / wait / talk / score / race),
@@ -89,7 +91,7 @@ src/touch.js    – warstwa dotykowa (tylko na urządzeniach dotykowych): joysti
                   pełny ekran + screen.orientation.lock; w main.js: niższa jakość, FPS w panelu, pauza w tle, plansza „Obróć telefon”
 src/settings.js – ustawienia gracza w localStorage (try/catch, gra działa bez), klawisze do przypisania, piksele wg rozdzielczości
                   (Drobne/Średnie/Grube ≈ 540/360/270 linii, zawsze różne), postęp dla „Kontynuuj”
-src/dashboard.js – zegary jak w autach z bloku wschodniego (prędkościomierz, obrotomierz, bateria jak zegar paliwa, kontrolki,
+src/dashboard.js – zegary jak w autach z bloku wschodniego (prędkościomierz, obrotomierz, zegar paliwa, kontrolki (rezerwa),
                   okienko biegu, bębenkowy licznik punktów): canvas 256×100 powiększony bez wygładzania
 src/turntable.js – obrotnica w garażu (przeciąganie, bezwładność, powrót auto-obrotu), bez DOM
 src/panel.js    – panel wyboru na środku ekranu (podsumowanie misji, stacja, sklep, pusty bak): przyciski dla palca, myszy,
@@ -98,7 +100,7 @@ src/menu.js     – menu (Graj / Kontynuuj / Garaż / Ustawienia), garaż (obrac
                   (grafika, dźwięk, sterowanie + trudność), pauza (Esc / Start); mysz, klawiatura, pad, dotyk
 src/drift.js    – punktacja driftu
 src/effects.js  – dym i ślady opon
-src/main.js     – scena nocna (mgła radialna), HUD (w tym bateria), lil-gui (G), debug kolizji (F), klej bateria/misja/narrator, pętla
+src/main.js     – scena nocna (mgła radialna), HUD (kasa, szacun), lil-gui (G), debug kolizji (F), klej paliwo/stacja/Żappka/misja/narrator, pętla
 public/assets/  – assety (Kenney CC0), public/models/polonez/ – Polonez; każdy wpisany w CREDITS.md
 assets-src/     – źródła assetów (zipy Kenneya, .glb Poloneza, tablica); scripts/convert-assets.mjs → public/
 test/           – testy scenariuszy jazdy (`npm test`, node:test, bez przeglądarki; Node ≥ 22.18 czyta .ts)
@@ -107,20 +109,36 @@ test/           – testy scenariuszy jazdy (`npm test`, node:test, bez przeglą
 TypeScript tylko przez usuwanie typów (bez enumów itp.), importy z rozszerzeniem `.ts`; `npm run typecheck` = `tsc`.
 Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości na lewo od maski (drift w lewo daje ujemny).
 
-## Bateria i misje (skrót)
+## Paliwo, kasa, szacun i misje (skrót)
 
-- Bateria 0–100%: `drainIdle` + `drainDrive` × prędkość/maks. + `drainHighBeam` (długie, klawisz L) %/s (bez driftu 60–90 s);
-  ładowanie tylko w porządnym drifcie (≥ `chargeMinAngle`, ≥ `chargeMinSpeed`): `chargeRate` × kąt × prędkość × (1 + `streakBonus` ×
-  seria/`streakTime`); uderzenie > `hitSpeed` zeruje serię i blokuje ładowanie na `hitCooldown`. Wszystko w `batterySettings` (lil-gui).
-- Reflektory: jasność 0,25–1 i zasięg 0,35–1 z baterią; poniżej `low` (20%) migoczą, poniżej `warn` (10%) piszczy ostrzeżenie.
-- 0%: silnik gaśnie (bez gazu i wstecznego), auto się toczy, `dyingTime` ciemnienie, `darkTime` komunikat, restart z punktu zapisu
-  (bateria co najmniej `respawnMin`). Misja nie cofa się.
-- Żappka: stój (< 1 m/s) na polu `map.shop.pad` → ładowanie `shopCharge` %/s do 100% → zapis punktu odrodzenia.
-- Misja = plik JSON: `start` (punkt z mapy, bateria), `intro`, `steps` (type, point/min/time, goal, say, done), `outro`, `hints` (on: low/warn/dead/respawn/shop).
+- **Paliwo** (v0.6d, zamiast baterii):
+  - bak z profilu auta (45 l);
+  - spalanie = (bieg jałowy + moc z obrotów i obciążenia × bsfc) × `fuelScale` (22: pełny bak ≈ 10 min gry); drift ×1,35;
+  - rezerwa 15% (kontrolka + pisk);
+  - pusty bak: silnik gaśnie, panel „Pchaj / Zadzwoń po kumpla”:
+    - pchanie: gaz popycha auto do ok. 6 km/h (vehicle `push()`);
+    - holowanie: 30 zł, ściemnienie, auto przy dystrybutorze;
+  - brak game over.
+- **Stacja paliw „Kometa”** (`map.station`, cel `points.stacja`): stój przy dystrybutorze → panel:
+  - do pełna / za 20 zł / za 50 zł, cena 2,99 zł/l;
+  - dług do −40 zł (na zeszyt), żeby pusty bak z pustym portfelem nie blokował gry.
+- **Kasa:** nagrody misji (`reward.kasa`) + drift w misji (0,01 zł/pkt) i w pokazie (0,03 zł/pkt).
+- **Szacun:** nagrody misji (`reward.szacun`) + drift przy ludziach (< 25 m od postaci, 1/60 pkt, maks. 40 na drift).
+  - Poziomy z nazwami są w `teksty.json` → `szacun`.
+  - Szacun odblokowuje misje (`kampania.json` → `wymagania`: pokaz 50, wyscig 150); do tego czasu wolna jazda, a potem panel „Nowa misja”.
+  - Zmienia kwestie postaci (warunki w rozmowach).
+- **Żappka:** stój na polu → zapis (pozycja + paliwo, kasa, szacun, flagi rozmów) + sklep: energetyk „Tygrys 5G” (6 zł, 60 s szacun ×2).
+- Wszystkie liczby są w `economySettings` (lil-gui: „Paliwo, kasa, szacun i misja”).
+- **Misja** = plik JSON:
+  - `start` (punkt z mapy, `paliwo` % przy nowej grze), `intro`;
+  - `steps` (type, point/min/time, goal, say, done), `outro`, `reward`;
+  - `hints` (on: rezerwa / pusty / holowanie / stacja / zapis).
   Punkty celów są w pliku mapy (`points`), postacie w `npcs` (cel `npc:<id>`), trasy wyścigów w `routes`. Nowa misja = nowy
   plik + wpis w `src/story/kampania.json`, bez kodu.
-- Kroki v0.5b: `talk` (npc, dialog, result, refuse), `score` (strefa `point`, `min` pkt w `time` s od wjazdu, `fail`),
-  `race` (route, laps, rival – postać z `auto`, `fail`). Rozmowa: stój < 1,5 m/s przy postaci (< 4,5 m), E / pad B / dotyk.
+- **Kroki:** `reach`, `money` (min zł od początku kroku), `refuel` (min % baku), `wait`, `talk` (npc, dialog, result, refuse),
+  `score` (strefa `point`, `min` pkt w `time` s od wjazdu, `fail`), `race` (route, laps, rival – postać z `auto`, `fail`).
+  Rozmowa: stój < 1,5 m/s przy postaci (< 4,5 m), E / pad B / dotyk.
+- **Warunki w rozmowach** (`dialogue.js` `when`): `alt` (inny tekst), `if` przy odpowiedzi / węźle (`else`); `szacun`, `kasa`, `flaga`.
 
 ## Model jazdy (skrót)
 

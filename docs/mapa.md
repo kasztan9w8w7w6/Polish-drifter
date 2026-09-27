@@ -69,7 +69,8 @@ Wszystkie narożniki i skrzyżowania mają zaokrąglony asfalt (promień ok. 4 m
 | **Zachód** | za ul. Lotników | Blok 4 (punktowiec, 10 pięter) z parkingiem od Lotników (cel dostawy), Blok 6 (4 piętra), drzewa |
 | **Garaże** | północny zachód | rząd blaszaków, drzwi na południe, asfaltowy plac przed nimi przylega do ul. Tereszkowej |
 | **Supersam i plac** | wschód, za ul. Gagarina | market na północy; wielki asfaltowy plac (wjazdy z Gagarina i z głównej), rzędy latarń, pusty środek do driftu; chłopaki stoją przy zachodnim wjeździe |
-| **Pierzeja handlowa** | południe, przy głównej | Żappka 24h z parkingiem i świecącym polem zapisu, pawilony, przystanek |
+| **Pierzeja handlowa** | południe, przy głównej | Żappka 24h z parkingiem i świecącym polem zapisu (sklep), pawilony, przystanek |
+| **Stacja paliw „Kometa”** (v0.6d) | południe głównej, na wschodzie | wiata na słupach ze świetlówkami, dwa dystrybutory, kiosk, szyld; podjazd z głównej, stój przy dystrybutorze (`points.stacja`) |
 
 ## Zasady
 

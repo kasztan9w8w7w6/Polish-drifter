@@ -20,7 +20,7 @@ import { headlightSettings, carLook } from './car.js';
 import { createAudio, audioSettings } from './audio.js';
 import { applyCar, carDrivetrain } from './cars.js';
 import { driveSettings } from './engine.js';
-import { createSurvival, headlightLevel, batterySettings } from './survival.js';
+import { createEconomy, economySettings } from './economy.js';
 import { createNarrator, narratorSettings } from './narrator.js';
 import { createMission, formatTime } from './mission.js';
 import { createMarkers } from './marker.js';
@@ -151,8 +151,22 @@ const scorer = createDriftScorer((event, s) => {
   } else {
     hud.drift.className = event;
     hudFlashTimer = 1.2;
+    if (event === 'banked') banked(s);
   }
 });
+// A banked drift pays: cash during a mission (more in a show), respect when people saw it (economy.js)
+let bankedTotal = 0;
+function banked(s) {
+  const pts = s.total - bankedTotal;
+  bankedTotal = s.total;
+  if (pts <= 0) return;
+  const pos = car.state.position;
+  const nearPeople = people.list.some((n) => n.visible && Math.hypot(n.root.position.x - pos.x, n.root.position.z - pos.z) < economySettings.crowdRadius);
+  const got = economy.drift(pts, { mission: mission.state.running, show: mission.state.step?.type === 'score', nearPeople });
+  const bits = [got.kasa > 0 ? clean(teksty.zarobek).replace('{zl}', got.kasa.toFixed(2)) : '', got.szacun > 0 ? `+${Math.round(got.szacun)} ${teksty.hud.szacun}` : ''].filter(Boolean);
+  if (got.levelUp) toast(clean(teksty.szacunWzrost).replace('{nazwa}', clean(economy.level().name)));
+  else if (bits.length) toast(bits.join(' · '));
+}
 hud.best.textContent = scorer.state.best.toLocaleString('pl-PL');
 
 // Short message in the middle of the screen (feedback for R / C / auto-unstick)
@@ -163,12 +177,17 @@ function toast(text, big = false) {
   toastTimer = 1.2;
 }
 
-// ---------- Survival: battery, shop, running flat (survival.js); narrator and mission 1 ----------
-const hudBat = { goal: $('goal'), narrator: $('narrator'), fade: $('fade'), summary: $('summary'), talk: $('talk-hint') };
-$('fade-msg').innerHTML = `<b>${clean(teksty.bateriaPadla.tytul)}</b><span>${clean(teksty.bateriaPadla.tekst)}</span>`;
+// ---------- Fuel, cash, respect (economy.js); narrator and missions ----------
+const hudBat = { goal: $('goal'), narrator: $('narrator'), fade: $('fade'), summary: $('summary'), talk: $('talk-hint'), wallet: $('wallet') };
 const homeSave = { x: home.x, z: home.z, heading: home.heading };
 let mdef = MISSIONS[campaign.first]; // the mission being played
-const survival = createSurvival({ pad: map.shop.pad, save: homeSave, level: mdef.start.battery });
+const TANK = profile.real.tankL ?? 45;
+const economy = createEconomy({ engine: ENGINES[profile.real.engine], tankL: TANK, fuel: (TANK * (mdef.start.paliwo ?? 50)) / 100, levels: teksty.szacun });
+let save = { ...homeSave }; // where "Kontynuuj" puts the car (Żappka, a mission start)
+let pushing = false; // empty tank: the player pushes the car
+let pending = null; // the next mission, waiting for enough respect
+const storyFlags = {}; // flags set in conversations (dialogue choices `set`), for later conditions
+let offerTimer = 0;
 const narrator = createNarrator();
 let mission = createMission(mdef, points, teksty);
 const dialogue = createDialogueUI({ people: PEOPLE, texts: teksty.rozmowa });
@@ -181,7 +200,6 @@ let raceRetry = 0; // s until a lost race is set up again
 let lastCount = 0;
 let freeRide = false; // every mission done
 const lightsState = { high: false };
-let beepTimer = 0;
 const score = () => scorer.state.total + scorer.state.current * scorer.state.combo;
 const headingOf = (q) => {
   const f = new THREE.Vector3(1, 0, 0).applyQuaternion(q);
@@ -205,7 +223,7 @@ function handleMission(events) {
 }
 // "Kontynuuj": the mission, its step and the save point (with its battery) go to localStorage
 function storeProgress() {
-  if (mission.state.running) saveProgress({ mission: mdef.id, step: mission.state.index, save: survival.state.save });
+  if (mission.state.running) saveProgress({ mission: mdef.id, step: mission.state.index, save, flags: storyFlags, ...economy.snapshot() });
 }
 function useMission(id) {
   mdef = MISSIONS[id];
@@ -218,7 +236,9 @@ function continueGame() {
   const r = campaign.resume(p);
   if (!p) return startMission();
   placeCar(p.save);
-  survival.restart(p.save, Math.max(p.save.level ?? 0, batterySettings.respawnMin));
+  save = { ...p.save };
+  economy.restore(p);
+  Object.assign(storyFlags, p.flags ?? {});
   narrator.clear();
   hudBat.summary.hidden = true;
   choice.close();
@@ -226,13 +246,16 @@ function continueGame() {
   useMission(r.mission);
   handleMission(mission.resume(r.step, score()));
 }
-// id: which mission (default: the first); keepCar: go on from where the car is (the next mission after a summary)
-function startMission(id = campaign.first, keepCar = false) {
+// id: which mission (default: the first); keepCar: go on from where the car is (the next mission after a summary);
+// fresh: a new game (menu "Graj"): the tank at the mission's start level, no cash, no respect
+function startMission(id = campaign.first, keepCar = false, fresh = false) {
   useMission(id);
+  pending = null;
   const p = points[mdef.start.point];
-  const at = keepCar ? survival.state.save : { x: p.x, z: p.z, heading: p.heading ?? 0 };
   if (!keepCar) placeCar(p);
-  survival.restart(keepCar ? { x: car.state.position.x, z: car.state.position.z, heading: headingOf(car.state.quaternion) } : at, keepCar ? Math.max(survival.state.level, mdef.start.battery) : mdef.start.battery);
+  save = keepCar ? { x: car.state.position.x, z: car.state.position.z, heading: headingOf(car.state.quaternion) } : { x: p.x, z: p.z, heading: p.heading ?? 0 };
+  if (fresh) economy.restore({ fuel: (TANK * (mdef.start.paliwo ?? 50)) / 100, money: 0, respect: 0 });
+  pushing = economy.state.empty;
   narrator.clear();
   hudBat.summary.hidden = true;
   choice.close();
@@ -240,27 +263,110 @@ function startMission(id = campaign.first, keepCar = false) {
 }
 function missionDone(s) {
   const next = campaign.next(mdef.id);
+  const got = economy.reward(s.reward ?? {});
+  if (got.levelUp) toast(clean(teksty.szacunWzrost).replace('{nazwa}', clean(economy.level().name)));
   // "Kontynuuj" from now on starts the next mission (or free driving after the last one)
-  saveProgress({ mission: next, step: 0, save: survival.state.save, done: !next });
+  saveProgress({ mission: next, step: 0, save, done: !next, ...economy.snapshot() });
   if (!next) narrator.say(kampania.koniec ?? []);
   const t = teksty.podsumowanie;
+  const rw = s.reward ?? {};
   // (panel.js: buttons for touch, mouse, keyboard and pad; it stays until one is pressed)
   choice.show({
     title: `${clean(t.koniecMisji)}: ${s.title}`,
-    rows: [[clean(t.czas), formatTime(s.time)], [clean(t.punkty), s.driftPoints.toLocaleString('pl-PL')]],
+    rows: [[clean(t.czas), formatTime(s.time)], [clean(t.punkty), s.driftPoints.toLocaleString('pl-PL')], ...(rw.kasa || rw.szacun ? [[clean(t.nagroda ?? 'Nagroda'), `+${rw.kasa ?? 0} zł · +${rw.szacun ?? 0} ${teksty.hud.szacun}`]] : [])],
     buttons: [
       { label: clean(next ? t.dalej : t.wolnaJazda), action: nextMission },
       { label: clean(t.jeszczeRaz), action: () => startMission(mdef.id) },
     ],
   });
 }
-// Summary → "Dalej": the next mission from where the car stands
+// Summary → "Dalej": the next mission from where the car stands – if there is enough respect for it (kampania.json
+// wymagania); otherwise free driving until there is, then it is offered (a panel)
+const needed = (id) => kampania.wymagania?.[id] ?? 0;
 function nextMission() {
   if (!mission.state.complete) return false;
   const next = campaign.next(mdef.id);
-  if (next) startMission(next, true);
-  else freeRide = true;
+  if (!next) freeRide = true;
+  else if (economy.state.respect >= needed(next)) startMission(next, true);
+  else {
+    pending = next;
+    freeRide = true;
+    narrator.say(kampania.brakSzacunu ?? []);
+  }
   return true;
+}
+function offerMission() {
+  const m = MISSIONS[pending];
+  choice.show({
+    title: clean(kampania.nowaMisja ?? ''),
+    text: clean(m.title),
+    buttons: [
+      { label: clean(teksty.podsumowanie.dalej), action: () => startMission(pending, true) },
+      { label: clean(teksty.podsumowanie.pozniej ?? 'Później'), action: () => (offerTimer = 45) },
+    ],
+  });
+}
+
+// ---------- Fuel station, empty tank, Żappka (panels: touch, mouse, keyboard, pad) ----------
+const zl = (v) => `${v.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} zł`;
+let atStation = false, atShop = false, stuckTimer = 0, towTimer = 0;
+function stationPanel() {
+  const t = teksty.stacja;
+  const fillL = Math.min(economy.space, economy.affordable);
+  const buy = (l) => {
+    const got = economy.buyFuel(l);
+    if (got > 0) {
+      toast(`+${got.toFixed(1)} l`);
+      pushing = false;
+      handleMission(mission.notify('stacja'));
+      storeProgress();
+    }
+  };
+  const forZl = (zlotys) => ({ label: t.zaKwote.replace('{zl}', zlotys), disabled: economy.litresFor(zlotys) <= 0 || economy.space <= 0 || economy.affordable < economy.litresFor(zlotys), action: () => buy(economy.litresFor(zlotys)) });
+  choice.show({
+    title: clean(t.nazwa),
+    text: clean(economy.state.money < 0 ? t.naZeszyt : t.tekst),
+    rows: [[t.wBaku, `${economy.state.fuel.toFixed(1)} / ${TANK} l`], [t.cena, `${zl(economySettings.fuelPrice)}/l`], [teksty.hud.kasa, zl(economy.state.money)]],
+    buttons: [
+      { label: `${t.doPelna} (${zl(economy.price(fillL))})`, disabled: fillL <= 0.05, action: () => buy(fillL) },
+      forZl(20),
+      forZl(50),
+      { label: t.anuluj },
+    ],
+    cancel: 3,
+  });
+}
+function emptyPanel() {
+  const t = teksty.pusty;
+  choice.show({
+    title: clean(t.tytul),
+    text: clean(economy.canTow ? t.tekst : t.brakKasy),
+    buttons: [
+      { label: t.pchaj, action: () => (pushing = true) },
+      { label: t.kumpel.replace('{zl}', economySettings.towCost), disabled: !economy.canTow, action: tow },
+    ],
+    cancel: 0,
+  });
+}
+function tow() {
+  if (!economy.tow()) return;
+  hudBat.fade.className = 'dark';
+  hudBat.fade.style.opacity = 1;
+  towTimer = 1.4; // the screen goes dark, the car turns up at the pump
+  handleMission(mission.notify('holowanie'));
+}
+function shopPanel() {
+  const t = teksty.zappka;
+  choice.show({
+    title: clean(t.tytul),
+    text: `${clean(t.tekst)} ${clean(t.opisEnergetyka)}`,
+    rows: [[teksty.hud.kasa, zl(economy.state.money)]],
+    buttons: [
+      { label: t.energetyk.replace('{zl}', economySettings.energyPrice), disabled: economy.state.money - economySettings.energyPrice < -economySettings.debtLimit, action: () => economy.buyEnergy() && toast(clean(t.wypity)) },
+      { label: t.wyjdz },
+    ],
+    cancel: 1,
+  });
 }
 
 // ---------- Conversations: stop next to someone, E / pad B / the touch button ----------
@@ -276,7 +382,8 @@ function startTalk() {
   dialogue.start(def, n.id, (res) => {
     input.enabled = !paused;
     talkResult = res;
-  });
+    Object.assign(storyFlags, res.flags);
+  }, { szacun: economy.state.respect, kasa: economy.state.money, flags: storyFlags }); // (conditions in the dialogue files)
 }
 
 // ---------- Race (race.js drives the rival; the mission checks won / lost) ----------
@@ -377,26 +484,26 @@ snd.add(audioSettings, 'volume', 0, 1, 0.01).name('głośność');
 snd.add(audioSettings, 'engine', 0, 2, 0.01).name('silnik');
 snd.add(audioSettings, 'skid', 0, 2, 0.01).name('pisk opon');
 snd.add(audioSettings, 'impact', 0, 2, 0.01).name('uderzenia');
-snd.add(audioSettings, 'warning', 0, 2, 0.01).name('ostrzeżenie baterii');
+snd.add(audioSettings, 'warning', 0, 2, 0.01).name('ostrzeżenie (rezerwa)');
 snd.add(audioSettings, 'typing', 0, 2, 0.01).name('pisanie (narrator)');
-const bat = gui.addFolder('Bateria i misja').close();
-bat.add(batterySettings, 'drainIdle', 0, 1, 0.01).name('rozładowanie: silnik (%/s)');
-bat.add(batterySettings, 'drainDrive', 0, 3, 0.05).name('rozładowanie: jazda, maks. (%/s)');
-bat.add(batterySettings, 'drainHighBeam', 0, 3, 0.05).name('rozładowanie: długie (%/s)');
-bat.add(batterySettings, 'chargeMinAngle', 0, 60, 1).name('ładowanie: min. kąt (°)');
-bat.add(batterySettings, 'chargeMinSpeed', 0, 25, 0.5).name('ładowanie: min. prędkość (m/s)');
-bat.add(batterySettings, 'chargeRate', 0, 0.05, 0.001).name('ładowanie driftem (%/s na °·m/s)');
-bat.add(batterySettings, 'streakTime', 0.5, 10, 0.1).name('seria: czas do pełnej premii (s)');
-bat.add(batterySettings, 'streakBonus', 0, 5, 0.1).name('seria: premia (×)');
-bat.add(batterySettings, 'hitSpeed', 0, 15, 0.5).name('uderzenie od (m/s)');
-bat.add(batterySettings, 'hitCooldown', 0, 10, 0.1).name('po uderzeniu bez ładowania (s)');
-bat.add(batterySettings, 'shopCharge', 1, 100, 1).name('ładowanie w sklepie (%/s)');
-bat.add(batterySettings, 'low', 0, 50, 1).name('miganie świateł poniżej (%)');
-bat.add(batterySettings, 'warn', 0, 50, 1).name('ostrzeżenie poniżej (%)');
-bat.add(batterySettings, 'dyingTime', 0.5, 6, 0.1).name('gaśnięcie (s)');
-bat.add(batterySettings, 'darkTime', 0.5, 6, 0.1).name('ciemny ekran (s)');
-bat.add(batterySettings, 'respawnMin', 0, 100, 1).name('min. bateria po restarcie (%)');
-bat.add(survival.state, 'level', 0, 100, 1).name('bateria teraz (%)').listen();
+const bat = gui.addFolder('Paliwo, kasa, szacun i misja').close();
+bat.add(economySettings, 'fuelScale', 1, 80, 1).name('paliwo: przyspieszenie spalania (×)');
+bat.add(economySettings, 'driftFuel', 1, 3, 0.05).name('paliwo: drift pali (×)');
+bat.add(economySettings, 'fuelPrice', 0.5, 20, 0.01).name('paliwo: cena (zł/l)');
+bat.add(economySettings, 'reserve', 0, 0.5, 0.01).name('rezerwa (część baku)');
+bat.add(economySettings, 'towCost', 0, 200, 1).name('holowanie (zł)');
+bat.add(economySettings, 'debtLimit', 0, 200, 1).name('limit długu (zł)');
+bat.add(economySettings, 'driftRate', 0, 0.1, 0.001).name('kasa za pkt driftu w misji (zł)');
+bat.add(economySettings, 'showRate', 0, 0.2, 0.001).name('kasa za pkt driftu w pokazie (zł)');
+bat.add(economySettings, 'respectRate', 0, 0.1, 0.001).name('szacun za pkt driftu przy ludziach');
+bat.add(economySettings, 'respectMax', 0, 200, 1).name('szacun maks. za jeden drift');
+bat.add(economySettings, 'crowdRadius', 5, 60, 1).name('„przy ludziach” (m)');
+bat.add(economySettings, 'energyPrice', 0, 50, 0.5).name('energetyk: cena (zł)');
+bat.add(economySettings, 'energyTime', 5, 300, 5).name('energetyk: czas (s)');
+bat.add(economySettings, 'energyBoost', 1, 5, 0.1).name('energetyk: szacun (×)');
+bat.add(economy.state, 'fuel', 0, TANK, 0.1).name('paliwo teraz (l)').listen();
+bat.add(economy.state, 'money', -200, 1000, 1).name('kasa teraz (zł)').listen();
+bat.add(economy.state, 'respect', 0, 1000, 1).name('szacun teraz').listen();
 bat.add(narratorSettings, 'charsPerSec', 5, 120, 1).name('narrator: liter/s');
 bat.add(narratorSettings, 'hold', 0.5, 10, 0.1).name('narrator: czas na ekranie (s)');
 bat.add({ start: () => startMission(mdef.id) }, 'start').name('Misja od nowa (N)');
@@ -557,7 +664,7 @@ const menu = createMenu({
   settings,
   paints: profile.look.paints,
   hooks: {
-    play: () => (startMission(), setPaused(false)),
+    play: () => (startMission(campaign.first, false, true), setPaused(false)),
     continue: () => (continueGame(), setPaused(false)),
     hasProgress: () => !!loadProgress(),
     resume: () => setPaused(false),
@@ -584,7 +691,7 @@ const menu = createMenu({
   },
 });
 applySettings(settings);
-if (new URLSearchParams(location.search).has('debug')) window.agro = { survival, scorer, choice, get mission() { return mission; }, people, dialogue, get race() { return race; }, startMission, narrator, car, menu, settings, perf: () => perf, paused: () => paused, resume: () => setPaused(false), tt: () => turntable, carYaw: () => { const f = new THREE.Vector3(1, 0, 0).applyQuaternion(carView.root.quaternion); return Math.atan2(-f.z, f.x); } }; // for testing from the console
+if (new URLSearchParams(location.search).has('debug')) window.agro = { economy, points, scorer, choice, get mission() { return mission; }, people, dialogue, get race() { return race; }, startMission, narrator, car, menu, settings, perf: () => perf, paused: () => paused, resume: () => setPaused(false), tt: () => turntable, carYaw: () => { const f = new THREE.Vector3(1, 0, 0).applyQuaternion(carView.root.quaternion); return Math.atan2(-f.z, f.x); } }; // for testing from the console
 // ?plan – the whole map from straight above, lit like daytime (docs/mapa.md screenshot, checking the layout)
 const PLAN = new URLSearchParams(location.search).has('plan');
 if (PLAN) {
@@ -614,9 +721,9 @@ else {
   setPaused(true);
   menu.openMain();
 }
-// ?bat=5 – start with that much battery (testing the flicker / running flat)
-const batArg = Number(new URLSearchParams(location.search).get('bat'));
-if (batArg > 0) survival.restart(survival.state.save, batArg);
+// ?paliwo=5 – start with that many litres (testing the reserve / an empty tank)
+const fuelArg = new URLSearchParams(location.search).get('paliwo');
+if (fuelArg !== null) economy.restore({ fuel: Number(fuelArg) });
 
 // ---------- Loop ----------
 const timer = new THREE.Timer();
@@ -660,11 +767,14 @@ function tick(time) {
   const controls = input.read(dt);
   if (choice.open) Object.assign(controls, { throttle: 0, steer: 0, handbrake: 0, brake: car.state.forwardSpeed > 0.5 ? 1 : 0 }); // (a choice on screen: the car stops)
   if (race && race.countdown > 0) controls.throttle = 0; // no jump start
-  if (!survival.engineOn) {
-    // Battery flat: no engine (no throttle, no reverse), the car just rolls to a stop; brakes and steering still work
+  const pushIt = economy.state.empty && pushing && controls.throttle > 0.1 && !choice.open;
+  if (economy.state.empty) {
+    // Empty tank: no engine (no throttle, no reverse), the car rolls to a stop; brakes and steering still work.
+    // Pushing: the throttle pushes the car at walking pace (vehicle push()).
     controls.throttle = 0;
     if (car.state.forwardSpeed < 0.5) controls.brake = 0;
   }
+  if (pushIt) car.push(1.2 * dt);
   physics.step(dt, (h) => car.update(controls, h), () => car.afterStep());
   const state = car.read();
   carView.sync(state);
@@ -691,37 +801,50 @@ function tick(time) {
   audio.hit(state.crash);
   scorer.update(dt, fwd, v, state.grounded);
 
-  // Battery (charges from the same drift the points count), shop, running flat
-  const topSpeed = tuning.power / tuning.angularDamping;
-  const heading = headingOf(state.quaternion);
-  const drifted = scorer.state.drifting ? scorer.state.angle : 0;
-  for (const e of survival.update(dt, { x: state.position.x, z: state.position.z, heading, speed: state.speed, topSpeed, angle: drifted, grounded: state.grounded, highBeam: lightsState.high, crash: state.crash })) {
+  // Fuel (economy.js: burned from the real rpm and load), the reserve, an empty tank
+  for (const e of economy.update(dt, { rpm: state.rpm, load: state.load, drifting: scorer.state.drifting, running: !economy.state.empty })) {
     handleMission(mission.notify(e));
-    if (e === 'saved') {
-      toast('Żappka: bateria 100%, zapisano');
+    if (e === 'rezerwa') audio.beep();
+    if (e === 'pusty') {
+      scorer.crash();
+      pushing = false;
+      stuckTimer = 0;
+      emptyPanel();
+    }
+  }
+  // stuck with an empty tank (pushing, not at the station): offer the tow again after a while
+  if (economy.state.empty && !choice.open && !atStation && state.speed < 0.3) {
+    if ((stuckTimer += dt) > 8) (stuckTimer = 0), emptyPanel();
+  } else stuckTimer = 0;
+  if (towTimer > 0 && (towTimer -= dt) <= 0) {
+    placeCar(points.stacja);
+    hudBat.fade.className = '';
+  }
+  hudBat.fade.style.opacity = Math.max(towTimer > 0 ? 1 : 0, Number(hudBat.fade.style.opacity || 0) - dt);
+  // Station: stop next to a pump → the fuel panel (once per stop)
+  const nearPoint = (p, r) => p && Math.hypot(state.position.x - p.x, state.position.z - p.z) < r;
+  const stopped = state.speed < 1;
+  if (nearPoint(points.stacja, 4) && stopped && !choice.open && !dialogue.open) {
+    if (!atStation) (atStation = true), stationPanel();
+  } else if (!nearPoint(points.stacja, 6)) atStation = false;
+  // Żappka: stop on the glowing pad → saved, and the shop
+  const pad = map.shop.pad;
+  const onPad = Math.abs(state.position.x - pad.x) < pad.w / 2 && Math.abs(state.position.z - pad.z) < pad.d / 2;
+  if (onPad && stopped && !choice.open && !dialogue.open) {
+    if (!atShop) {
+      atShop = true;
+      save = { x: pad.x, z: pad.z, heading: headingOf(state.quaternion) };
       storeProgress();
+      if (!mission.state.running) saveProgress({ mission: pending ?? (freeRide ? null : mdef.id), step: 0, save, done: freeRide && !pending, ...economy.snapshot() });
+      handleMission(mission.notify('zapis'));
+      shopPanel();
     }
-    if (e === 'hit') toast('Uderzenie – seria ładowania przerwana');
-    if (e === 'dead') scorer.crash();
-    if (e === 'respawn') {
-      placeCar(survival.state.save);
-      hudBat.fade.className = '';
-    }
-    if (e === 'dark') hudBat.fade.className = 'dark';
-  }
-  const sv = survival.state;
-  const fadeTo = sv.phase === 'dying' ? Math.min(1, sv.phaseTime / batterySettings.dyingTime) : sv.phase === 'dark' ? 1 : 0;
-  const fadeNow = Number(hudBat.fade.style.opacity || 0);
-  hudBat.fade.style.opacity = fadeTo >= fadeNow ? fadeTo : Math.max(fadeTo, fadeNow - dt); // fades back in 1 s after a restart
-  // Headlights follow the battery; after it runs flat they die out
-  const hl = headlightLevel(sv.level, batterySettings);
-  const dying = sv.phase === 'drive' ? 1 : sv.phase === 'dying' ? Math.max(0, 1 - sv.phaseTime / 0.8) : 0;
-  carView.setLights(hl.brightness * dying, hl.reach, lightsState.high);
-  if (sv.warn && (beepTimer -= dt) <= 0) {
-    audio.beep();
-    beepTimer = 1.2;
-  }
-  district.update(timer.getElapsed(), sv.charging);
+  } else if (!onPad) atShop = false;
+  // Headlights: always on (the lamp and battery business is gone); an empty tank leaves only the parking lights
+  carView.setLights(economy.state.empty ? 0.25 : 1, 1, lightsState.high);
+  district.update(timer.getElapsed(), onPad && stopped);
+  // A mission waiting for respect: offered when there is enough
+  if (pending && !choice.open && !dialogue.open && economy.state.respect >= needed(pending) && (offerTimer -= dt) <= 0) offerMission();
 
   // Race: the rival follows the route, countdown, laps
   let raceInfo = '';
@@ -755,7 +878,7 @@ function tick(time) {
   if (raceRetry > 0 && (raceRetry -= dt) <= 0 && raceStep) setupRace(raceStep);
 
   // Mission, target marker, narrator
-  handleMission(mission.update(dt, { x: state.position.x, z: state.position.z, speed: state.speed, battery: sv.level, score: score(), talk: talkResult, race: raceResult }));
+  handleMission(mission.update(dt, { x: state.position.x, z: state.position.z, speed: state.speed, money: economy.state.money, fuelPct: (100 * economy.state.fuel) / TANK, score: score(), talk: talkResult, race: raceResult }));
   talkResult = null;
   target ??= mission.target();
   const dist = markers.update(timer.getElapsed(), target, state.position);
@@ -793,21 +916,25 @@ function tick(time) {
   // Rev counter, gear and engine sound from the real powertrain (engine.js through vehicle state)
   const { gear, rpm, load } = state;
   const rpmFrac = drivetrain ? Math.max(0, Math.min(1, (rpm - drivetrain.idleRpm) / (drivetrain.redRpm - drivetrain.idleRpm))) : load;
-  audio.update(dt, state, rpmFrac, controls.throttle, survival.engineOn); // (engine pitch from the real rpm)
+  audio.update(dt, state, rpmFrac, controls.throttle, !economy.state.empty); // (engine pitch from the real rpm)
   const blink = Math.floor(timer.getElapsed() * 3) % 2 === 0;
   dashboard.draw({
     speedKmh: state.speed * 3.6,
-    rpm: survival.engineOn ? rpm : 0, // battery flat: the engine is off
+    rpm: economy.state.empty ? 0 : rpm, // empty tank: the engine is off
     redRpm: drivetrain?.redRpm ?? 6000,
     gear,
-    battery: sv.level,
-    charging: sv.driftCharge > 0 || sv.charging,
-    lightsOn: sv.level > 0,
+    fuel: (100 * economy.state.fuel) / TANK,
+    reserve: economy.state.reserve && blink,
+    lightsOn: true,
     highBeam: lightsState.high,
-    engineWarn: !survival.engineOn || (sv.level < batterySettings.warn && blink),
+    engineWarn: economy.state.empty,
     handbrake: controls.handbrake > 0.5,
     points: score(),
   }, dt);
+  // Cash and respect (pixel HUD under the record): "12,40 zł · Ziomek z klatki 72/150", ⚡ while the energy drink works
+  const lv = economy.level();
+  const wallet = `<b class="${economy.state.money < 0 ? 'debt' : ''}">${zl(economy.state.money)}</b> · ${clean(lv.name)} <small>${Math.floor(economy.state.respect)}${lv.next ? `/${lv.next}` : ''}</small>${economy.state.energy > 0 ? ` <i>⚡${Math.ceil(economy.state.energy)}</i>` : ''}${pending ? ` <small>· ${clean(MISSIONS[pending].title)}: ${needed(pending)}</small>` : ''}`;
+  if (hudBat.wallet.innerHTML !== wallet) hudBat.wallet.innerHTML = wallet;
   hud.telemetry.textContent = `kąt ${Math.round(Math.abs(state.slipAngle))}° · ${panel.preset}${input.gamepadConnected ? ' · pad' : ''}`;
   if (hudFlashTimer > 0 && (hudFlashTimer -= dt) <= 0) {
     hud.points.textContent = '';

@@ -1,16 +1,16 @@
 {
-  "_help": "Misja: kroki po kolei. type: reach (point z mapy, stop: true = trzeba stanąć), battery (min %), wait (time s). goal = tekst celu na HUD, say = narrator na początku kroku, done = na końcu. hints: teksty na zdarzenia gry (low, warn, dead, respawn, shop), once = tylko raz.",
+  "_help": "Misja: kroki po kolei. type: reach (point z mapy, stop: true = trzeba stanąć), money (min = zł zarobione od początku kroku), refuel (min = % baku), wait (time s), talk, score, race (opis w pokaz.json). goal = tekst celu na HUD, say = narrator na początku kroku, done = na końcu. start: point, paliwo (% baku przy nowej grze). reward: kasa (zł) i szacun za ukończenie. hints: teksty na zdarzenia gry (rezerwa, pusty, holowanie, stacja, zapis, szacun), once = tylko raz.",
   "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
   "id": "paczka",
   "title": "PLACEHOLDER: Paczka",
   "start": {
     "point": "spawn",
-    "battery": 60
+    "paliwo": 30
   },
   "intro": [
     "PLACEHOLDER: Osiedle Kosmonautów. Trzecia w nocy. Mgła gęsta jak żurek u teściowej.",
     "PLACEHOLDER: Nad blokami buczy maszt. Sąsiad z parteru mówi, że to 5G. Sąsiad z parteru wie wszystko.",
-    "PLACEHOLDER: Twój Polonez ma nowy akumulator. Z Chin. Ładuje się tylko wtedy, kiedy jedziesz bokiem."
+    "PLACEHOLDER: W baku ćwierć. W portfelu nic. W Polonezie – cała reszta życia."
   ],
   "steps": [
     {
@@ -27,16 +27,28 @@
       ]
     },
     {
-      "id": "ladowanie",
-      "type": "battery",
-      "min": 70,
-      "goal": "PLACEHOLDER: Naładuj baterię driftem do 70% (plac pod Supersamem)",
+      "id": "zarobek",
+      "type": "money",
+      "min": 30,
+      "goal": "PLACEHOLDER: Zarób 30 zł driftem na placu pod Supersamem",
       "say": [
-        "PLACEHOLDER: Pan Zdzisław z Bloku 4 nie otworzy nikomu, kto przyjedzie na przygaszonych światłach. „Oni tak przyjeżdżają”, mówi.",
-        "PLACEHOLDER: Bateria sama się nie naładuje. Plac pod Supersamem, za ul. Gagarina. Bokiem, szeroko i czysto – każde uderzenie to stracona seria."
+        "PLACEHOLDER: Paliwa na styk. Na stacji „Kometa” nikt nie leje za darmo, nawet na zeszyt długo nie pociągniesz.",
+        "PLACEHOLDER: Plac pod Supersamem. Kierowcy z osiedla płacą za dobry drift – ktoś zawsze obstawia. Bokiem, szeroko, bez obijania."
       ],
       "done": [
-        "PLACEHOLDER: Reflektory świecą jak u prezesa spółdzielni. Można jechać."
+        "PLACEHOLDER: Trzydzieści złotych w monetach. Pachnie spalinami i szacunem."
+      ]
+    },
+    {
+      "id": "tankowanie",
+      "type": "refuel",
+      "min": 40,
+      "goal": "PLACEHOLDER: Zatankuj na stacji „Kometa” (przy głównej, na wschodzie) – co najmniej 40% baku",
+      "say": [
+        "PLACEHOLDER: Stacja „Kometa” przy głównej. Dystrybutor z epoki, pan Józek z epoki, ceny z przyszłości."
+      ],
+      "done": [
+        "PLACEHOLDER: Bak chlupie. Pan Józek liczy drobne dwa razy i patrzy na ciebie jak na podejrzanego."
       ]
     },
     {
@@ -70,37 +82,41 @@
   ],
   "hints": [
     {
-      "on": "low",
+      "on": "rezerwa",
       "once": true,
       "say": [
-        "PLACEHOLDER: Reflektory mrugają. To bateria, nie 5G. Chyba. Drift ją naładuje."
+        "PLACEHOLDER: Zapaliła się rezerwa. Stacja „Kometa” jest przy głównej, na wschodzie."
       ]
     },
     {
-      "on": "warn",
+      "on": "pusty",
+      "say": [
+        "PLACEHOLDER: Silnik kaszle i gaśnie. Cisza. Tylko maszt buczy. Pchaj albo dzwoń po kumpla."
+      ]
+    },
+    {
+      "on": "holowanie",
+      "say": [
+        "PLACEHOLDER: Kumpel przyjeżdża Żukiem na linie. Nie pyta, skąd masz długi. Jeszcze."
+      ]
+    },
+    {
+      "on": "stacja",
       "once": true,
       "say": [
-        "PLACEHOLDER: Piszczy. Zostało dziesięć procent. Bokiem, na parking, już!"
+        "PLACEHOLDER: Stań przy dystrybutorze – pan Józek sam wyjdzie."
       ]
     },
     {
-      "on": "dead",
-      "say": [
-        "PLACEHOLDER: Silnik gaśnie. Cisza. Tylko maszt buczy coraz głośniej..."
-      ]
-    },
-    {
-      "on": "respawn",
-      "say": [
-        "PLACEHOLDER: Budzisz się w aucie. Nikt nie wie, jak tu wróciłeś. Najmniej ty."
-      ]
-    },
-    {
-      "on": "shop",
+      "on": "zapis",
       "once": true,
       "say": [
-        "PLACEHOLDER: Żappka. Bezpiecznie. Bateria się ładuje, a tu zapisuje się twoje życie."
+        "PLACEHOLDER: Żappka. Bezpiecznie. Tu zapisuje się twoje życie, a w lodówce stoi energetyk."
       ]
     }
-  ]
+  ],
+  "reward": {
+    "kasa": 40,
+    "szacun": 60
+  }
 }

@@ -5,7 +5,8 @@ import { clean } from './typewriter.js';
 //
 // Step types:
 //   reach   – get to map point `point` (map.points: x, z, r); with `stop: true` you also have to stop there
-//   battery – charge the battery to at least `min` %
+//   money   – earn at least `min` zł from the start of this step (drifting during the mission: economy.js)
+//   refuel  – have at least `min` % of the tank (fill up at the station)
 //   wait    – `time` seconds (lets the narrator talk)
 //   talk    – stop by character `npc` and talk (dialogue `dialog`, src/story/dialogi); with `result` the talk has to end
 //             that way (e.g. "zgoda"), otherwise `refuse` lines are said and the step waits for another talk
@@ -14,7 +15,8 @@ import { clean } from './typewriter.js';
 //   race    – race rival `rival` on map route `route`, `laps` laps (race.js drives it; main.js reports won / lost);
 //             lost → `fail` lines and the race starts again
 // Every step can have `goal` (short text on the HUD), `say` (narrator lines when it starts) and `done` (when it ends).
-// `hints`: lines said on game events – { "on": "low" | "warn" | "dead" | "respawn" | "shop", "say": [...], "once": true }.
+// `hints`: lines said on game events – { "on": "rezerwa" | "pusty" | "holowanie" | "stacja" | "zapis" | "szacun", "say": [...], "once": true }.
+// `reward`: { kasa, szacun } paid when the mission is complete (main.js → economy.js).
 // Texts in mission files are for the scriptwriter to replace: docs/teksty.md.
 
 const STOP_SPEED = 1.5; // m/s – "stopped" for a reach step with stop: true
@@ -32,6 +34,7 @@ export function createMission(def, points, texts = {}) {
     startScore: 0,
     summary: null,
     show: null, // score step: { inside, clock, points, pause }
+    moneyAt: null, // money step: cash when the step started
     raceResult: null,
   };
   const used = new Set(); // hints already said (once)
@@ -48,6 +51,7 @@ export function createMission(def, points, texts = {}) {
     state.stepTime = 0;
     state.show = state.step?.type === 'score' ? { inside: false, clock: 0, points: 0, pause: 0, last: null } : null;
     state.raceResult = null;
+    state.moneyAt = null;
     if (!state.step) return;
     if (state.step.say) events.push({ type: 'say', lines: state.step.say });
     events.push({ type: 'step', step: state.step, index: i });
@@ -96,8 +100,11 @@ export function createMission(def, points, texts = {}) {
         const near = Math.hypot(car.x - p.x, car.z - p.z) <= (step.r ?? p.r ?? 4);
         return near && (!step.stop || car.speed < STOP_SPEED);
       }
-      case 'battery':
-        return car.battery >= step.min;
+      case 'money':
+        state.moneyAt ??= car.money ?? 0;
+        return (car.money ?? 0) - state.moneyAt >= step.min;
+      case 'refuel':
+        return (car.fuelPct ?? 0) >= step.min;
       case 'wait':
         return state.stepTime >= step.time;
       default:
@@ -131,7 +138,7 @@ export function createMission(def, points, texts = {}) {
     return false;
   }
 
-  // car: { x, z, speed (m/s), battery (%), score, talk?: { npc, dialog, result }, race?: 'won' | 'lost' | null }
+  // car: { x, z, speed (m/s), money (zł), fuelPct (%), score, talk?: { npc, dialog, result }, race?: 'won' | 'lost' | null }
   function update(dt, car) {
     const events = [];
     if (!state.running) return events;
@@ -146,14 +153,14 @@ export function createMission(def, points, texts = {}) {
     if (!state.step) {
       state.running = false;
       state.complete = true;
-      state.summary = { title: clean(def.title), id: def.id, time: state.time, driftPoints: Math.max(0, Math.round(car.score - state.startScore)) };
+      state.summary = { title: clean(def.title), id: def.id, reward: def.reward ?? null, time: state.time, driftPoints: Math.max(0, Math.round(car.score - state.startScore)) };
       if (def.outro) events.push({ type: 'say', lines: def.outro });
       events.push({ type: 'complete', summary: state.summary });
     }
     return events;
   }
 
-  // Game events (survival.js / main.js) → narrator hints
+  // Game events (economy.js / main.js: rezerwa, pusty, holowanie, stacja, zapis) → narrator hints
   function notify(name) {
     const events = [];
     if (!state.running) return events;

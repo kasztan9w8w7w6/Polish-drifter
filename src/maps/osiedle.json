@@ -1,5 +1,5 @@
 {
- "_help": "Mapa osiedla (plan: docs/mapa.md). Współrzędne w metrach: x = wschód, z = południe (północ = -z). streets: ulice (pts: punkty osi, width, sidewalk = szerokość chodnika, kind glowna = linie na jezdni); narożniki zaokrąglają się same (cornerRadius). areas: prostokąty [x1, z1, x2, z2] podłoża (asfalt = place i parkingi, łączą się z ulicami; bruk; ziemia); paths: chodniki przez podwórka; reszta to trawa (ground.js). crossings: pasy na głównej [x, z]. blocks: bloki z wielkiej płyty (blocks.js): x, z, yaw (0 = wejścia na południe), klatki, pietra, balkony, kolor (szary/bez/blekitny/zolty), maszt, dlugosc/glebokosc (punktowiec), collide: false = dekoracja. objects: modele Kenneya, yaw w stopniach: 0 = front modelu na południe, 180 = na północ, 90 = na wschód, -90 = na zachód. Rozmiar: scale, length (najdłuższy bok w m) albo fit [szer., wys., głęb.] w m; y = wysokość nad ziemią. collide (domyślnie true): kolizja z geometrii na wysokości karoserii, surface = materiał (physics.js SURFACES). repeat = rząd kopii co dx/dz. props: rzeczy z własnej geometrii (lawka, trzepak, piaskownica, hustawka, przystanek). lamps: [x, z, yaw, podwójna]. points: miejsca dla misji (r = promień celu), heading auta: 0 = na wschód, 90 = na północ. npcs: postacie (id z src/story/postacie.json, x, z, yaw w stopniach); rozmowa: stań obok (< 4,5 m). routes: trasy wyścigów – rogi ulic w kolejności jazdy, zamknięta pętla (start/meta = pierwszy punkt).",
+ "_help": "Mapa osiedla (plan: docs/mapa.md). Współrzędne w metrach: x = wschód, z = południe (północ = -z). streets: ulice (pts: punkty osi, width, sidewalk = szerokość chodnika, kind glowna = linie na jezdni); narożniki zaokrąglają się same (cornerRadius). areas: prostokąty [x1, z1, x2, z2] podłoża (asfalt = place i parkingi, łączą się z ulicami; bruk; ziemia); paths: chodniki przez podwórka; reszta to trawa (ground.js). crossings: pasy na głównej [x, z]. blocks: bloki z wielkiej płyty (blocks.js): x, z, yaw (0 = wejścia na południe), klatki, pietra, balkony, kolor (szary/bez/blekitny/zolty), maszt, dlugosc/glebokosc (punktowiec), collide: false = dekoracja. objects: modele Kenneya, yaw w stopniach: 0 = front modelu na południe, 180 = na północ, 90 = na wschód, -90 = na zachód. Rozmiar: scale, length (najdłuższy bok w m) albo fit [szer., wys., głęb.] w m; y = wysokość nad ziemią. collide (domyślnie true): kolizja z geometrii na wysokości karoserii, surface = materiał (physics.js SURFACES). repeat = rząd kopii co dx/dz. props: rzeczy z własnej geometrii (lawka, trzepak, piaskownica, hustawka, przystanek). station: stacja paliw (x, z = środek wiaty; dystrybutory na osi wschód–zachód, podjazd od północy). lamps: [x, z, yaw, podwójna]. points: miejsca dla misji (r = promień celu), heading auta: 0 = na wschód, 90 = na północ. npcs: postacie (id z src/story/postacie.json, x, z, yaw w stopniach); rozmowa: stań obok (< 4,5 m). routes: trasy wyścigów – rogi ulic w kolejności jazdy, zamknięta pętla (start/meta = pierwszy punkt).",
  "name": "Osiedle Kosmonautów",
  "size": 200,
  "cornerRadius": 4,
@@ -23,7 +23,8 @@
   {"name": "parking przed Żappką", "kind": "asfalt", "rect": [-10, 77, 10, 84]},
   {"name": "bruk przed pawilonami", "kind": "bruk", "rect": [-48, 79.5, -12, 85]},
   {"name": "bruk przed pawilonami", "kind": "bruk", "rect": [12, 79.5, 48, 85]},
-  {"name": "piasek placu zabaw", "kind": "ziemia", "rect": [-32, -28, -18, -16]}
+  {"name": "piasek placu zabaw", "kind": "ziemia", "rect": [-32, -28, -18, -16]},
+  {"name": "stacja paliw „Kometa”", "kind": "asfalt", "rect": [58, 77, 98, 99]}
  ],
  "paths": [
   {"width": 2.5, "pts": [[-55.5, -37.5], [27.5, -37.5]]},
@@ -159,8 +160,7 @@
   {"model": "suburban/tree-large", "x": -60, "z": -94, "scale": 10, "surface": "tree"},
   {"model": "suburban/tree-large", "x": -92, "z": 90, "scale": 10, "surface": "tree"},
   {"model": "suburban/tree-large", "x": -60, "z": 94, "scale": 10, "surface": "tree"},
-  {"model": "suburban/tree-large", "x": 60, "z": 94, "scale": 10, "surface": "tree"},
-  {"model": "suburban/tree-large", "x": 92, "z": 92, "scale": 10, "surface": "tree"},
+  {"model": "suburban/tree-large", "x": 52, "z": 97, "scale": 10, "surface": "tree"},
   {"model": "suburban/tree-large", "x": -80, "z": 60, "scale": 10, "surface": "tree"},
   {"model": "suburban/tree-large", "x": 20, "z": 60, "scale": 10, "surface": "tree"},
   {"model": "suburban/tree-large", "x": -50, "z": 60, "scale": 10, "surface": "tree"},
@@ -200,8 +200,7 @@
   [-20, 78.2, 0, false],
   [20, 78.2, 0, false],
   [40, 78.2, 0, false],
-  [60, 78.2, 0, false],
-  [80, 78.2, 0, false],
+  [56, 78.2, 0, false],
   [-56.2, -45, 90, false],
   [26.2, -45, -90, false],
   [-56.2, -20, 90, false],
@@ -267,6 +266,7 @@
   "light": [0, 3, 82.5],
   "pad": {"x": 0, "z": 80.5, "w": 6, "d": 4}
  },
+ "station": {"name": "KOMETA", "x": 76, "z": 90},
  "locker": {"name": "Paczkobox 24/7", "x": -3, "z": -38.9, "yaw": 0},
  "points": {
   "spawn": {"x": -30, "z": 59.5, "heading": 0, "label": "parking pod Blokiem 2"},
@@ -274,7 +274,8 @@
   "locker": {"x": -3, "z": -35.5, "r": 3.5, "label": "Paczkobox przy Bloku 1"},
   "lot": {"x": 68, "z": 0, "r": 25, "label": "plac pod Supersamem"},
   "delivery": {"x": -66, "z": 30, "r": 4, "label": "Blok 4, punktowiec"},
-  "shop": {"x": 0, "z": 80.5, "r": 3, "label": "Żappka 24h"}
+  "shop": {"x": 0, "z": 80.5, "r": 3, "label": "Żappka 24h"},
+  "stacja": {"x": 76, "z": 87.4, "r": 3.5, "heading": 0, "label": "stacja paliw „Kometa”, przy dystrybutorze"}
  },
  "npcs": [
   {"id": "seba", "x": 37.2, "z": -6, "yaw": 90},

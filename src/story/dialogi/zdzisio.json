@@ -5,6 +5,6 @@
   "start": "a",
   "nodes": {
     "a": { "who": "zdzisio", "text": "PLACEHOLDER: W Żappce nie ma zasięgu. Sprawdzałem. Trzy razy. Dlatego tu stoję.", "next": "b" },
-    "b": { "who": "zdzisio", "text": "PLACEHOLDER: Stań na zielonym, to ci się naładuje. Mnie też by się naładowało, ale nie mam wtyczki." }
+    "b": { "who": "zdzisio", "text": "PLACEHOLDER: Stań na zielonym, to się zapiszesz. Mnie też by zapisali, ale do przychodni." }
   }
 }

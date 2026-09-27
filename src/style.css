@@ -177,3 +177,19 @@ body.touch #goal { max-width: calc(100% - 360px); white-space: nowrap; overflow:
 #panel button:disabled { opacity: .35; cursor: default; }
 body.panel-open #t-pedals, body.panel-open #t-stick, body.panel-open #t-arrows, body.panel-open #t-talk, body.panel-open #talk-hint { visibility: hidden; }
 body.touch .m-keys, body.touch .m-keys + .m-hint, body.touch [data-go=defaultKeys] { display: none; }
+
+/* v0.6d: cash and respect under the record (pixel font) */
+#wallet { position: absolute; left: 24px; top: 46px; font-family: 'Silkscreen', monospace; font-size: 13px; color: #e8dcc0; text-shadow: 2px 2px 0 #000; }
+#wallet b { color: #9dff6a; font-weight: 700; }
+#wallet b.debt { color: #ff6a4a; }
+#wallet small { opacity: .75; }
+#wallet i { font-style: normal; color: #ffe14a; }
+body.touch #wallet { left: max(12px, env(safe-area-inset-left)); top: 24px; font-size: 11px; }
+/* (v0.6d: the wallet line goes under the record; the angle and the goal move down one line) */
+#wallet { top: 44px; }
+#telemetry { top: 66px; }
+#goal { top: 88px; }
+body.touch #wallet { top: 24px; }
+body.touch #telemetry { top: 40px; }
+body.touch #goal { top: 56px; }
+body.touch #narrator { top: 76px; }
