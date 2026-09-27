@@ -14,6 +14,7 @@ gracz ucieka przed „promieniowaniem 5G”.
   - (zrobione: v0.3 narrator i misje; v0.6d pętla paliwo → drift → kasa → wydatki → szacun odblokowuje misje, zamiast baterii),
   - kolejne misje i dialogi,
   - radio zmieniające mgłę i przyczepność,
+  - (zrobione w v0.6e: 5G jako czysty klimat przy masztach – bez licznika i kar),
   - uszkodzenia.
 
 ## Warstwy (roadmapa)
@@ -81,6 +82,9 @@ src/npc.js      – postacie: bryły z kodu (albo .gltf z danych), animacja bezc
 src/crowd.js    – kiedy chłopaki przy placu krzyczą (dobrze / słabo / uderzenie / czekanie), bez DOM
 src/race.js     – wyścig bez DOM: trasa z mapy (densify + CatmullRomCurve3), postęp i okrążenia, przeciwnik po trasie
                   (hamowanie przed zakrętami, dopasowanie tempa, omijanie gracza); src/rival.js – jego auto (Car Kit, światła, kolizja)
+src/fiveg.js    – 5G jako klimat (bez DOM): przy masztach (bloki z `maszt`, mapa `masty`, promień ~36 m) mrugające reflektory,
+                  szum i trzaski (audio.setStatic), przerwy silnika (gaz × throttle), zakłócenia obrazu (pixelart setGlitch),
+                  paranoiczny komentarz narratora (teksty.json → 5g); siła każdego efektu w fivegSettings (lil-gui „5G”); bez kar
 src/marker.js   – znacznik celu misji: słup światła nad celem + strzałka nad autem
 src/occlusion.js – obiekty zasłaniające auto robią się półprzezroczyste
 src/audio.js    – Howler.js: silnik (pitch z obrotów), pisk opon (z kąta), uderzenia

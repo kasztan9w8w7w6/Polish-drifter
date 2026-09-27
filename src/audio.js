@@ -7,13 +7,14 @@ const BASE = `${import.meta.env.BASE_URL}assets/kenney/racing/audio/`;
 const dbToGain = (db) => 10 ** (db / 20);
 const lerp = (a, b, k) => a + (b - a) * k;
 
-export const audioSettings = { volume: 0.7, engine: 1, skid: 1, impact: 1, warning: 1, typing: 1 };
+export const audioSettings = { volume: 0.7, engine: 1, skid: 1, impact: 1, warning: 1, typing: 1, static: 1 };
 
 export function createAudio() {
   let engine, skid, impact, engineId, skidId;
   let started = false;
   let engVol = 0, engRate = 0.5, skidVol = 0, skidRate = 1, engOn = 1;
   let impactCooldown = 0;
+  let staticGain = null; // 5G hiss (setStatic)
 
   function start() {
     if (started) return;
@@ -71,6 +72,29 @@ export function createAudio() {
       o.connect(g).connect(Howler.masterGain);
       o.start(t);
       o.stop(t + 0.14);
+    },
+    // 5G static (fiveg.js): band-passed white noise, `level` 0..1 hiss plus `crackle` 0..1 bursts. Web Audio, no file.
+    setStatic(level, crackle = 0) {
+      const ctx = Howler.ctx;
+      if (!started || !ctx) return;
+      if (!staticGain) {
+        const buf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.loop = true;
+        const band = ctx.createBiquadFilter();
+        band.type = 'bandpass';
+        band.frequency.value = 2600;
+        band.Q.value = 0.8;
+        staticGain = ctx.createGain();
+        staticGain.gain.value = 0;
+        src.connect(band).connect(staticGain).connect(Howler.masterGain);
+        src.start();
+      }
+      const target = (level * 0.05 + crackle * 0.22 * (Math.random() < 0.5 ? 1 : 0.2)) * audioSettings.static;
+      staticGain.gain.setTargetAtTime(target, ctx.currentTime, 0.02);
     },
     // Typewriter click for one letter of the narrator / a dialogue: a very short filtered blip, slightly different pitch
     // every time (so a line doesn't sound like a machine gun). Web Audio, no sound file.

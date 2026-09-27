@@ -3,6 +3,18 @@
 Wersje do v0.4c mają lokalne tagi w git (serwer odrzuca wypychanie tagów); od v0.5 wersję znajdziesz po commicie „v0.5a – …”.
 Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
 
+## v0.6e – 5G jako klimat
+- **Maszty 5G:** na Bloku 1 (był), na Bloku 5 i wolnostojąca kratownica 26 m za garażami. Wszystkie mają migające czerwone światło.
+- **W promieniu ok. 36 m od masztu** (tym mocniej, im bliżej; `src/fiveg.js`):
+  - reflektory krótko przygasają;
+  - słychać szum z trzaskami (Web Audio, bez pliku);
+  - silnik co jakiś czas przerywa (na chwilę znika gaz);
+  - obraz ma delikatne zakłócenia (przesunięte rzędy pikseli, rozszczepienie kolorów, pojedyncze iskry w końcowym shaderze pixel-artu);
+  - narrator czasem rzuca paranoiczny komentarz (`teksty.json` → `5g`, PLACEHOLDER), najwyżej raz na 55 s.
+- Bez licznika i bez kar. Siła każdego efektu, zasięg i przerwa między komentarzami są w lil-gui („5G (klimat)”), głośność szumu w dźwięku.
+- Testy (`test/fiveg.test.mjs`): efekty tylko w promieniu i silniejsze bliżej (przy maszcie w 30 s: 46 mrugnięć, 13 przerw silnika;
+  22 m: 18 / 4; daleko: nic), każdy efekt wyłączalny, narrator nie częściej niż co 55 s.
+
 ## v0.6d – paliwo, kasa, szacun (zamiast baterii)
 - **Bateria usunięta:** kod (`survival.js`), HUD, teksty, testy; reflektory zawsze świecą (przy pustym baku postojowe).
 - **Paliwo** (`src/economy.js`):

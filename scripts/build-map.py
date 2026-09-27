@@ -50,7 +50,7 @@ paths = [
 blocks = [
     {'name': 'Blok 1 (ul. Tereszkowej 3)', 'x': -15, 'z': -46, 'yaw': 0, 'klatki': 4, 'pietra': 10, 'balkony': True, 'kolor': 'szary', 'maszt': True},
     {'name': 'Blok 3 (ul. Lotników 7)', 'x': -48, 'z': -20, 'yaw': 90, 'klatki': 2, 'pietra': 4, 'balkony': True, 'kolor': 'bez'},
-    {'name': 'Blok 5 (ul. Komarowa 2)', 'x': -12, 'z': 13, 'yaw': 180, 'klatki': 3, 'pietra': 10, 'balkony': True, 'kolor': 'blekitny'},
+    {'name': 'Blok 5 (ul. Komarowa 2)', 'x': -12, 'z': 13, 'yaw': 180, 'klatki': 3, 'pietra': 10, 'balkony': True, 'kolor': 'blekitny', 'maszt': True},
     {'name': 'Blok 2 (ul. Kosmonautów 12)', 'x': -15, 'z': 44, 'yaw': 0, 'klatki': 4, 'pietra': 4, 'balkony': True, 'kolor': 'zolty'},
     {'name': 'Blok 4 (punktowiec, ul. Lotników 9)', 'x': -82, 'z': 30, 'yaw': 90, 'klatki': 1, 'pietra': 10, 'dlugosc': 16, 'glebokosc': 16, 'balkony': True, 'kolor': 'szary'},
     {'name': 'Blok 6 (ul. Lotników 11)', 'x': -84, 'z': -25, 'yaw': 90, 'klatki': 3, 'pietra': 4, 'balkony': True, 'kolor': 'blekitny'},
@@ -131,7 +131,7 @@ m = {
              'objects: modele Kenneya, yaw w stopniach: 0 = front modelu na południe, 180 = na północ, 90 = na wschód, -90 = na zachód. Rozmiar: scale, length (najdłuższy bok w m) '
              'albo fit [szer., wys., głęb.] w m; y = wysokość nad ziemią. collide (domyślnie true): kolizja z geometrii na wysokości karoserii, '
              'surface = materiał (physics.js SURFACES). repeat = rząd kopii co dx/dz. props: rzeczy z własnej geometrii (lawka, trzepak, piaskownica, hustawka, przystanek). '
-             'station: stacja paliw (x, z = środek wiaty; dystrybutory na osi wschód–zachód, podjazd od północy). lamps: [x, z, yaw, podwójna]. points: miejsca dla misji (r = promień celu), heading auta: 0 = na wschód, 90 = na północ. '
+             'masty: wolnostojące maszty 5G (x, z, h), razem z masztami na blokach (maszt) robią klimat 5G (fiveg.js). station: stacja paliw (x, z = środek wiaty; dystrybutory na osi wschód–zachód, podjazd od północy). lamps: [x, z, yaw, podwójna]. points: miejsca dla misji (r = promień celu), heading auta: 0 = na wschód, 90 = na północ. '
              'npcs: postacie (id z src/story/postacie.json, x, z, yaw w stopniach); rozmowa: stań obok (< 4,5 m). '
              'routes: trasy wyścigów – rogi ulic w kolejności jazdy, zamknięta pętla (start/meta = pierwszy punkt).',
     'name': 'Osiedle Kosmonautów',
@@ -179,6 +179,7 @@ m = {
     ],
     'shop': {'light': [0, 3, 82.5], 'pad': {'x': 0, 'z': 80.5, 'w': 6, 'd': 4}},
     'station': {'name': 'KOMETA', 'x': 76, 'z': 90},
+    'masty': [{'x': -86, 'z': -93, 'h': 26}],
     'locker': {'name': 'Paczkobox 24/7', 'x': -3, 'z': -38.9, 'yaw': 0},
     'points': {
         'spawn': {'x': -30, 'z': 59.5, 'heading': 0, 'label': 'parking pod Blokiem 2'},

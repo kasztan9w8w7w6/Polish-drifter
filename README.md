@@ -128,6 +128,9 @@ i **Łatwy** – dawna jazda z asystą (kąt trzyma się sam, bez bączków), ja
 - postacie: chłopaki przy placu, Sąsiad Zbyszek, Pani Halina, Mietek, Pan Zdzisio (rozmowa: stań obok, E / pad B / dotyk);
 - stacja paliw „Kometa” przy głównej.
 
+**5G (v0.6e):** przy masztach (Blok 1, Blok 5, kratownica za garażami) reflektory mrugają, radio szumi, silnik przerywa, a obraz
+lekko się zakłóca. To czysty klimat, bez kar; siłę efektów zmienisz w panelu (G → 5G).
+
 **Pętla gry (v0.6d):** jeździsz, driftujesz, zarabiasz, wydajesz, odblokowujesz.
 - **Paliwo:** pełny bak starcza na ok. 10 min, drift pali więcej. Pusty bak to nie koniec gry: pchasz albo dzwonisz po kumpla.
 - **Kasa:** za misje i za drift w misjach, najwięcej w pokazach.

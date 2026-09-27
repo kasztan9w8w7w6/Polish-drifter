@@ -1,5 +1,5 @@
 {
-  "_help": "Teksty systemowe gry (nie z misji ani rozmów): powrót po „Kontynuuj”, paliwo i stacja, pusty bak, Żappka, poziomy szacunu, wyścig, podsumowanie. Etykiety przycisków menu są w src/menu.js.",
+  "_help": "Teksty systemowe gry (nie z misji ani rozmów): powrót po „Kontynuuj”, paliwo i stacja, pusty bak, Żappka, poziomy szacunu, wyścig, podsumowanie, 5g (paranoiczne komentarze narratora przy masztach). Etykiety przycisków menu są w src/menu.js.",
   "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
   "powrot": "PLACEHOLDER: Wracasz. Mgła ta sama, maszt ten sam, paliwa mniej niż było.",
   "rozmowa": {
@@ -85,5 +85,12 @@
     "wypity": "PLACEHOLDER: Serce bije jak dwusuw. Szacun ×2 przez minutę."
   },
   "szacunWzrost": "PLACEHOLDER: Nowy poziom szacunu: {nazwa}",
-  "zarobek": "+{zl} zł"
+  "zarobek": "+{zl} zł",
+  "5g": [
+    "PLACEHOLDER: Reflektory mrugają. To nie żarówki. To on. Maszt.",
+    "PLACEHOLDER: W radiu szum. Ktoś tam mówi. Albo to tylko twoje myśli, wysłane dalej.",
+    "PLACEHOLDER: Silnik się krztusi. Sąsiad z parteru mówił, że fale lubią gaźniki.",
+    "PLACEHOLDER: Obraz faluje. Mówią, że to mgła. Mgła nie buczy.",
+    "PLACEHOLDER: Czujesz to? Tu nawet Polonez ma zasięg."
+  ]
 }

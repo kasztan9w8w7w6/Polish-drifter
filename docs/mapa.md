@@ -70,6 +70,7 @@ Wszystkie narożniki i skrzyżowania mają zaokrąglony asfalt (promień ok. 4 m
 | **Garaże** | północny zachód | rząd blaszaków, drzwi na południe, asfaltowy plac przed nimi przylega do ul. Tereszkowej |
 | **Supersam i plac** | wschód, za ul. Gagarina | market na północy; wielki asfaltowy plac (wjazdy z Gagarina i z głównej), rzędy latarń, pusty środek do driftu; chłopaki stoją przy zachodnim wjeździe |
 | **Pierzeja handlowa** | południe, przy głównej | Żappka 24h z parkingiem i świecącym polem zapisu (sklep), pawilony, przystanek |
+| **Maszty 5G** (v0.6e) | dach Bloku 1 i Bloku 5, kratownica 26 m za garażami | klimat: w promieniu ~36 m mrugające światła, szum, przerwy silnika, zakłócenia obrazu |
 | **Stacja paliw „Kometa”** (v0.6d) | południe głównej, na wschodzie | wiata na słupach ze świetlówkami, dwa dystrybutory, kiosk, szyld; podjazd z głównej, stój przy dystrybutorze (`points.stacja`) |
 
 ## Zasady

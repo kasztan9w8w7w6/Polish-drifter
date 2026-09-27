@@ -154,21 +154,34 @@ function addVertexSnap(m) {
 
 // ---------- Final pass: brightness bands + ordered dither ----------
 const BandShader = {
-  uniforms: { tDiffuse: { value: null }, steps: { value: 4 }, amount: { value: 0.6 }, dither: { value: 0.25 }, pixelSize: { value: 4 } },
+  uniforms: { tDiffuse: { value: null }, steps: { value: 4 }, amount: { value: 0.6 }, dither: { value: 0.25 }, pixelSize: { value: 4 }, glitch: { value: 0 }, time: { value: 0 } },
   vertexShader: /* glsl */ `
     varying vec2 vUv;
     void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: /* glsl */ `
     uniform sampler2D tDiffuse;
-    uniform float steps, amount, dither, pixelSize;
+    uniform float steps, amount, dither, pixelSize, glitch, time;
     varying vec2 vUv;
+    float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
     float bayer4(vec2 p) {
       int x = int(mod(p.x, 4.0)), y = int(mod(p.y, 4.0));
       int m[16] = int[16](0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5);
       return float(m[x + y * 4]) / 16.0 - 0.5;
     }
     void main() {
-      vec4 c = texture2D(tDiffuse, vUv);
+      // 5G interference (fiveg.js): some rows of game pixels slide sideways, a colour split, grey speckles
+      vec2 uv = vUv;
+      vec4 c;
+      if (glitch > 0.001) {
+        float slot = floor(time * 18.0);
+        float row = floor(gl_FragCoord.y / (pixelSize * 3.0));
+        float r = hash(vec2(row, slot));
+        if (r < glitch * 0.35) uv.x += (hash(vec2(slot, row)) - 0.5) * 0.06 * glitch;
+        float split = glitch * 0.004;
+        c = vec4(texture2D(tDiffuse, uv + vec2(split, 0.0)).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv - vec2(split, 0.0)).b, 1.0);
+        float n = hash(floor(gl_FragCoord.xy / pixelSize) + slot);
+        c.rgb = mix(c.rgb, vec3(n * 0.45), step(1.0 - glitch * 0.02, n) * 0.7);
+      } else c = texture2D(tDiffuse, uv);
       float l = max(max(c.r, c.g), c.b);
       if (l > 0.002 && amount > 0.0) {
         // Snap brightness (not hue) to bands; the dither decides pixel by pixel near a band edge
@@ -217,6 +230,11 @@ export function createPixelComposer(renderer, scene, camera) {
     apply,
     setCamera(cam) {
       pixel.camera = cam;
+    },
+    // 5G interference 0..1 (fiveg.js) at time t (s)
+    setGlitch(g, t) {
+      bands.uniforms.glitch.value = g;
+      bands.uniforms.time.value = t;
     },
   };
 }
