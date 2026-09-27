@@ -30,6 +30,7 @@ import { createTouchControls, touchSettings } from './touch.js';
 import { loadSettings, saveSettings, pixelSizeFor, loadProgress, saveProgress } from './settings.js';
 import { createDashboard } from './dashboard.js';
 import { createMenu } from './menu.js';
+import { createTurntable } from './turntable.js';
 
 // ---------- Renderer / scene: night on the estate ----------
 installRadialFog(); // before any material compiles
@@ -252,6 +253,7 @@ snd.add(audioSettings, 'engine', 0, 2, 0.01).name('silnik');
 snd.add(audioSettings, 'skid', 0, 2, 0.01).name('pisk opon');
 snd.add(audioSettings, 'impact', 0, 2, 0.01).name('uderzenia');
 snd.add(audioSettings, 'warning', 0, 2, 0.01).name('ostrzeżenie baterii');
+snd.add(audioSettings, 'typing', 0, 2, 0.01).name('pisanie (narrator)');
 const bat = gui.addFolder('Bateria i misja').close();
 bat.add(batterySettings, 'drainIdle', 0, 1, 0.01).name('rozładowanie: silnik (%/s)');
 bat.add(batterySettings, 'drainDrive', 0, 3, 0.05).name('rozładowanie: jazda, maks. (%/s)');
@@ -396,6 +398,21 @@ let fpsFrames = 0, fpsTime = 0;
 let garage = false;
 const garageLight = new THREE.PointLight(0xffd9a0, 0, 16, 1); // a bare bulb over the car in the garage view
 scene.add(garageLight);
+// Garage: drag the car round with the mouse or a finger (turntable.js: inertia, the slow turn comes back when idle).
+// The menu covers the screen, so the drag starts anywhere outside its buttons and sliders.
+const turntable = createTurntable();
+addEventListener('pointerdown', (e) => {
+  if (!garage || e.target.closest?.('button, input, .m-paints')) return;
+  turntable.grab(e.clientX, e.timeStamp / 1000);
+  document.body.classList.add('grabbing');
+});
+addEventListener('pointermove', (e) => turntable.move(e.clientX, e.timeStamp / 1000));
+for (const ev of ['pointerup', 'pointercancel']) {
+  addEventListener(ev, (e) => {
+    turntable.release(e.timeStamp / 1000);
+    document.body.classList.remove('grabbing');
+  });
+}
 function applySettings(s) {
   if (presets[s.difficulty] && panel.preset !== s.difficulty) {
     panel.preset = s.difficulty;
@@ -407,7 +424,7 @@ function applySettings(s) {
   applyNight();
   perf.quality = s.quality ?? (TOUCH ? 'niska' : 'wysoka');
   applyQuality();
-  Object.assign(audioSettings, { volume: s.volume, engine: s.engine, skid: s.skid, impact: s.impact, warning: s.warning });
+  Object.assign(audioSettings, { volume: s.volume, engine: s.engine, skid: s.skid, impact: s.impact, warning: s.warning, typing: s.typing ?? 1 });
   gui.controllersRecursive().forEach((c) => c.updateDisplay());
 }
 const menu = createMenu({
@@ -441,7 +458,7 @@ const menu = createMenu({
   },
 });
 applySettings(settings);
-if (new URLSearchParams(location.search).has('debug')) window.agro = { survival, mission, narrator, car, menu, settings, perf: () => perf, paused: () => paused }; // for testing from the console
+if (new URLSearchParams(location.search).has('debug')) window.agro = { survival, mission, narrator, car, menu, settings, perf: () => perf, paused: () => paused, resume: () => setPaused(false), tt: () => turntable, carYaw: () => { const f = new THREE.Vector3(1, 0, 0).applyQuaternion(carView.root.quaternion); return Math.atan2(-f.z, f.x); } }; // for testing from the console
 // ?plan – the whole map from straight above, lit like daytime (docs/mapa.md screenshot, checking the layout)
 const PLAN = new URLSearchParams(location.search).has('plan');
 if (PLAN) {
@@ -488,11 +505,12 @@ function tick(time) {
     perf.fps = Math.round(fpsFrames / fpsTime);
     fpsFrames = fpsTime = 0;
   }
+  fit(); // (cheap when nothing changed)
   menu.update(); // pad in the menu
-  // Garage: the Polonez turns slowly under a bare bulb, seen from a low camera
+  // Garage: the Polonez turns slowly under a bare bulb (or by hand), seen from a low camera
   if (garage) {
     const p = carView.root.position;
-    carView.root.rotateY(dt * 0.5);
+    carView.root.rotateY(turntable.update(dt));
     const a = timer.getElapsed() * 0.05;
     chaseCam.fov = 45;
     chaseCam.position.set(p.x + Math.cos(a) * 7.5, p.y + 1.6, p.z + Math.sin(a) * 7.5);
@@ -581,6 +599,7 @@ function tick(time) {
   const dist = markers.update(timer.getElapsed(), target, state.position);
   hudBat.goal.innerHTML = mission.goal ? `Cel: ${mission.goal}${target ? ` <small>${Math.round(dist)} m</small>` : ''}` : '';
   const nr = narrator.update(dt);
+  if (nr.keys) audio.type(); // (one click per frame is enough even when two letters land in it)
   if (hudBat.narrator.textContent !== nr.text) hudBat.narrator.textContent = nr.text;
   hudBat.narrator.style.opacity = nr.opacity;
   if (summaryTimer > 0 && (summaryTimer -= dt) <= 0) hudBat.summary.hidden = true;
@@ -628,12 +647,22 @@ function tick(time) {
   requestAnimationFrame(tick);
 }
 
-addEventListener('resize', () => {
-  chaseCam.aspect = innerWidth / innerHeight;
+// Canvas size = window size. Checked every frame, not only on 'resize': the page is built behind several awaits
+// (physics, models, map), and a window or frame that changes size while it loads (maximised, the artifact frame
+// settling, devtools) used to leave the canvas at its first size – the game squeezed into part of the screen.
+let fitW = 0, fitH = 0;
+function fit() {
+  const w = innerWidth, h = innerHeight;
+  if (w === fitW && h === fitH) return;
+  fitW = w;
+  fitH = h;
+  chaseCam.aspect = w / h;
   chaseCam.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-  composer.setSize(innerWidth, innerHeight);
+  renderer.setSize(w, h);
+  composer.setSize(w, h);
   applyPixelSize();
-});
+}
+addEventListener('resize', fit);
+fit();
 
 tick();

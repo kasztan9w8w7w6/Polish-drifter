@@ -1,6 +1,21 @@
 # Changelog – Agro Drifter
 
-Każda wersja ma tag w git (`git checkout v0.4a` uruchamia dokładnie tę wersję). Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
+Wersje do v0.4c mają lokalne tagi w git (serwer odrzuca wypychanie tagów); od v0.5 wersję znajdziesz po commicie „v0.5a – …”.
+Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
+
+## v0.5a – szybkie poprawki
+- **Obraz ściśnięty na komputerze (błąd krytyczny):** rozmiar canvasu jest teraz sprawdzany w każdej klatce (i przy `resize`),
+  nie tylko po wczytaniu. Wcześniej zmiana rozmiaru okna/ramki w trakcie ładowania (maksymalizacja, ramka artefaktu)
+  zostawiała canvas w pierwszym rozmiarze. Sprawdzone: 1366×768, 1920×1080, 2560×1440, zmiana rozmiaru w czasie ładowania, telefon w poziomie.
+- **Piksele:** Drobne / Średnie / Grube ≈ 540 / 360 / 270 linii (1080p: piksel 2 / 3 / 4) i zawsze trzy różne rozmiary
+  (przy każdej wysokości ekranu każdy grubszy poziom ma piksel co najmniej o 1 większy).
+- **Pisk opon:** tylko przy poślizgu bocznym (nowy `sideSlip` 0–90°, taki sam w przód i wstecz) i buksowaniu przy ruszaniu
+  pełnym gazem; cofanie już nie piszczy i nie zostawia śladów.
+- **Obrót (Normalny/Pro):** najwyżej jeden – obrót nadwozia jest tłumiony od wykrycia bączka (dokłada ~250° w `proSpinTime`),
+  auto wytraca prędkość i staje; przez 1 s po obrocie nie da się wejść w nowy poślizg.
+- **Garaż:** obracanie auta przeciąganiem myszą / palcem, z bezwładnością; po 2,5 s bezczynności wraca powolny auto-obrót.
+- **Narrator:** wolniejsze pisanie jak na maszynie (przerwy po przecinkach i kropkach), ciche kliknięcie przy każdej literze
+  (losowa wysokość, bez dźwięku na spacjach), głośność „Pisanie” w ustawieniach dźwięku, tekst zostaje dłużej.
 
 ## v0.4c – logiczne osiedle
 - Plan osiedla w `docs/mapa.md` (szkic ASCII, strefy, zasady) i zbudowana z niego mapa 200 × 200 m.

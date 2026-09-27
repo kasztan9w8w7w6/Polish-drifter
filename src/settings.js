@@ -3,10 +3,17 @@
 const KEY = 'agro-settings';
 const PROGRESS = 'agro-progress';
 
-// Game pixel size from the screen: about this many game pixels from top to bottom
-export const PIXEL_LINES = { Drobne: 540, Średnie: 360, Grube: 240 };
+// Game pixel size from the screen: about this many game pixels from top to bottom. Rounding alone can give two levels
+// the same size (at 900 px: 540 → 2, 360 → 3, 270 → 3; a small window: all 1), so every coarser level is at least
+// one screen pixel bigger than the finer one – the three always look different.
+export const PIXEL_LINES = { Drobne: 540, Średnie: 360, Grube: 270 };
 export function pixelSizeFor(screenHeight, detail = 'Średnie') {
-  return Math.max(1, Math.round(screenHeight / (PIXEL_LINES[detail] ?? PIXEL_LINES['Średnie'])));
+  let size = 0;
+  for (const [name, lines] of Object.entries(PIXEL_LINES)) {
+    size = Math.max(size + 1, Math.round(screenHeight / lines));
+    if (name === detail) return size;
+  }
+  return pixelSizeFor(screenHeight, 'Średnie');
 }
 
 // Keyboard bindings: action → key codes (KeyboardEvent.code); the first one is shown and changed in the menu
@@ -34,6 +41,7 @@ export function defaultSettings() {
     skid: 1,
     impact: 1,
     warning: 1,
+    typing: 1, // narrator / dialogue typewriter clicks
     paint: null, // colour name from the car profile's palette (null = the profile's default)
     keys: structuredClone(DEFAULT_KEYS),
   };

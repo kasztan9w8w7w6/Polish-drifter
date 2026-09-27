@@ -18,8 +18,8 @@ gracz ucieka przed „promieniowaniem 5G”.
 
 ## Warstwy (roadmapa)
 
-Tabela wersji jest w [`ROADMAP.md`](ROADMAP.md) (tam dopisuj nowe). Teraz: v0.3d – sterowanie mobilne w wersji testowej;
-dopracowanie sterowania mobilnego w v0.15; następne: v0.4 MVP.
+Tabela wersji jest w [`ROADMAP.md`](ROADMAP.md) (tam dopisuj nowe). Teraz: v0.5 – MVP (misje, postacie, dialogi,
+osiedle z wielkiej płyty); dopracowanie sterowania mobilnego w v0.15.
 
 ## Zasady pracy
 
@@ -36,7 +36,7 @@ src/physics.js  – jedyne miejsce z Rapierem poza vehicle.ts: świat, stały kr
 src/vehicle.ts  – auto arcade (port Kenney Starter Kit Racing, vehicle.gd): toczona KULA r = 1 m + drift na wierzchu.
                   Wejście: { throttle, brake, steer (+ = lewo), handbrake } 0..1 / -1..1
                   Wyjście: vehicle.state { position, quaternion, velocity, speed, slipAngle, driftAngle, drifting,
-                  bodyRoll, bodyPitch, wheels[] }
+                  sideSlip (0–90°, cofanie ≠ poślizg), wheelspin, bodyRoll, bodyPitch, wheels[] }
 src/tuning.ts   – wszystkie parametry jazdy i kamery + presety „Normalny” (domyślny, wymagający), „Pro”, „Łatwy” (dostępność)
 src/cars/*.json – profile aut (realne dane + wartości arcade, przełożenia, paleta lakierów, model); nowe auto = nowy plik
 src/cars.js     – applyCar (masa, moc z prędkości maks., napęd → tuning), gearsOf (biegi i obroty dla gearbox.js)
@@ -54,7 +54,8 @@ src/pixelart.js – pixel-art: RenderPixelatedPass (przykład three.js webgl_pos
                   posteryzacja jasności, mgła radialna wokół auta (podmienione chunki fog_*), opcjonalne drżenie PS1
 src/survival.js – pętla przetrwania (logika bez DOM, testy w Node): bateria (rozładowanie, ładowanie driftem jak punkty),
                   reflektory (headlightLevel), 0% → gaśnięcie → ciemny ekran → restart z punktu zapisu, pole przed Żappką = 100% + zapis
-src/narrator.js – narrator: tekst u góry, pisany litera po literze, znika po kilku sekundach, nie pauzuje gry
+src/typewriter.js – pisanie jak na maszynie (przerwy po znakach interpunkcyjnych, `keys` = litery do kliknięć); narrator i dialogi
+src/narrator.js – narrator: tekst u góry, pisany typewriter.js, kliknięcie na literę (audio.type), znika po kilku sekundach, nie pauzuje gry
 src/mission.js  – wykonawca misji z plików danych; src/missions/*.json – kroki (reach / battery / wait), cele, teksty, podpowiedzi
 src/marker.js   – znacznik celu misji: słup światła nad celem + strzałka nad autem
 src/occlusion.js – obiekty zasłaniające auto robią się półprzezroczyste
@@ -66,9 +67,10 @@ src/touchstate.js – dotyk bez DOM (testy w Node): isTouchDevice (po możliwoś
 src/touch.js    – warstwa dotykowa (tylko na urządzeniach dotykowych): joystick nipplejs / przyciski ←→, gaz, hamulec, ręczny,
                   pełny ekran + screen.orientation.lock; w main.js: niższa jakość, FPS w panelu, pauza w tle, plansza „Obróć telefon”
 src/settings.js – ustawienia gracza w localStorage (try/catch, gra działa bez), klawisze do przypisania, piksele wg rozdzielczości
-                  (Drobne/Średnie/Grube ≈ 540/360/240 linii), postęp dla „Kontynuuj”
+                  (Drobne/Średnie/Grube ≈ 540/360/270 linii, zawsze różne), postęp dla „Kontynuuj”
 src/dashboard.js – zegary jak w autach z bloku wschodniego (prędkościomierz, obrotomierz, bateria jak zegar paliwa, kontrolki,
                   okienko biegu, bębenkowy licznik punktów): canvas 256×100 powiększony bez wygładzania
+src/turntable.js – obrotnica w garażu (przeciąganie, bezwładność, powrót auto-obrotu), bez DOM
 src/menu.js     – menu (Graj / Kontynuuj / Garaż / Ustawienia), garaż (obracający się Polonez, lakiery), ustawienia
                   (grafika, dźwięk, sterowanie + trudność), pauza (Esc / Start); mysz, klawiatura, pad, dotyk
 src/drift.js    – punktacja driftu
@@ -122,7 +124,7 @@ Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości n
   Normalny/Pro (`realCounter` = 1): kąt nie goni celu, tylko sam rośnie (`proGrow` + (gaz − `proThrottleNeutral`) · `proGrowThrottle`
   + ręczny `proGrowHandbrake`; za mało gazu = kąt maleje i auto łapie przyczepność poniżej 4°);
   kontra go zmniejsza (`proSteer` °/s na pełny skręt), skręt w zakręt pogłębia (`proSteerInto`), powyżej `proSpinAngle`
-  obrót (`proSpinTime`: bez gazu, auto wytraca prędkość, potem odjeżdża w stronę, w którą patrzy). Łatwy: bez zmian.
+  obrót (`proSpinTime`: bez gazu, obrót tłumiony – dokłada ~250°, najwyżej jeden – auto staje; 1 s bez nowego poślizgu). Łatwy: bez zmian.
 - **Kontakt:** kula ma restitution 0; prędkość „od podłoża” jest tłumiona (`landingDamping`), model podąża za wysokością
   kuli z opóźnieniem (`suspension`).
 - **Przeszkody** (kolidery z `surface`, grupa kolizji OBSTACLE_GROUP) mają kolizję dokładnie taką, jak wyglądają. Kula ich

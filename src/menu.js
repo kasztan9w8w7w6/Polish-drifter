@@ -54,6 +54,7 @@ export function createMenu({ settings, paints, hooks }) {
         ${slider('Pisk opon', 'skid', 0, 2, 0.01)}
         ${slider('Uderzenia', 'impact', 0, 2, 0.01)}
         ${slider('Ostrzeżenie baterii', 'warning', 0, 2, 0.01)}
+        ${slider('Pisanie (narrator, rozmowy)', 'typing', 0, 2, 0.01)}
       </div>
       <div class="m-panel" data-panel="ctl">
         ${choice('Jazda', 'difficulty', ['Łatwy', 'Normalny', 'Pro'])}

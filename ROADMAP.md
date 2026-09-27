@@ -18,7 +18,9 @@ Wersje po kolei. Szczegóły modułów: [`CLAUDE.md`](CLAUDE.md), zmiany w każd
 | v0.4a | trudniejsza jazda (preset Normalny, pęd, obrót, zarzucenie) i bateria (60–90 s bez driftu, seria czystego driftu) | zrobione |
 | v0.4b | kamera niżej i w bok, piksele wg rozdzielczości, zegary z bloku wschodniego, menu (główne, garaż, ustawienia, pauza) | zrobione |
 | v0.4c | logiczne osiedle z wielkiej płyty (plan w docs/mapa.md) | zrobione |
-| v0.4 | MVP | następne |
+| v0.5a | szybkie poprawki: skalowanie obrazu, piksele, pisk przy cofaniu, jeden obrót, garaż z przeciąganiem, narrator z maszyną do pisania | zrobione |
+| v0.5b | MVP: postacie, dialogi, misje 2–3 | w toku |
+| v0.5c | prawdziwe osiedle: bloki z wielkiej płyty, ulice w pętlach | w toku |
 | v0.15 | dopracowanie sterowania mobilnego (po testach na telefonach) | planowane |
 
 ## Sterowanie mobilne

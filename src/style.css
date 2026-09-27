@@ -94,7 +94,9 @@ body.paused #hud, body.paused #touch, body.paused #help { visibility: hidden; }
 #menu { position: fixed; inset: 0; z-index: 25; display: grid; place-items: center; font-family: 'Silkscreen', monospace; color: #e8dcc0;
   background: radial-gradient(ellipse at 50% 60%, #0000 0%, #000c 60%, #000f 100%); padding-inline: 16px; overflow-y: auto; }
 #menu[hidden] { display: none; }
-#menu.m-garage { background: linear-gradient(90deg, #000e 0%, #0009 32%, #0000 60%); place-items: center start; }
+#menu.m-garage { background: linear-gradient(90deg, #000e 0%, #0009 32%, #0000 60%); place-items: center start; cursor: grab; touch-action: none; }
+body.grabbing #menu.m-garage { cursor: grabbing; }
+#menu.m-garage .m-title p::after { content: ' · przeciągnij, by obrócić'; color: #8a7a60; }
 .m-box { display: grid; gap: 14px; width: min(460px, 100%); padding-block: 20px; }
 #menu.m-settings .m-box { width: min(640px, 100%); }
 .m-title h1 { margin: 0; font-size: clamp(30px, 6vw, 54px); line-height: 1; color: #ffb347; text-shadow: 3px 3px 0 #5a2a08, 0 0 18px #ff7a1a55; letter-spacing: 2px; }
