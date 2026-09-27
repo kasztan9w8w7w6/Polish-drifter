@@ -44,7 +44,8 @@ test('Łatwy: w drifcie przednie koła same pokazują kontrę, proporcjonalnie d
 });
 
 // Pad driver that holds `goal`° of drift with counter-steer only (P-controller on the angle)
-function holdAngle(goal, gain = 0.03, bias = -0.45) {
+// (bias: the counter-steer that cancels full-throttle growth – Pro since v0.6b: 15 °/s ÷ 75 °/s per full lock ≈ 0.2)
+function holdAngle(goal, gain = 0.03, bias = -0.2) {
   return (s) => {
     const side = Math.sign(s.driftAngle) || 1;
     const err = goal - Math.abs(s.driftAngle); // + = too shallow → less counter
@@ -71,7 +72,7 @@ test('Pro: kąt trzymany kontrą; puszczenie kontry go zwiększa, mocniejsza kon
   t.diagnostic(`trzymanie 30° kontrą (skręt ${fmt(steerHold, 2)}): kąt ${fmt(lo)}–${fmt(hi)}° przez 2 s, drift ${sim.car.state.drifting || a2 < 5 ? 'utrzymany' : '?'}; puszczenie kontry 0,5 s: ${fmt(a0)}° → ${fmt(a1)}°; mocna kontra 0,5 s: → ${fmt(a2)}°; obroty ${sim.car.state.spins}`);
   assert.ok(lo > 22 && hi < 38, 'kontra utrzymuje kąt przez kilka sekund');
   assert.ok(steerHold < -0.1, 'do trzymania kąta potrzebna jest kontra (skręt przeciwny do zakrętu)');
-  assert.ok(a1 > a0 + 8, 'puszczenie kontry zwiększa kąt');
+  assert.ok(a1 > a0 + 5, 'puszczenie kontry zwiększa kąt (stopniowo: v0.6b)');
   assert.ok(a2 < a1 - 15, 'kontra zmniejsza kąt');
   assert.equal(sim.car.state.spins, 0);
 });

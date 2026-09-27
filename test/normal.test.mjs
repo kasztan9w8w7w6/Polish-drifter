@@ -87,11 +87,12 @@ for (const preset of ['Normalny', 'Pro']) {
     // Neglected: gas on, steering left alone (no counter)
     const sim2 = await simAt(60, preset);
     enterLeft(sim2);
-    const neglect = watch(sim2, 3, { throttle: 1, steer: 0 });
+    // (v0.6b balance zone: full throttle deepens the angle gradually, the spin comes after ~1 s held over the edge)
+    const neglect = watch(sim2, 6, { throttle: 1, steer: 0 });
     // Neglected with the steering still into the turn
     const sim3 = await simAt(60, preset);
     enterLeft(sim3);
-    const into = watch(sim3, 3, { throttle: 0.8, steer: 0.5 });
+    const into = watch(sim3, 6, { throttle: 0.8, steer: 0.5 });
     t.diagnostic(`kontra trzyma ${fmt(Math.min(...h))}–${fmt(Math.max(...h))}° przez 3 s (obrotów ${heldSpins}); bez kontry z gazem: ${neglect.spun ? 'obrót' : 'bez obrotu'} (max ${fmt(neglect.maxSlip)}°); skręt w zakręt: ${into.spun ? 'obrót' : 'bez obrotu'}`);
     assert.equal(heldSpins, 0);
     assert.ok(Math.min(...h) > 15 && Math.max(...h) < 45, 'kontra utrzymuje drift');

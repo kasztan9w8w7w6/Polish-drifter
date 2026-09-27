@@ -316,7 +316,7 @@ gui.add(panel, 'export').name('Eksport ustawień (JSON)');
 gui.add(panel, 'import').name('Wczytaj JSON');
 const RANGES = {
   mass: [300, 3000], gravityScale: [0.5, 3], sharpSteer: [0.5, 1.01], sharpThrottle: [0, 1], transitionSteer: [0.3, 1.01], driftAngleLowSpeed: [0.2, 1],
-  driftAngleMax: [20, 60], realCounter: [0, 1], handbrakeSteer: [0, 1], liftSpeed: [5, 40], liftSteer: [0, 1], liftDrop: [0, 1], liftWindow: [0.05, 1], proThrottleNeutral: [0, 1], sideGripHigh: [1, 30], driftSideGrip: [1, 30], counterSteerVisual: [0, 1.5], proSpinAngle: [45, 120], dioPitch: [20, 80], dioYaw: [-180, 180], dioYawFollow: [0, 2], driftSpeedLoss: [0, 0.5], fovBase: [40, 90], fovFast: [40, 110], shakeSpeed: [0, 1],
+  driftAngleMax: [20, 60], realCounter: [0, 1], handbrakeSteer: [0, 1], liftSpeed: [5, 40], liftSteer: [0, 1], liftDrop: [0, 1], liftWindow: [0.05, 1], proThrottleNeutral: [0, 1], sideGripHigh: [1, 30], driftSideGrip: [1, 30], counterSteerVisual: [0, 1.5], proSpinAngle: [45, 120], proDangerAngle: [20, 90], proSpinDelay: [0.2, 3], dioPitch: [20, 80], dioYaw: [-180, 180], dioYawFollow: [0, 2], driftSpeedLoss: [0, 0.5], fovBase: [40, 90], fovFast: [40, 110], shakeSpeed: [0, 1],
 };
 const groups = {
   'Kula (Kenney)': ['mass', 'gravityScale', 'angularDamping', 'coastDamping', 'linearDamping'],
@@ -324,9 +324,9 @@ const groups = {
   Kierownica: ['steerRate', 'steerRateHigh', 'steerFullSpeed', 'turnSmoothing'],
   'Wejście w drift': ['driftMinSpeed', 'handbrakeSteer', 'liftSpeed', 'liftSteer', 'liftDrop', 'liftWindow', 'sharpSteer', 'sharpThrottle', 'sharpSpeed', 'sharpTime', 'driftExitDelay', 'transitionSteer'],
   'Kąt driftu': ['driftAngleBase', 'driftAngleSteer', 'driftAngleThrottle', 'driftAngleHandbrake', 'selfAlign', 'driftAngleLowSpeed', 'driftAngleMax', 'driftAngleRate', 'straightenRate', 'driftTurnRate', 'driftTurnSteer', 'driftSpeedLoss'],
-  'Kontra (Pro: prawdziwa)': ['counterSteerVisual', 'realCounter', 'proGrow', 'proGrowThrottle', 'proThrottleNeutral', 'proGrowHandbrake', 'proSteer', 'proSteerInto', 'proSpinAngle', 'proSpinTime'],
+  'Kontra (Pro: prawdziwa)': ['counterSteerVisual', 'realCounter', 'proGrow', 'proGrowThrottle', 'proThrottleNeutral', 'proGrowHandbrake', 'proSteer', 'proSteerInto', 'proDangerAngle', 'proSpinDelay', 'proSpinAngle', 'proSpinTime'],
   'Wygląd jazdy i kontakt': ['bodyRoll', 'bodyPitch', 'suspension', 'landingDamping', 'unstuckTime', 'crashMinSpeed', 'crashRebound', 'crashStun'],
-  'Kamera Diorama': ['dioPitch', 'dioYaw', 'dioYawFollow', 'dioZoom', 'dioZoomFast', 'dioLead', 'dioFollow', 'shakeSpeed', 'shakeImpact'],
+  'Kamera Diorama': ['dioPitch', 'dioYaw', 'dioYawFollow', 'dioZoom', 'dioZoomFast', 'dioLead', 'dioFollow', 'shakeSpeed', 'shakeImpact', 'shakeWarning'],
   'Kamera Za autem': ['camDistance', 'camDistanceFast', 'camHeight', 'camFollow', 'camYawFollow', 'camLead', 'fovBase', 'fovFast'],
 };
 for (const [title, keys] of Object.entries(groups)) {
@@ -681,6 +681,7 @@ function tick(time) {
   const v = state.velocity;
   if (state.crash > CRASH_SPEED) scorer.crash();
   rig.hit(state.crash);
+  rig.rumble(state.spinWarning ?? 0); // drift balance zone: the camera shakes before a spin
   audio.hit(state.crash);
   scorer.update(dt, fwd, v, state.grounded);
 

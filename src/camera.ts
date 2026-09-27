@@ -151,6 +151,10 @@ export function createCameraRig(chase: PerspectiveCamera, dio: OrthographicCamer
     },
     // impact in N from vehicle.state.impact
     // speed (m/s) into the obstacle, vehicle.state.crash
+    // A low steady rumble (the spin warning): the shake doesn't fall below `level` (0..1) this frame
+    rumble(level: number) {
+      trauma = Math.max(trauma, Math.min(1, level) * t.shakeWarning);
+    },
     hit(speed: number) {
       trauma = Math.min(1, trauma + (speed / 20) * t.shakeImpact);
     },

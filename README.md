@@ -102,8 +102,10 @@ Normalna jazda trzyma przyczepność: zwykły zakręt, nawet pełny skręt z gaz
 - **pełnego gazu z pełnym skrętem** od ~61 km/h.
 
 W poślizgu nic nie trzyma kąta za ciebie:
-- gaz wypycha tył dalej, **kontra** (skręt przeciwny do zakrętu) zmniejsza kąt; drift trzymasz kontrą i gazem jednocześnie;
-- za mało gazu – auto się prostuje i łapie przyczepność; skręt w zakręt albo puszczona kontra – kąt rośnie aż do **obrotu** (powyżej 65°);
+- pełny gaz **stopniowo** pogłębia kąt, około pół gazu go trzyma, odpuszczenie zmniejsza; **kontra** (skręt przeciwny do zakrętu) reguluje;
+- za mało gazu – auto się prostuje i łapie przyczepność;
+- **strefa balansu:** za duży kąt (od 50°, w Pro od 45°) trzymany bez kontry i bez odpuszczenia gazu przez ok. 1 s kończy się **obrotem**.
+  Wcześniej auto ostrzega: pisk robi się głośniejszy i wyższy, a kamera drży. Kontra albo odpuszczenie gazu w tym czasie ratuje auto;
 - za mocna kontra przy wyjściu **zarzuca w drugą stronę**; wyjście z wyczuciem: odpuść gaz i lekko kontruj;
 - auto ma **pęd**: w szybkim zakręcie i w drifcie wynosi je na zewnątrz, więc da się przestrzelić zakręt.
 
