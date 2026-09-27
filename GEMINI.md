@@ -42,12 +42,17 @@ src/cars/*.json – profile aut (realne dane + wartości arcade, przełożenia, 
 src/cars.js     – applyCar (masa, moc z prędkości maks., napęd → tuning), gearsOf (biegi i obroty dla gearbox.js)
 src/camera.ts   – kamera „Diorama” (orto, 35° w dół, obrócona 28° od osi mapy, przyciągana do siatki pikseli) i „Za autem” (port view.gd), klawisz C
 src/car.js      – wygląd auta: model Poloneza (koła = kości, kręcą się i skręcają), przechył, reflektory; zastępcze bryły
-src/track.js    – podłoże: asfalt, ściany, słupki opon, pachołki (pozycje z mapy)
-src/maps/*.json – mapa w pliku danych (plan i strefy: docs/mapa.md): ulice jako odcinki (roads, crossings), obiekty (model, x, z, yaw,
-                  rozmiar, kolizja, materiał), props z własnej geometrii, latarnie, dziury, parkingi, szyldy, paczkomat, sklep, punkty
-                  misji. Edytuj tu, nie w kodzie; opis pól w `_help`. scripts/build-map.py wygenerował pierwszą wersję z planu.
-src/roads.js    – kafle ulic z odcinków: prosta / łuk / T / skrzyżowanie / pasy dobierane po sąsiadach na siatce 10 m
-src/map.js      – buduje mapę z pliku: ulice, modele Kenneya, latarnie, dziury (tylko wygląd), linie parkingowe, paczkomat,
+src/track.js    – podłoże fizyczne i trawa za płotem, ściany, słupki opon, pachołki (pozycje z mapy)
+src/maps/*.json – mapa w pliku danych (plan i strefy: docs/mapa.md): ulice (streets: osie, szerokość, chodnik, glowna = linie),
+                  areas (asfalt placów/parkingów, bruk, ziemia), paths (chodniki na podwórkach), crossings, blocks (wielka płyta),
+                  obiekty Kenneya (model, x, z, yaw, rozmiar, kolizja, materiał), props z własnej geometrii, latarnie, dziury, parkingi,
+                  szyldy, paczkomat, sklep, punkty misji, npcs, routes. Edytuj tu, nie w kodzie; opis pól w `_help`.
+                  scripts/build-map.py generuje ją z planu (v0.5c).
+src/ground.js   – podłoże jako jedna pikselowa tekstura (0,25 m/teksel) z danych mapy: rasterize() bez DOM (testy), zaokrąglone
+                  narożniki przez zamknięcie morfologiczne maski jezdni (EDT), krawężniki, linie i pasy tylko na głównej
+src/blocks.js   – bloki z wielkiej płyty z kodu: płyty ze spoinami, okna (część zapalona, kolory), klatki (luksfery, drzwi, daszek,
+                  lampka, plama światła), balkony, maszynownie, maszt 5G; blockLayout() bez DOM (wymiary, wejścia, obrys)
+src/map.js      – buduje mapę z pliku: podłoże (ground.js), bloki (blocks.js), modele Kenneya, latarnie, dziury (tylko wygląd), linie parkingowe, paczkomat,
                   ławki / trzepaki / piaskownica / huśtawka / przystanek, szyldy. Kolizja modelu = obrys jego geometrii na wysokości
                   karoserii (0,1–2,2 m): drzewo = pień. `?plan` w adresie: cała mapa z góry (docs/mapa.png).
 src/pixelart.js – pixel-art: RenderPixelatedPass (przykład three.js webgl_postprocessing_pixel), materiały toon z N stopniami,

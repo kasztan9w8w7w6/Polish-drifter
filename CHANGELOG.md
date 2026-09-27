@@ -3,6 +3,27 @@
 Wersje do v0.4c mają lokalne tagi w git (serwer odrzuca wypychanie tagów); od v0.5 wersję znajdziesz po commicie „v0.5a – …”.
 Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
 
+## v0.5c – prawdziwe osiedle
+- **Bloki z wielkiej płyty z kodu** (`src/blocks.js`) zamiast rozciągniętych budynków Kenneya:
+  - płyty ze spoinami i zaciekami, rzędy okien (ok. 22% zapalonych: ciepłe, pomarańczowe, zimne, niebieskie od telewizora, z firankami);
+  - nad każdą klatką pionowy pas luksferów, przy wejściu drzwi, daszek, lampka i plama światła na chodniku;
+  - balkony z kolorowymi balustradami od podwórka, maszynownie wind i anteny na dachu, na Bloku 1 maszt 5G z migającym światłem;
+  - 4 i 10 pięter, 1–4 klatek; za płotem kolejne bloki jako tło.
+- **Nowy układ** (plan w `docs/mapa.md`, generator `scripts/build-map.py`):
+  - ulice w zamkniętych pętlach (duża: Kosmonautów–Gagarina–Tereszkowej–Lotników, dzielona ul. Komarowa na północną i południową);
+  - główna 10 m z liniami i pasami, uliczki osiedlowe 6 m bez linii;
+  - między blokami podwórka (trawa, chodniki, plac zabaw, trzepaki, ławki), parkingi osobno;
+  - garaże z placem przy ul. Tereszkowej; plac pod Supersamem z wjazdami z Gagarina i z głównej.
+- **Podłoże jako jedna pikselowa tekstura** (`src/ground.js`, 0,25 m na teksel):
+  - jezdnie, chodniki z płyt, asfalt placów, bruk, trawa, krawężniki;
+  - narożniki i skrzyżowania zaokrąglone automatycznie (zamknięcie morfologiczne), więc zniknął źle obrócony zakręt
+    i wszystkie kafle Kenneya (`roads.js` usunięty).
+- **Przeciwnik w wyścigu szybszy:** 97 km/h na prostej, szybciej przyspiesza i bierze zakręty; na nowej trasie (433 m) wyścig jest wyrównany.
+- **Testy:**
+  - pętle zamknięte, narożniki zaokrąglone, pasy wolne, podwórka to nie jezdnia, place i garaże połączone z ulicami;
+  - wszystkie cele misji 1–3 i postacie osiągalne autem;
+  - pełny wyścig autopilota Poloneza z przeciwnikiem po kolizjach mapy.
+
 ## v0.5b – postacie, rozmowy, misje 2–3 (MVP)
 - **Postacie na osiedlu:** Seba, Kamil i Dawid przy placu pod Supersamem, Sąsiad Zbyszek pod Blokiem 2,
   Pani Halina przy Bloku 1, Mietek przy garażach, Pan Zdzisio przed Żappką.

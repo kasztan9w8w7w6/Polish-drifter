@@ -161,3 +161,4 @@ body.talking #t-talk { display: none; }
 @media (max-width: 700px) { #dialogue .d-face { width: 64px; height: 64px; } #dialogue .d-text { font-size: 14px; } #dialogue .d-main { min-height: 64px; } }
 body.touch #talk-hint { display: none; }
 #toast.big { font-family: 'Silkscreen', monospace; font-size: clamp(40px, 9vw, 96px); top: 24%; text-shadow: 4px 4px 0 #5a2a08; }
+body.touch #goal { max-width: calc(100% - 360px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

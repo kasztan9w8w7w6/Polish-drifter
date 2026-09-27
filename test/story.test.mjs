@@ -8,6 +8,7 @@ import { createCampaign } from '../src/campaign.js';
 import { createRoute, createRace, createTracker } from '../src/race.js';
 import { createCrowd } from '../src/crowd.js';
 import { clean } from '../src/typewriter.js';
+import { rasterize, isAsphalt } from '../src/ground.js';
 
 const json = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url)));
 const map = json('../src/maps/osiedle.json');
@@ -123,14 +124,11 @@ test('misja 2 „Pokaz”: rozmowa (odmowa czeka), drift w strefie na czas, pora
 
 test('wyścig: trasa po ulicach, okrążenia, przeciwnik bez teleportów, dopasowanie tempa, bez skrótów', (t) => {
   const route = createRoute(map.routes.petla);
-  // the smoothed route stays on the streets (within 5 m of a road's axis)
-  const onRoad = (x, z) => map.roads.some(([[x1, z1], [x2, z2]]) => {
-    const lx = Math.min(x1, x2) - 5, hx = Math.max(x1, x2) + 5, lz = Math.min(z1, z2) - 5, hz = Math.max(z1, z2) + 5;
-    return x >= lx && x <= hx && z >= lz && z <= hz;
-  });
+  // the smoothed route stays on the asphalt (ground.js raster)
+  const ground = rasterize(map);
   for (let s = 0; s < route.length; s += 2) {
     const p = route.at(s);
-    assert.ok(onRoad(p.x, p.z), `trasa na ulicy przy s = ${fmt(s)} (${fmt(p.x)}, ${fmt(p.z)})`);
+    assert.ok(isAsphalt(ground.at(p.x, p.z)), `trasa na asfalcie przy s = ${fmt(s)} (${fmt(p.x)}, ${fmt(p.z)})`);
   }
   // A scripted player driving the route at a steady speed
   const drive = (speed, laps = 2) => {

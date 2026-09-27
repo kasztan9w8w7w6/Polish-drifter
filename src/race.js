@@ -9,9 +9,9 @@ import { CatmullRomCurve3, Vector3 } from 'three';
 //   matched to the player (a bit faster when far behind, a bit slower when far ahead). When the player blocks the
 //   way it moves over to the other side of the lane and doesn't drive through.
 export const raceSettings = {
-  top: 26, // m/s on a straight (≈ 94 km/h; the Polonez does ~108)
-  lateral: 6.5, // m/s² in corners → corner speed = √(lateral / curvature)
-  accel: 3.2, // m/s²
+  top: 27, // m/s on a straight (≈ 97 km/h; the Polonez does ~108)
+  lateral: 7.5, // m/s² in corners → corner speed = √(lateral / curvature)
+  accel: 4.4, // m/s²
   brake: 7, // m/s²
   catchUp: 0.2, // up to +20 % when far behind…
   holdBack: 0.22, // …and up to −22 % when far ahead

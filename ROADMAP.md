@@ -20,7 +20,8 @@ Wersje po kolei. Szczegóły modułów: [`CLAUDE.md`](CLAUDE.md), zmiany w każd
 | v0.4c | logiczne osiedle z wielkiej płyty (plan w docs/mapa.md) | zrobione |
 | v0.5a | szybkie poprawki: skalowanie obrazu, piksele, pisk przy cofaniu, jeden obrót, garaż z przeciąganiem, narrator z maszyną do pisania | zrobione |
 | v0.5b | MVP: postacie, rozmowy z wyborami, misja 2 „Pokaz”, misja 3 „Wyścig z sąsiadem”, kolejność misji i zapis | zrobione |
-| v0.5c | prawdziwe osiedle: bloki z wielkiej płyty, ulice w pętlach | w toku |
+| v0.5c | prawdziwe osiedle: bloki z wielkiej płyty z kodu, ulice w pętlach, podwórka, podłoże jako pikselowa tekstura | zrobione |
+| v0.6 | teksty docelowe od scenarzysty, kolejne misje, radio (mgła/przyczepność), uszkodzenia | następne |
 | v0.15 | dopracowanie sterowania mobilnego (po testach na telefonach) | planowane |
 
 ## Sterowanie mobilne

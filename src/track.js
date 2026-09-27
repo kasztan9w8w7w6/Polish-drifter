@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-// The ground of the estate: asphalt, concrete barriers around it, cones and tyre stacks (positions from the map file,
-// src/maps/*.json; buildings, lamps and cars: map.js).
+// The ground under the estate (grass beyond the painted area of ground.js; the physics ground), concrete barriers
+// around it, cones and tyre stacks (positions from the map file, src/maps/*.json; buildings, lamps and cars: map.js).
 // Obstacles collide exactly as big as they look (the car's body box hits them, vehicle.ts).
 
 export function createTrack(scene, physics, map) {
@@ -13,7 +13,7 @@ export function createTrack(scene, physics, map) {
 
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(SIZE * 3, SIZE * 3),
-    new THREE.MeshStandardMaterial({ map: asphaltTexture(), roughness: 0.95 }),
+    new THREE.MeshStandardMaterial({ map: map.streets ? grassTexture() : asphaltTexture(), roughness: 0.95 }),
   );
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
@@ -66,6 +66,24 @@ export function createTrack(scene, physics, map) {
       }
     },
   };
+}
+
+// Dark night grass for everything outside ground.js's texture (the scenery around the fence)
+function grassTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const ctx = c.getContext('2d');
+  for (let i = 0; i < 64 * 64; i++) {
+    const v = Math.random();
+    ctx.fillStyle = v > 0.97 ? '#162014' : v > 0.5 ? '#22301e' : '#1e2b1b';
+    ctx.fillRect(i % 64, Math.floor(i / 64), 1, 1);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(150, 150);
+  t.magFilter = THREE.NearestFilter;
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
 }
 
 function asphaltTexture() {

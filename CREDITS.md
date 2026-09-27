@@ -34,8 +34,8 @@ z osadzonymi danymi (serwer artefaktów nie serwuje `.glb`) w `public/`. Geometr
 |---|---|---|---|
 | `public/models/polonez/polonez.gltf` (źródło `assets-src/polonez-mr93-lp.glb`) | [„1993 FSO Polonez MR93 (LP)”, Sketchfab](https://sketchfab.com/3d-models/1993-fso-polonez-mr93-lp-f191456e08a041ad81264ce67f4ed1d1). Zmiany: usunięte logo FSO, tablica rejestracyjna zamieniona na fikcyjną | [KrStolorz (Krzysztof Stolorz)](https://sketchfab.com/KrStolorz) | **Sketchfab Standard** (tak zapisano w metadanych pliku; to nie CC0, patrz niżej) |
 | `assets-src/plate-agro.png` (tablica „AGR 5G01”) | wygenerowana na potrzeby gry | Agro Drifter | CC0 |
-| `public/assets/kenney/roads/*` (drogi, latarnie, śmietniki, roboty drogowe, słupy) | [City Kit (Roads)](https://kenney.nl/assets/city-kit-roads), `assets-src/kenney_city-kit-roads.zip` | Kenney | CC0 |
-| `public/assets/kenney/commercial/*` (bloki, pawilony, sklep, markiza) | [City Kit (Commercial)](https://kenney.nl/assets/city-kit-commercial) 2.1, `assets-src/kenney_city-kit-commercial_2.1.zip` | Kenney | CC0 |
+| `public/assets/kenney/roads/*` (latarnie, śmietniki, słupy; kafle dróg nieużywane od v0.5c) | [City Kit (Roads)](https://kenney.nl/assets/city-kit-roads), `assets-src/kenney_city-kit-roads.zip` | Kenney | CC0 |
+| `public/assets/kenney/commercial/*` (pawilony, sklep, market, markiza) | [City Kit (Commercial)](https://kenney.nl/assets/city-kit-commercial) 2.1, `assets-src/kenney_city-kit-commercial_2.1.zip` | Kenney | CC0 |
 | `public/assets/kenney/suburban/*` (drzewa, płoty) | [City Kit (Suburban)](https://kenney.nl/assets/city-kit-suburban) 2.0, `assets-src/kenney_city-kit-suburban_20.zip` | Kenney | CC0 |
 | `public/assets/kenney/cars/*` (zaparkowane auta, auto Sąsiada Zbyszka w wyścigu) | [Car Kit](https://kenney.nl/assets/car-kit), `assets-src/kenney_car-kit.zip` | Kenney | CC0 |
 | `public/assets/kenney/racing/audio/engine.ogg`, `impact.ogg` | [Starter Kit Racing](https://github.com/KenneyNL/Starter-Kit-Racing) `audio/` | Kenney | CC0 |
@@ -61,3 +61,9 @@ Generowane w kodzie: asfalt, żarówki i światła latarni, szyld „Żappka 24h
 Postacie na osiedlu i ich portrety w rozmowach są zrobione w kodzie gry (`src/npc.js`: bryły z prostopadłościanów,
 portret rysowany na kanwie 24 × 24) – bez zewnętrznych assetów. Gotowe modele CC0 (Kenney Mini Characters) nie były
 dostępne z tego środowiska; jak je podmienić: `docs/teksty.md` → „Postacie – modele 3D”.
+
+## Bloki i podłoże (v0.5c)
+
+Bloki z wielkiej płyty (`src/blocks.js`), ich tekstury (malowane w kodzie na kanwie) i podłoże osiedla (`src/ground.js`)
+są zrobione na potrzeby gry – bez zewnętrznych assetów. `BufferGeometryUtils.mergeGeometries` z `three/addons` (MIT)
+łączy detale bloków w kilka siatek.
