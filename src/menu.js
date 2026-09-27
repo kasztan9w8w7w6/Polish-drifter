@@ -11,6 +11,7 @@ export function createMenu({ settings, paints, hooks }) {
   root.hidden = true;
   document.body.appendChild(root);
   const stack = []; // screens, the last one is shown
+  let prev = []; // pad buttons last frame
   let from = 'main'; // settings opened from the main menu or from the pause menu
 
   const save = () => saveSettings(settings);
@@ -94,6 +95,8 @@ export function createMenu({ settings, paints, hooks }) {
     stack.length = 0;
     stack.push(name);
     root.hidden = false;
+    // the pad button that opened it (Start) must not also count as "back" on the next frame
+    prev = [...(navigator.getGamepads?.() ?? [])].find((p) => p?.connected)?.buttons.map((x) => x.pressed) ?? [];
     render();
   }
   function push(name) {
@@ -181,7 +184,6 @@ export function createMenu({ settings, paints, hooks }) {
   }, true);
 
   // Pad in the menu: d-pad / stick up-down, A presses, B goes back
-  let prev = [];
   let stickHeld = false;
   function update() {
     if (root.hidden) return;
@@ -192,11 +194,12 @@ export function createMenu({ settings, paints, hooks }) {
     const y = pad.axes[1] ?? 0;
     const stick = Math.abs(y) > 0.6 ? Math.sign(y) : 0;
     const items = [...root.querySelectorAll('button:not([disabled])')].filter((x) => x.offsetParent);
-    const i = items.indexOf(document.activeElement);
+    // (the pad doesn't give the page keyboard focus: without a focused button the first one is the selected one)
+    const i = Math.max(0, items.indexOf(document.activeElement));
     const move = edge(13) || (stick > 0 && !stickHeld) ? 1 : edge(12) || (stick < 0 && !stickHeld) ? -1 : 0;
     stickHeld = stick !== 0;
     if (move) items[(i + move + items.length) % items.length]?.focus();
-    if (edge(0)) document.activeElement?.click?.();
+    if (edge(0)) (items.includes(document.activeElement) ? document.activeElement : items[0])?.click?.();
     if (edge(1) || edge(9)) back();
     prev = b;
   }

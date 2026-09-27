@@ -30,6 +30,7 @@ import postacie from './story/postacie.json';
 import { createCampaign } from './campaign.js';
 import { createPeople } from './npc.js';
 import { createDialogueUI } from './dialogueui.js';
+import { createPanel } from './panel.js';
 import { createRival } from './rival.js';
 import { createRoute, createRace } from './race.js';
 import { createCrowd } from './crowd.js';
@@ -169,6 +170,7 @@ const survival = createSurvival({ pad: map.shop.pad, save: homeSave, level: mdef
 const narrator = createNarrator();
 let mission = createMission(mdef, points, teksty);
 const dialogue = createDialogueUI({ people: PEOPLE, texts: teksty.rozmowa });
+const choice = createPanel();
 const crowd = createCrowd();
 let talkResult = null; // { npc, dialog, result } for one frame after a conversation ends
 let race = null; // the race in progress (race.js) and its step
@@ -178,7 +180,6 @@ let lastCount = 0;
 let freeRide = false; // every mission done
 const lightsState = { high: false };
 let beepTimer = 0;
-let summaryTimer = 0;
 const score = () => scorer.state.total + scorer.state.current * scorer.state.combo;
 const headingOf = (q) => {
   const f = new THREE.Vector3(1, 0, 0).applyQuaternion(q);
@@ -218,6 +219,7 @@ function continueGame() {
   survival.restart(p.save, Math.max(p.save.level ?? 0, batterySettings.respawnMin));
   narrator.clear();
   hudBat.summary.hidden = true;
+  choice.close();
   if (!r.mission) return (freeRide = true), endRace();
   useMission(r.mission);
   handleMission(mission.resume(r.step, score()));
@@ -231,6 +233,7 @@ function startMission(id = campaign.first, keepCar = false) {
   survival.restart(keepCar ? { x: car.state.position.x, z: car.state.position.z, heading: headingOf(car.state.quaternion) } : at, keepCar ? Math.max(survival.state.level, mdef.start.battery) : mdef.start.battery);
   narrator.clear();
   hudBat.summary.hidden = true;
+  choice.close();
   handleMission(mission.start(score()));
 }
 function missionDone(s) {
@@ -239,16 +242,19 @@ function missionDone(s) {
   saveProgress({ mission: next, step: 0, save: survival.state.save, done: !next });
   if (!next) narrator.say(kampania.koniec ?? []);
   const t = teksty.podsumowanie;
-  hudBat.summary.innerHTML = `<h2>${clean(t.koniecMisji)}: ${s.title}</h2><p><span>${clean(t.czas)}</span><b>${formatTime(s.time)}</b></p>
-    <p><span>${clean(t.punkty)}</span><b>${s.driftPoints.toLocaleString('pl-PL')}</b></p><small>${clean(t.dalej)}</small>`;
-  hudBat.summary.hidden = false;
-  summaryTimer = 20;
+  // (panel.js: buttons for touch, mouse, keyboard and pad; it stays until one is pressed)
+  choice.show({
+    title: `${clean(t.koniecMisji)}: ${s.title}`,
+    rows: [[clean(t.czas), formatTime(s.time)], [clean(t.punkty), s.driftPoints.toLocaleString('pl-PL')]],
+    buttons: [
+      { label: clean(next ? t.dalej : t.wolnaJazda), action: nextMission },
+      { label: clean(t.jeszczeRaz), action: () => startMission(mdef.id) },
+    ],
+  });
 }
-// Summary → Enter / tap / pad B: the next mission from where the car stands
+// Summary → "Dalej": the next mission from where the car stands
 function nextMission() {
-  if (hudBat.summary.hidden) return false;
-  hudBat.summary.hidden = true;
-  if (!mission.state.complete) return true;
+  if (!mission.state.complete) return false;
   const next = campaign.next(mdef.id);
   if (next) startMission(next, true);
   else freeRide = true;
@@ -465,8 +471,8 @@ const actions = {
     toast(lightsState.high ? 'Długie światła (bateria szybciej schodzi)' : 'Krótkie światła');
   },
   mission: () => startMission(mdef.id),
-  confirm: () => nextMission(),
-  talk: () => nextMission() || startTalk(),
+  confirm: () => {},
+  talk: () => !choice.open && startTalk(),
 };
 const input = createInput(actions, () => settings.keys);
 const touchControls = TOUCH ? createTouchControls({ actions }) : null;
@@ -572,7 +578,7 @@ const menu = createMenu({
   },
 });
 applySettings(settings);
-if (new URLSearchParams(location.search).has('debug')) window.agro = { survival, get mission() { return mission; }, people, dialogue, get race() { return race; }, startMission, narrator, car, menu, settings, perf: () => perf, paused: () => paused, resume: () => setPaused(false), tt: () => turntable, carYaw: () => { const f = new THREE.Vector3(1, 0, 0).applyQuaternion(carView.root.quaternion); return Math.atan2(-f.z, f.x); } }; // for testing from the console
+if (new URLSearchParams(location.search).has('debug')) window.agro = { survival, scorer, choice, get mission() { return mission; }, people, dialogue, get race() { return race; }, startMission, narrator, car, menu, settings, perf: () => perf, paused: () => paused, resume: () => setPaused(false), tt: () => turntable, carYaw: () => { const f = new THREE.Vector3(1, 0, 0).applyQuaternion(carView.root.quaternion); return Math.atan2(-f.z, f.x); } }; // for testing from the console
 // ?plan – the whole map from straight above, lit like daytime (docs/mapa.md screenshot, checking the layout)
 const PLAN = new URLSearchParams(location.search).has('plan');
 if (PLAN) {
@@ -621,6 +627,7 @@ function tick(time) {
   }
   fit(); // (cheap when nothing changed)
   menu.update(); // pad in the menu
+  choice.update(); // pad on the choice panel
   // Garage: the Polonez turns slowly under a bare bulb (or by hand), seen from a low camera
   if (garage) {
     const p = carView.root.position;
@@ -645,6 +652,7 @@ function tick(time) {
     return;
   }
   const controls = input.read(dt);
+  if (choice.open) Object.assign(controls, { throttle: 0, steer: 0, handbrake: 0, brake: car.state.forwardSpeed > 0.5 ? 1 : 0 }); // (a choice on screen: the car stops)
   if (race && race.countdown > 0) controls.throttle = 0; // no jump start
   if (!survival.engineOn) {
     // Battery flat: no engine (no throttle, no reverse), the car just rolls to a stop; brakes and steering still work
@@ -711,8 +719,10 @@ function tick(time) {
   // Race: the rival follows the route, countdown, laps
   let raceInfo = '';
   let target = null;
+  let raceResult = null; // (kept for the mission even when the race is wound up in this same frame)
   if (race) {
     const st = race.update(dt, { x: state.position.x, z: state.position.z, speed: state.speed });
+    raceResult = st.result;
     const r = race.rival.state;
     rival?.set(r.x, r.z, r.yaw, r.speed, dt);
     const w = teksty.wyscig;
@@ -738,7 +748,7 @@ function tick(time) {
   if (raceRetry > 0 && (raceRetry -= dt) <= 0 && raceStep) setupRace(raceStep);
 
   // Mission, target marker, narrator
-  handleMission(mission.update(dt, { x: state.position.x, z: state.position.z, speed: state.speed, battery: sv.level, score: score(), talk: talkResult, race: race?.state.result ?? null }));
+  handleMission(mission.update(dt, { x: state.position.x, z: state.position.z, speed: state.speed, battery: sv.level, score: score(), talk: talkResult, race: raceResult }));
   talkResult = null;
   target ??= mission.target();
   const dist = markers.update(timer.getElapsed(), target, state.position);
@@ -771,7 +781,6 @@ function tick(time) {
   if (nr.keys) audio.type(); // (one click per frame is enough even when two letters land in it)
   if (hudBat.narrator.textContent !== nr.text) hudBat.narrator.textContent = nr.text;
   hudBat.narrator.style.opacity = nr.opacity;
-  if (summaryTimer > 0 && (summaryTimer -= dt) <= 0) hudBat.summary.hidden = true;
 
   // Dashboard: speed, virtual gear, rev counter
   const { gear, rpm, load } = gearbox.update(dt, state, controls.throttle);

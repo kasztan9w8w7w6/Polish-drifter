@@ -25,6 +25,7 @@ export function createTouchControls({ actions = {} } = {}) {
       <button data-a="pause" title="Pauza">❚❚</button>
       <button data-a="reset" title="Reset">R</button>
       <button data-a="camera" title="Kamera">C</button>
+      <button data-a="lights" title="Długie światła">L</button>
       <button data-a="gui" title="Panel">G</button>
     </div>`;
   document.body.appendChild(root);

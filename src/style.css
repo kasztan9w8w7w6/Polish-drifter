@@ -162,3 +162,18 @@ body.talking #t-talk { display: none; }
 body.touch #talk-hint { display: none; }
 #toast.big { font-family: 'Silkscreen', monospace; font-size: clamp(40px, 9vw, 96px); top: 24%; text-shadow: 4px 4px 0 #5a2a08; }
 body.touch #goal { max-width: calc(100% - 360px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* v0.6a: choice panel (panel.js) – summary, station, shop, empty tank; big buttons for fingers */
+#panel { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: #0006; font-family: 'Silkscreen', monospace; color: #e8dcc0; }
+#panel[hidden] { display: none; }
+#panel .p-box { display: grid; gap: 10px; width: min(460px, calc(100% - 32px)); padding: 18px 20px; background: #0d0906f2; border: 3px solid #3a2a1c; box-shadow: 0 0 0 2px #000, 6px 6px 0 #0008; }
+#panel h2 { margin: 0; font-size: 20px; color: #ffb347; text-wrap: balance; }
+#panel .p-text { margin: 0; font-family: system-ui, sans-serif; font-size: 15px; line-height: 1.4; }
+#panel .p-row { margin: 0; display: flex; justify-content: space-between; gap: 24px; font-size: 14px; }
+#panel .p-row b { color: #ffd28a; font-variant-numeric: tabular-nums; }
+#panel nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-top: 6px; }
+#panel button { font: inherit; font-size: 15px; color: #e8dcc0; background: #120c08; border: 2px solid #3a2a1c; padding: 14px 12px; min-height: 48px; cursor: pointer; touch-action: none; }
+#panel button.on, #panel button:hover { border-color: #ffb347; color: #ffb347; background: #3a2208; }
+#panel button:disabled { opacity: .35; cursor: default; }
+body.panel-open #t-pedals, body.panel-open #t-stick, body.panel-open #t-arrows, body.panel-open #t-talk, body.panel-open #talk-hint { visibility: hidden; }
+body.touch .m-keys, body.touch .m-keys + .m-hint, body.touch [data-go=defaultKeys] { display: none; }
