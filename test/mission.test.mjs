@@ -16,18 +16,20 @@ test('narrator: pisze litera po literze, znika po kilku sekundach, kolejka linii
   const line = 'Osiedle Kosmonautów. Trzecia w nocy.';
   n.say([line, 'Druga linia.']);
   const seen = [];
-  let full = null, gone = null, second = null;
-  for (let time = 0; time < 20; time += DT) {
+  let full = null, gone = null, second = null, keys = 0;
+  for (let time = 0; time < 30; time += DT) {
     const s = n.update(DT);
+    if (full === null) keys += s.keys;
     seen.push(s.text.length);
     if (full === null && s.text === line) full = time;
     if (gone === null && full !== null && s.text === 'D') gone = time;
     if (second === null && s.text === 'Druga linia.') second = time;
   }
   const lengths = new Set(seen.filter((l) => l > 0 && l < line.length));
-  t.diagnostic(`${line.length} znaków napisane w ${fmt(full, 2)} s (${lengths.size} pośrednich długości), następna linia po ${fmt(gone, 1)} s, cała kolejka pusta: ${n.idle}`);
-  assert.ok(full > 0.5 && full < 1.5 && lengths.size > 20, 'litera po literze');
-  assert.ok(gone > 4 && gone < 8, 'linia znika po kilku sekundach');
+  t.diagnostic(`${line.length} znaków napisane w ${fmt(full, 2)} s (${lengths.size} pośrednich długości, ${keys} kliknięć), następna linia po ${fmt(gone, 1)} s, cała kolejka pusta: ${n.idle}`);
+  assert.ok(full > 1.8 && full < 4 && lengths.size > 20, 'litera po literze, wolno (maszyna do pisania)');
+  assert.equal(keys, line.replace(/\s/g, '').length, 'kliknięcie na każdą literę, nie na spacje');
+  assert.ok(gone > 7 && gone < 14, 'linia zostaje dłużej, potem znika');
   assert.ok(second !== null && n.idle);
 });
 

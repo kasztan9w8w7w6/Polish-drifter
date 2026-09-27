@@ -24,12 +24,22 @@ import { createSurvival, headlightLevel, batterySettings } from './survival.js';
 import { createNarrator, narratorSettings } from './narrator.js';
 import { createMission, formatTime } from './mission.js';
 import { createMarkers } from './marker.js';
-import paczka from './missions/paczka.json';
+import kampania from './story/kampania.json';
+import teksty from './story/teksty.json';
+import postacie from './story/postacie.json';
+import { createCampaign } from './campaign.js';
+import { createPeople } from './npc.js';
+import { createDialogueUI } from './dialogueui.js';
+import { createRival } from './rival.js';
+import { createRoute, createRace } from './race.js';
+import { createCrowd } from './crowd.js';
+import { clean } from './typewriter.js';
 import { isTouchDevice } from './touchstate.js';
 import { createTouchControls, touchSettings } from './touch.js';
-import { loadSettings, saveSettings, pixelSizeFor, loadProgress, saveProgress } from './settings.js';
+import { loadSettings, saveSettings, pixelSizeFor, loadProgress, saveProgress, keyLabel } from './settings.js';
 import { createDashboard } from './dashboard.js';
 import { createMenu } from './menu.js';
+import { createTurntable } from './turntable.js';
 
 // ---------- Renderer / scene: night on the estate ----------
 installRadialFog(); // before any material compiles
@@ -93,6 +103,28 @@ if (settings.paint && profile.look.paints[settings.paint]) {
 const skids = createSkidMarks(scene);
 const smoke = createSmoke(scene);
 const district = await createMap(scene, physics, map);
+// ---------- Story: missions in order (kampania.json), people (postacie.json + map npcs), conversations ----------
+const MISSIONS = Object.fromEntries(Object.values(import.meta.glob('./missions/*.json', { eager: true, import: 'default' })).map((m) => [m.id, m]));
+const DIALOGS = Object.fromEntries(Object.values(import.meta.glob('./story/dialogi/*.json', { eager: true, import: 'default' })).map((d) => [d.id, d]));
+const PEOPLE = postacie.postacie;
+const campaign = createCampaign(kampania, MISSIONS);
+const people = createPeople(scene, physics, map.npcs ?? [], PEOPLE);
+await people.ready;
+// Mission targets: map points and the people's spots ("npc:seba"; kept up to date when someone moves)
+const points = { ...map.points };
+const syncPoint = (n) => (points[`npc:${n.id}`] = { x: n.root.position.x, z: n.root.position.z, r: 3.5, label: n.who.imie });
+people.list.forEach(syncPoint);
+// The neighbour's car: parked at the start of its race route until the race (rival.js, race.js)
+const rivalSpec = Object.entries(PEOPLE).find(([, p]) => p.auto);
+const rival = rivalSpec ? await createRival(scene, physics, rivalSpec[1].auto) : null;
+const parkRival = () => {
+  const r = map.routes?.petla;
+  if (!rival || !r) return;
+  const route = createRoute(r);
+  const p = route.at(-8), rx = -p.dz, rz = p.dx;
+  rival.set(p.x + rx * 1.8, p.z + rz * 1.8, Math.atan2(-p.dz, p.dx));
+};
+parkRival();
 pixelizeScene(scene);
 const markers = createMarkers(scene); // (after pixelizeScene: unlit, keeps its own materials)
 const occlusion = createOcclusion();
@@ -122,18 +154,28 @@ hud.best.textContent = scorer.state.best.toLocaleString('pl-PL');
 
 // Short message in the middle of the screen (feedback for R / C / auto-unstick)
 let toastTimer = 0;
-function toast(text) {
+function toast(text, big = false) {
   hud.toast.textContent = text;
-  hud.toast.className = 'on';
+  hud.toast.className = big ? 'on big' : 'on';
   toastTimer = 1.2;
 }
 
 // ---------- Survival: battery, shop, running flat (survival.js); narrator and mission 1 ----------
-const hudBat = { goal: $('goal'), narrator: $('narrator'), fade: $('fade'), summary: $('summary') };
+const hudBat = { goal: $('goal'), narrator: $('narrator'), fade: $('fade'), summary: $('summary'), talk: $('talk-hint') };
+$('fade-msg').innerHTML = `<b>${clean(teksty.bateriaPadla.tytul)}</b><span>${clean(teksty.bateriaPadla.tekst)}</span>`;
 const homeSave = { x: home.x, z: home.z, heading: home.heading };
-const survival = createSurvival({ pad: map.shop.pad, save: homeSave, level: paczka.start.battery });
+let mdef = MISSIONS[campaign.first]; // the mission being played
+const survival = createSurvival({ pad: map.shop.pad, save: homeSave, level: mdef.start.battery });
 const narrator = createNarrator();
-const mission = createMission(paczka, map.points);
+let mission = createMission(mdef, points, teksty);
+const dialogue = createDialogueUI({ people: PEOPLE, texts: teksty.rozmowa });
+const crowd = createCrowd();
+let talkResult = null; // { npc, dialog, result } for one frame after a conversation ends
+let race = null; // the race in progress (race.js) and its step
+let raceStep = null;
+let raceRetry = 0; // s until a lost race is set up again
+let lastCount = 0;
+let freeRide = false; // every mission done
 const lightsState = { high: false };
 let beepTimer = 0;
 let summaryTimer = 0;
@@ -142,44 +184,116 @@ const headingOf = (q) => {
   const f = new THREE.Vector3(1, 0, 0).applyQuaternion(q);
   return (Math.atan2(-f.z, f.x) * 180) / Math.PI;
 };
-function placeCar({ x, z, heading }) {
-  car.reset({ x, y: 1, z }, (heading * Math.PI) / 180);
+function placeCar({ x, z, heading = 0 }) {
+  car.reset({ x, y: 1, z }, ((heading ?? 0) * Math.PI) / 180); // (points without a heading face east)
   rig.reset();
 }
 function handleMission(events) {
   for (const e of events) {
     if (e.type === 'say') narrator.say(e.lines);
-    if (e.type === 'step') storeProgress();
-    if (e.type === 'complete') showSummary(e.summary);
+    if (e.type === 'step') {
+      storeProgress();
+      if (e.step.type === 'race') setupRace(e.step);
+    }
+    if (e.type === 'retry' && e.step.type === 'race') raceRetry = 3; // lost: set up again in a moment
+    if (e.type === 'show-start') toast(clean(e.step.goal));
+    if (e.type === 'complete') missionDone(e.summary);
   }
 }
-// "Kontynuuj": the mission step and the save point (with its battery) go to localStorage
+// "Kontynuuj": the mission, its step and the save point (with its battery) go to localStorage
 function storeProgress() {
-  if (mission.state.running) saveProgress({ mission: paczka.id, step: mission.state.index, save: survival.state.save });
+  if (mission.state.running) saveProgress({ mission: mdef.id, step: mission.state.index, save: survival.state.save });
+}
+function useMission(id) {
+  mdef = MISSIONS[id];
+  mission = createMission(mdef, points, teksty);
+  freeRide = false;
+  endRace();
 }
 function continueGame() {
   const p = loadProgress();
+  const r = campaign.resume(p);
   if (!p) return startMission();
   placeCar(p.save);
   survival.restart(p.save, Math.max(p.save.level ?? 0, batterySettings.respawnMin));
   narrator.clear();
   hudBat.summary.hidden = true;
-  handleMission(mission.resume(p.step, score()));
+  if (!r.mission) return (freeRide = true), endRace();
+  useMission(r.mission);
+  handleMission(mission.resume(r.step, score()));
 }
-function startMission(keepCar = false) {
-  const p = map.points[paczka.start.point];
+// id: which mission (default: the first); keepCar: go on from where the car is (the next mission after a summary)
+function startMission(id = campaign.first, keepCar = false) {
+  useMission(id);
+  const p = points[mdef.start.point];
+  const at = keepCar ? survival.state.save : { x: p.x, z: p.z, heading: p.heading ?? 0 };
   if (!keepCar) placeCar(p);
-  survival.restart({ x: p.x, z: p.z, heading: p.heading }, paczka.start.battery);
+  survival.restart(keepCar ? { x: car.state.position.x, z: car.state.position.z, heading: headingOf(car.state.quaternion) } : at, keepCar ? Math.max(survival.state.level, mdef.start.battery) : mdef.start.battery);
   narrator.clear();
   hudBat.summary.hidden = true;
   handleMission(mission.start(score()));
 }
-function showSummary(s) {
-  hudBat.summary.innerHTML = `<h2>Misja zakończona: ${s.title}</h2><p><span>Czas</span><b>${formatTime(s.time)}</b></p>
-    <p><span>Punkty za drift</span><b>${s.driftPoints.toLocaleString('pl-PL')}</b></p><small>Enter: dalej · N: jeszcze raz</small>`;
+function missionDone(s) {
+  const next = campaign.next(mdef.id);
+  // "Kontynuuj" from now on starts the next mission (or free driving after the last one)
+  saveProgress({ mission: next, step: 0, save: survival.state.save, done: !next });
+  if (!next) narrator.say(kampania.koniec ?? []);
+  const t = teksty.podsumowanie;
+  hudBat.summary.innerHTML = `<h2>${clean(t.koniecMisji)}: ${s.title}</h2><p><span>${clean(t.czas)}</span><b>${formatTime(s.time)}</b></p>
+    <p><span>${clean(t.punkty)}</span><b>${s.driftPoints.toLocaleString('pl-PL')}</b></p><small>${clean(t.dalej)}</small>`;
   hudBat.summary.hidden = false;
-  summaryTimer = 15;
+  summaryTimer = 20;
 }
+// Summary → Enter / tap / pad B: the next mission from where the car stands
+function nextMission() {
+  if (hudBat.summary.hidden) return false;
+  hudBat.summary.hidden = true;
+  if (!mission.state.complete) return true;
+  const next = campaign.next(mdef.id);
+  if (next) startMission(next, true);
+  else freeRide = true;
+  return true;
+}
+
+// ---------- Conversations: stop next to someone, E / pad B / the touch button ----------
+function startTalk() {
+  if (dialogue.open || car.state.speed > 1.5) return;
+  const n = people.near(car.state.position);
+  if (!n) return;
+  const id = (mission.state.running && mission.dialogFor(n.id)) || n.who.dialog;
+  const def = DIALOGS[id];
+  if (!def) return;
+  input.enabled = false;
+  touchControls?.releaseAll();
+  dialogue.start(def, n.id, (res) => {
+    input.enabled = !paused;
+    talkResult = res;
+  });
+}
+
+// ---------- Race (race.js drives the rival; the mission checks won / lost) ----------
+function setupRace(step) {
+  const route = createRoute(map.routes[step.route]);
+  race = createRace(route, { laps: step.laps ?? 2, countdown: 3 });
+  raceStep = step;
+  raceRetry = 0;
+  lastCount = 0;
+  // the grid: the rival on the right, the player on the left, 8 m before the line
+  const p = route.at(-8), rx = -p.dz, rz = p.dx;
+  const heading = Math.atan2(-p.dz, p.dx);
+  placeCar({ x: p.x - rx * 1.8, z: p.z - rz * 1.8, heading: (heading * 180) / Math.PI });
+  const r = race.rival.state;
+  rival?.set(r.x, r.z, r.yaw);
+  people.show(step.rival, false); // sitting in the car
+}
+function endRace() {
+  race = null;
+  raceStep = null;
+  raceRetry = 0;
+  for (const n of people.list) people.show(n.id, true);
+  parkRival();
+}
+
 
 const CRASH_SPEED = 4; // m/s (≈ 14 km/h) straight into an obstacle counts as a crash (ends the drift combo)
 
@@ -252,6 +366,7 @@ snd.add(audioSettings, 'engine', 0, 2, 0.01).name('silnik');
 snd.add(audioSettings, 'skid', 0, 2, 0.01).name('pisk opon');
 snd.add(audioSettings, 'impact', 0, 2, 0.01).name('uderzenia');
 snd.add(audioSettings, 'warning', 0, 2, 0.01).name('ostrzeżenie baterii');
+snd.add(audioSettings, 'typing', 0, 2, 0.01).name('pisanie (narrator)');
 const bat = gui.addFolder('Bateria i misja').close();
 bat.add(batterySettings, 'drainIdle', 0, 1, 0.01).name('rozładowanie: silnik (%/s)');
 bat.add(batterySettings, 'drainDrive', 0, 3, 0.05).name('rozładowanie: jazda, maks. (%/s)');
@@ -272,7 +387,7 @@ bat.add(batterySettings, 'respawnMin', 0, 100, 1).name('min. bateria po restarci
 bat.add(survival.state, 'level', 0, 100, 1).name('bateria teraz (%)').listen();
 bat.add(narratorSettings, 'charsPerSec', 5, 120, 1).name('narrator: liter/s');
 bat.add(narratorSettings, 'hold', 0.5, 10, 0.1).name('narrator: czas na ekranie (s)');
-bat.add({ start: () => startMission() }, 'start').name('Misja 1 od nowa (N)');
+bat.add({ start: () => startMission(mdef.id) }, 'start').name('Misja od nowa (N)');
 gui.hide();
 
 function exportTuning() {
@@ -349,8 +464,9 @@ const actions = {
     lightsState.high = !lightsState.high;
     toast(lightsState.high ? 'Długie światła (bateria szybciej schodzi)' : 'Krótkie światła');
   },
-  mission: () => startMission(),
-  confirm: () => (hudBat.summary.hidden = true),
+  mission: () => startMission(mdef.id),
+  confirm: () => nextMission(),
+  talk: () => nextMission() || startTalk(),
 };
 const input = createInput(actions, () => settings.keys);
 const touchControls = TOUCH ? createTouchControls({ actions }) : null;
@@ -396,6 +512,21 @@ let fpsFrames = 0, fpsTime = 0;
 let garage = false;
 const garageLight = new THREE.PointLight(0xffd9a0, 0, 16, 1); // a bare bulb over the car in the garage view
 scene.add(garageLight);
+// Garage: drag the car round with the mouse or a finger (turntable.js: inertia, the slow turn comes back when idle).
+// The menu covers the screen, so the drag starts anywhere outside its buttons and sliders.
+const turntable = createTurntable();
+addEventListener('pointerdown', (e) => {
+  if (!garage || e.target.closest?.('button, input, .m-paints')) return;
+  turntable.grab(e.clientX, e.timeStamp / 1000);
+  document.body.classList.add('grabbing');
+});
+addEventListener('pointermove', (e) => turntable.move(e.clientX, e.timeStamp / 1000));
+for (const ev of ['pointerup', 'pointercancel']) {
+  addEventListener(ev, (e) => {
+    turntable.release(e.timeStamp / 1000);
+    document.body.classList.remove('grabbing');
+  });
+}
 function applySettings(s) {
   if (presets[s.difficulty] && panel.preset !== s.difficulty) {
     panel.preset = s.difficulty;
@@ -407,7 +538,7 @@ function applySettings(s) {
   applyNight();
   perf.quality = s.quality ?? (TOUCH ? 'niska' : 'wysoka');
   applyQuality();
-  Object.assign(audioSettings, { volume: s.volume, engine: s.engine, skid: s.skid, impact: s.impact, warning: s.warning });
+  Object.assign(audioSettings, { volume: s.volume, engine: s.engine, skid: s.skid, impact: s.impact, warning: s.warning, typing: s.typing ?? 1 });
   gui.controllersRecursive().forEach((c) => c.updateDisplay());
 }
 const menu = createMenu({
@@ -418,7 +549,7 @@ const menu = createMenu({
     continue: () => (continueGame(), setPaused(false)),
     hasProgress: () => !!loadProgress(),
     resume: () => setPaused(false),
-    restart: () => (startMission(), setPaused(false)),
+    restart: () => (startMission(mdef.id), setPaused(false)),
     toMenu: () => (storeProgress(), setPaused(true)),
     garage: (open) => {
       garage = open;
@@ -441,7 +572,7 @@ const menu = createMenu({
   },
 });
 applySettings(settings);
-if (new URLSearchParams(location.search).has('debug')) window.agro = { survival, mission, narrator, car, menu, settings, perf: () => perf, paused: () => paused }; // for testing from the console
+if (new URLSearchParams(location.search).has('debug')) window.agro = { survival, get mission() { return mission; }, people, dialogue, get race() { return race; }, startMission, narrator, car, menu, settings, perf: () => perf, paused: () => paused, resume: () => setPaused(false), tt: () => turntable, carYaw: () => { const f = new THREE.Vector3(1, 0, 0).applyQuaternion(carView.root.quaternion); return Math.atan2(-f.z, f.x); } }; // for testing from the console
 // ?plan – the whole map from straight above, lit like daytime (docs/mapa.md screenshot, checking the layout)
 const PLAN = new URLSearchParams(location.search).has('plan');
 if (PLAN) {
@@ -466,7 +597,7 @@ if (PLAN) {
   throw new Error('plan view'); // (stop here: no game loop, no menu)
 }
 // ?spawn=… or ?graj skips the menu (testing); otherwise the game starts in the main menu, the world paused behind it
-if (spawnArg?.length === 3 || new URLSearchParams(location.search).has('graj')) startMission(spawnArg?.length === 3);
+if (spawnArg?.length === 3 || new URLSearchParams(location.search).has('graj')) startMission(campaign.first, spawnArg?.length === 3);
 else {
   setPaused(true);
   menu.openMain();
@@ -488,11 +619,12 @@ function tick(time) {
     perf.fps = Math.round(fpsFrames / fpsTime);
     fpsFrames = fpsTime = 0;
   }
+  fit(); // (cheap when nothing changed)
   menu.update(); // pad in the menu
-  // Garage: the Polonez turns slowly under a bare bulb, seen from a low camera
+  // Garage: the Polonez turns slowly under a bare bulb (or by hand), seen from a low camera
   if (garage) {
     const p = carView.root.position;
-    carView.root.rotateY(dt * 0.5);
+    carView.root.rotateY(turntable.update(dt));
     const a = timer.getElapsed() * 0.05;
     chaseCam.fov = 45;
     chaseCam.position.set(p.x + Math.cos(a) * 7.5, p.y + 1.6, p.z + Math.sin(a) * 7.5);
@@ -513,6 +645,7 @@ function tick(time) {
     return;
   }
   const controls = input.read(dt);
+  if (race && race.countdown > 0) controls.throttle = 0; // no jump start
   if (!survival.engineOn) {
     // Battery flat: no engine (no throttle, no reverse), the car just rolls to a stop; brakes and steering still work
     controls.throttle = 0;
@@ -575,12 +708,67 @@ function tick(time) {
   }
   district.update(timer.getElapsed(), sv.charging);
 
+  // Race: the rival follows the route, countdown, laps
+  let raceInfo = '';
+  let target = null;
+  if (race) {
+    const st = race.update(dt, { x: state.position.x, z: state.position.z, speed: state.speed });
+    const r = race.rival.state;
+    rival?.set(r.x, r.z, r.yaw, r.speed, dt);
+    const w = teksty.wyscig;
+    const c = race.countdown;
+    if (c !== lastCount) toast(c > 0 ? w.odliczanie[w.odliczanie.length - c] ?? String(c) : clean(w.start), true);
+    if (c === 0 && lastCount === 0 && st.lap === st.laps && !race.lastLap) (race.lastLap = true), toast(clean(w.ostatnie));
+    lastCount = c;
+    raceInfo = ` · ${w.okrazenie} ${st.lap}/${st.laps} · ${w.pozycja} ${st.position}/2 · ${Math.abs(Math.round(st.gap))} m ${st.gap >= 0 ? w.przewaga : w.strata}`;
+    const ahead = race.route.at(st.playerTotal + 40);
+    if (!st.result) target = { x: ahead.x, z: ahead.z, r: 3 };
+    // won: the rival rolls to a stop past the line, the neighbour gets out next to his car (the talk at the finish)
+    if (st.result === 'won' && r.speed < 0.3) {
+      const n = people.get(raceStep.rival);
+      if (n) {
+        people.place(raceStep.rival, r.x + Math.sin(r.yaw) * 2.2, r.z + Math.cos(r.yaw) * 2.2, (r.yaw * 180) / Math.PI);
+        people.show(raceStep.rival, true);
+        syncPoint(n);
+      }
+      race = null;
+      raceStep = null;
+    }
+  }
+  if (raceRetry > 0 && (raceRetry -= dt) <= 0 && raceStep) setupRace(raceStep);
+
   // Mission, target marker, narrator
-  handleMission(mission.update(dt, { x: state.position.x, z: state.position.z, speed: state.speed, battery: sv.level, score: score() }));
-  const target = mission.target();
+  handleMission(mission.update(dt, { x: state.position.x, z: state.position.z, speed: state.speed, battery: sv.level, score: score(), talk: talkResult, race: race?.state.result ?? null }));
+  talkResult = null;
+  target ??= mission.target();
   const dist = markers.update(timer.getElapsed(), target, state.position);
-  hudBat.goal.innerHTML = mission.goal ? `Cel: ${mission.goal}${target ? ` <small>${Math.round(dist)} m</small>` : ''}` : '';
+  const show = mission.state.show;
+  const step = mission.state.step;
+  const showInfo = show && step ? ` · ${Math.round(show.points).toLocaleString('pl-PL')}/${step.min.toLocaleString('pl-PL')} ${teksty.pokaz.punkty}${show.inside ? ` · ${teksty.pokaz.czas} ${Math.max(0, Math.ceil(step.time - show.clock))} s` : ''}` : '';
+  hudBat.goal.innerHTML = mission.goal ? `Cel: ${mission.goal}${showInfo}${raceInfo}${target && !raceInfo ? ` <small>${Math.round(dist)} m</small>` : ''}` : '';
+  // The lads by the drift lot react (crowd.js) – loud during the show
+  const zone = step?.type === 'score' ? points[step.point] : points.lot;
+  if (zone) {
+    const inZone = Math.hypot(state.position.x - zone.x, state.position.z - zone.z) < (zone.r ?? 20) + 4;
+    const kind = crowd.update(dt, { inZone, drifting: scorer.state.drifting, angle: scorer.state.angle, speed: state.speed, crash: state.crash }, !!show);
+    if (kind) {
+      const lads = people.list.filter((n) => n.who.grupa === 'chlopaki' && n.visible && n.who.reakcje?.[kind]);
+      const who = lads[Math.floor(Math.random() * lads.length)];
+      if (who) {
+        const lines = who.who.reakcje[kind];
+        people.say(who.id, lines[Math.floor(Math.random() * lines.length)]);
+        if (kind === 'dobrze') lads.forEach((n) => people.cheer(n.id));
+      }
+    }
+  }
+  // Talk prompt: stopped next to someone
+  const near = !dialogue.open && state.speed < 1.5 ? people.near(state.position) : null;
+  const hint = near ? `<b>${keyLabel(settings.keys.talk?.[0] ?? 'KeyE')}</b> ${teksty.rozmowa.podpowiedz}: ${near.who.imie}` : '';
+  if (hudBat.talk.innerHTML !== hint) hudBat.talk.innerHTML = hint;
+  document.body.classList.toggle('can-talk', !!near);
+  if (dialogue.update(dt)) audio.type();
   const nr = narrator.update(dt);
+  if (nr.keys) audio.type(); // (one click per frame is enough even when two letters land in it)
   if (hudBat.narrator.textContent !== nr.text) hudBat.narrator.textContent = nr.text;
   hudBat.narrator.style.opacity = nr.opacity;
   if (summaryTimer > 0 && (summaryTimer -= dt) <= 0) hudBat.summary.hidden = true;
@@ -623,17 +811,28 @@ function tick(time) {
   setCamera(cam);
   fill.position.copy(state.position).y += 5;
   occlusion.update(cam, state.position, state.quaternion);
+  people.update(timer.getElapsed(), dt, state.position, cam, dialogue.npc);
 
   composer.render();
   requestAnimationFrame(tick);
 }
 
-addEventListener('resize', () => {
-  chaseCam.aspect = innerWidth / innerHeight;
+// Canvas size = window size. Checked every frame, not only on 'resize': the page is built behind several awaits
+// (physics, models, map), and a window or frame that changes size while it loads (maximised, the artifact frame
+// settling, devtools) used to leave the canvas at its first size – the game squeezed into part of the screen.
+let fitW = 0, fitH = 0;
+function fit() {
+  const w = innerWidth, h = innerHeight;
+  if (w === fitW && h === fitH) return;
+  fitW = w;
+  fitH = h;
+  chaseCam.aspect = w / h;
   chaseCam.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-  composer.setSize(innerWidth, innerHeight);
+  renderer.setSize(w, h);
+  composer.setSize(w, h);
   applyPixelSize();
-});
+}
+addEventListener('resize', fit);
+fit();
 
 tick();

@@ -1,0 +1,11 @@
+{
+  "_help": "Rozmowa: węzły (nodes) po kolei od start. who = id postaci z postacie.json albo gracz. next = następny węzeł, choices = wybór odpowiedzi (text, next albo end, set = flagi), end = koniec rozmowy z wynikiem (misja może go sprawdzać). Bez next/choices/end = koniec.",
+  "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
+  "id": "pokaz-koniec",
+  "start": "a",
+  "nodes": {
+    "a": { "who": "seba", "text": "PLACEHOLDER: No dobra. Szacun. Dawid nawet nagrał, tylko palcem zasłonił.", "next": "b" },
+    "b": { "who": "kamil", "text": "PLACEHOLDER: Zbyszek z Bloku 2 mówił, że jego szesnastozaworowiec cię objedzie.", "next": "c" },
+    "c": { "who": "seba", "text": "PLACEHOLDER: Jedź do niego. Stoi pod blokiem przy głównej. Zawsze stoi." }
+  }
+}

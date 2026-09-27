@@ -1,0 +1,10 @@
+{
+  "_help": "Rozmowa: węzły (nodes) po kolei od start. who = id postaci z postacie.json albo gracz. next = następny węzeł, choices = wybór odpowiedzi (text, next albo end, set = flagi), end = koniec rozmowy z wynikiem (misja może go sprawdzać). Bez next/choices/end = koniec.",
+  "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
+  "id": "zdzisio",
+  "start": "a",
+  "nodes": {
+    "a": { "who": "zdzisio", "text": "PLACEHOLDER: W Żappce nie ma zasięgu. Sprawdzałem. Trzy razy. Dlatego tu stoję.", "next": "b" },
+    "b": { "who": "zdzisio", "text": "PLACEHOLDER: Stań na zielonym, to ci się naładuje. Mnie też by się naładowało, ale nie mam wtyczki." }
+  }
+}

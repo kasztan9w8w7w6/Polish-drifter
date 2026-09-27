@@ -94,7 +94,9 @@ body.paused #hud, body.paused #touch, body.paused #help { visibility: hidden; }
 #menu { position: fixed; inset: 0; z-index: 25; display: grid; place-items: center; font-family: 'Silkscreen', monospace; color: #e8dcc0;
   background: radial-gradient(ellipse at 50% 60%, #0000 0%, #000c 60%, #000f 100%); padding-inline: 16px; overflow-y: auto; }
 #menu[hidden] { display: none; }
-#menu.m-garage { background: linear-gradient(90deg, #000e 0%, #0009 32%, #0000 60%); place-items: center start; }
+#menu.m-garage { background: linear-gradient(90deg, #000e 0%, #0009 32%, #0000 60%); place-items: center start; cursor: grab; touch-action: none; }
+body.grabbing #menu.m-garage { cursor: grabbing; }
+#menu.m-garage .m-title p::after { content: ' · przeciągnij, by obrócić'; color: #8a7a60; }
 .m-box { display: grid; gap: 14px; width: min(460px, 100%); padding-block: 20px; }
 #menu.m-settings .m-box { width: min(640px, 100%); }
 .m-title h1 { margin: 0; font-size: clamp(30px, 6vw, 54px); line-height: 1; color: #ffb347; text-shadow: 3px 3px 0 #5a2a08, 0 0 18px #ff7a1a55; letter-spacing: 2px; }
@@ -123,3 +125,40 @@ body.paused #hud, body.paused #touch, body.paused #help { visibility: hidden; }
 .m-paints button { display: flex; align-items: center; gap: 8px; font-size: 12px !important; padding: 8px !important; }
 .m-paints i { width: 18px; height: 18px; flex: none; border: 2px solid #0008; }
 body.plan #hud, body.plan #help, body.plan #menu, body.plan #touch { display: none !important; }
+
+/* v0.5b: talk prompt, dialogue window (dialogueui.js), speech bubbles over people (npc.js) */
+#talk-hint { position: absolute; left: 50%; bottom: 26%; transform: translateX(-50%); font-family: 'Silkscreen', monospace; font-size: 15px;
+  color: #e8dcc0; text-shadow: 2px 2px 0 #000; white-space: nowrap; }
+#talk-hint:not(:empty) { padding: 6px 12px; background: #120c08d9; border: 2px solid #3a2a1c; }
+#talk-hint b { color: #120c08; background: #ffb347; padding: 0 6px; margin-right: 6px; }
+body.touch #talk-hint b { display: none; }
+#dialogue { position: fixed; z-index: 12; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  width: min(760px, calc(100% - 32px)); display: grid; grid-template-columns: auto 1fr; gap: 14px; padding: 12px 14px;
+  background: #0d0906f2; border: 3px solid #3a2a1c; box-shadow: 0 0 0 2px #000, 6px 6px 0 #0008; font-family: 'Silkscreen', monospace;
+  color: #e8dcc0; cursor: pointer; user-select: none; touch-action: none; }
+#dialogue[hidden] { display: none; }
+#dialogue .d-face { width: 96px; height: 96px; image-rendering: pixelated; border: 3px solid #3a2a1c; background: #141018; }
+#dialogue.player .d-face { border-color: #4a6a8a; }
+#dialogue .d-main { display: grid; align-content: start; gap: 6px; min-height: 96px; }
+#dialogue .d-name { color: #ffb347; font-size: 15px; letter-spacing: 1px; }
+#dialogue.player .d-name { color: #8ac8ff; }
+#dialogue .d-text { margin: 0; font-family: system-ui, sans-serif; font-size: 17px; line-height: 1.4; min-height: 2.8em; }
+#dialogue .d-choices { margin: 0; padding: 0 0 0 22px; display: grid; gap: 4px; font-family: system-ui, sans-serif; font-size: 15px; }
+#dialogue .d-choices li { padding: 4px 8px; border: 2px solid transparent; cursor: pointer; }
+#dialogue .d-choices li.on, #dialogue .d-choices li:hover { border-color: #ffb347; color: #ffd28a; background: #3a2208; }
+#dialogue .d-more { justify-self: end; font-size: 11px; color: #8a7a60; animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+body.talking #dashboard, body.talking #help, body.talking #t-pedals, body.talking #t-stick, body.talking #t-arrows, body.talking #talk-hint { visibility: hidden; }
+#bubbles { position: fixed; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; }
+.bubble { position: absolute; left: 0; top: 0; padding: 4px 8px; background: #f4ecd8; color: #1a120a; font-family: 'Silkscreen', monospace;
+  font-size: 13px; white-space: nowrap; border: 2px solid #1a120a; opacity: 0; transition: opacity .15s; }
+.bubble.on { opacity: 1; }
+.bubble::after { content: ''; position: absolute; left: 50%; bottom: -8px; margin-left: -4px; border: 4px solid transparent; border-top-color: #1a120a; border-width: 8px 4px 0; }
+body.paused #bubbles, body.plan #bubbles { display: none; }
+#t-talk { position: absolute; left: 50%; bottom: 26%; transform: translateX(-50%); display: none; }
+body.can-talk #t-talk { display: block; }
+body.talking #t-talk { display: none; }
+@media (max-width: 700px) { #dialogue .d-face { width: 64px; height: 64px; } #dialogue .d-text { font-size: 14px; } #dialogue .d-main { min-height: 64px; } }
+body.touch #talk-hint { display: none; }
+#toast.big { font-family: 'Silkscreen', monospace; font-size: clamp(40px, 9vw, 96px); top: 24%; text-shadow: 4px 4px 0 #5a2a08; }
+body.touch #goal { max-width: calc(100% - 360px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

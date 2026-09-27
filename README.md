@@ -1,4 +1,4 @@
-# Agro Drifter 🇵🇱 (v0.4)
+# Agro Drifter 🇵🇱 (v0.5)
 
 Przeglądarkowa gra o driftowaniu Polonezem nocą po osiedlu: pixel-art 3D z kamerą jak nad dioramą
 i ucieczka przed „promieniowaniem 5G” (opis projektu i roadmapa w [`CLAUDE.md`](CLAUDE.md)).
@@ -16,7 +16,7 @@ Zasada projektu: **składamy gotowe klocki zamiast pisać własne**.
 | Pixel-art | przykład three.js [`webgl_postprocessing_pixel`](https://threejs.org/examples/#webgl_postprocessing_pixel) | `RenderPixelatedPass` (pikselizacja + obrysy z głębi i normalnych), kamera ortograficzna przyciągana do siatki pikseli; do tego `UnrealBloomPass`, `OutputPass` i mały `ShaderPass` (stopnie jasności + dithering) |
 | Noc | `THREE.Fog` z podmienionym chunkiem shadera, `SpotLight`, `PointLight` | mgła radialna wokół auta (czerń dookoła), reflektory, latarnie, świecący szyld |
 | Auto | [„1993 FSO Polonez MR93 (LP)”](https://sketchfab.com/3d-models/1993-fso-polonez-mr93-lp-f191456e08a041ad81264ce67f4ed1d1) (Sketchfab) | model z kołami na kościach (kręcą się i skręcają) |
-| Osiedle | [Kenney City Kit Roads / Commercial / Suburban, Car Kit, Starter Kit City Builder](CREDITS.md) (CC0) | drogi, latarnie, bloki, pawilony, sklep, garaże, zaparkowane auta, drzewa (`GLTFLoader`) |
+| Osiedle | [Kenney City Kit Roads / Commercial / Suburban, Car Kit, Starter Kit City Builder](CREDITS.md) (CC0) + własne bryły | latarnie, pawilony, sklep, market, garaże, zaparkowane auta, drzewa (`GLTFLoader`); bloki z wielkiej płyty, podłoże i postacie z kodu |
 | Konwersja modeli | [glTF-Transform](https://gltf-transform.dev) | `npm run assets` (usunięcie logo, fikcyjna tablica, `.glb` → `.gltf`) |
 | Dźwięk | [Howler.js](https://howlerjs.com) + dźwięki z Kenney Starter Kit Racing (CC0) | silnik, pisk opon, uderzenia |
 | Czcionka HUD | [Silkscreen](https://fonts.google.com/specimen/Silkscreen) przez `@fontsource/silkscreen` (OFL) | pikselowy licznik |
@@ -112,13 +112,15 @@ i **Łatwy** – dawna jazda z asystą (kąt trzyma się sam, bez bączków), ja
 
 **Mapa:** Osiedle Kosmonautów ułożone jak prawdziwe osiedle z wielkiej płyty. Plan ze szkicem i strefami jest w
 [`docs/mapa.md`](docs/mapa.md), a sama mapa w `src/maps/osiedle.json` (edytowalny plik danych). Układ:
-- ulica główna z latarniami po obu stronach, przystankiem i pasami przy Żappce;
-- dwie uliczki osiedlowe na północ i jedna poprzeczna (kafle skrzyżowań i łuków dobierają się same);
-- Blok 1 i 2 równolegle, między nimi podwórko (plac zabaw, trzepaki, ławki, drzewa), za Lotników długi Blok 3 i punktowiec;
-- rząd garaży na skraju z placem przed wjazdami;
+- ulica główna z liniami, latarniami po obu stronach, przystankiem i pasami;
+- węższe uliczki osiedlowe bez linii, tworzące zamknięte pętle (duża pętla to trasa wyścigu); narożniki zaokrąglone;
+- bloki z wielkiej płyty z kodu (4 i 10 pięter, różne długości, klatki z daszkami, balkony, zapalone okna, maszt 5G);
+- między blokami podwórka: trawa, chodniki, plac zabaw, trzepaki, ławki, drzewa; parkingi osobno;
+- rząd garaży z placem połączonym z ul. Tereszkowej;
 - pawilony i Żappka 24h przy głównej z parkingiem;
-- market „Supersam” z wielkim placem do driftu;
-- paczkomat przy wejściu do Bloku 1, śmietniki przy blokach, auta tylko na parkingach i przy krawężnikach.
+- market „Supersam” z wielkim placem do driftu (wjazdy z Gagarina i z głównej);
+- paczkomat przy wejściu do Bloku 1, śmietniki przy blokach, auta tylko na parkingach i placach.
+- postacie: chłopaki przy placu, Sąsiad Zbyszek, Pani Halina, Mietek, Pan Zdzisio (rozmowa: stań obok, E / pad B / dotyk).
 
 Kolizja każdego obiektu to obrys jego geometrii na wysokości karoserii (drzewo zderza się pniem, latarnia słupem).
 `?plan` w adresie pokazuje całą mapę z góry.
@@ -181,7 +183,8 @@ Workflow `.github/workflows/pages.yml` publikuje build na GitHub Pages po pushu 
 ## Znane ograniczenia
 
 - Bundle ma ~5 MB (1,8 MB gzip), bo `rapier3d-compat` wbudowuje WASM w JS. Modele to kolejne ~8 MB `.gltf` (base64). Do optymalizacji później.
-- Misje: na razie jest jedna i gra startuje ją automatycznie (wybór misji w v0.4).
+- Misje: trzy po kolei (Paczka, Pokaz, Wyścig z sąsiadem); teksty są tymczasowe (PLACEHOLDER, `docs/teksty.md`).
+- Postacie to bryły z kodu: modeli CC0 nie dało się pobrać z tego środowiska (podmiana: `docs/teksty.md`).
 - Kolizja karoserii z przeszkodami to prostokąt w rzucie z góry (bez zaokrągleń i bez wysokości): liczy się obrys auta na ziemi.
 - Model Poloneza ma licencję Sketchfab Standard, a nie CC0 (szczegóły w CREDITS).
 - Dźwięki są w `.ogg`: starsze Safari ich nie odtworzy.

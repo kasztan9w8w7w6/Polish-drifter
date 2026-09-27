@@ -1,10 +1,12 @@
 import * as THREE from 'three';
 import { loadGltf } from './gltf.js';
-import { roadTiles, ROAD_TILE } from './roads.js';
+import { createGround } from './ground.js';
+import { buildBlock, blockLayout } from './blocks.js';
 
-// The housing estate, built from a hand-made map file (src/maps/*.json: models, positions, turns) with Kenney kits
-// (CC0, see CREDITS.md): City Kit Roads (streets, lamps, dumpsters, road works), City Kit Commercial (blocks,
-// pavilions, the shop), City Kit Suburban (trees, fences), Car Kit (parked cars), Starter Kit City Builder (garages).
+// The housing estate, built from a hand-made map file (src/maps/*.json: models, positions, turns): the ground (streets,
+// sidewalks, lots, yards) is one pixel texture (ground.js), the blocks of flats are built in code (blocks.js), the rest
+// comes from Kenney kits (CC0, see CREDITS.md): City Kit Roads (lamps, dumpsters), City Kit Commercial (pavilions,
+// the shop, the market), City Kit Suburban (trees, fences), Car Kit (parked cars), Starter Kit City Builder (garages).
 // Walls, cones and tyre stacks: track.js. The mission points (locker, delivery, shop pad) are in the same file.
 //
 // Collisions are as big as the objects really are where the car can touch them: each model's collider is the
@@ -68,9 +70,26 @@ export async function createMap(scene, physics, map) {
   const jobs = [];
   const add = (...args) => jobs.push(put(...args));
 
-  // --- Streets: flat road tiles on the asphalt (4 cm kerbs, no collision), picked per 10 m cell from its neighbours ---
-  const road = { fit: [ROAD_TILE, 0.04, ROAD_TILE], y: 0.005, tint: 0.6 }; // darker, so the tiles sit in the asphalt
-  for (const t of roadTiles(map.roads, map.crossings)) add(t.model, t.x, t.z, { ...road, yaw: t.yaw });
+  // --- Ground: streets, sidewalks, lots, yards (one pixel texture, ground.js) ---
+  if (map.streets) createGround(scene, map);
+
+  // --- Blocks of flats (wielka płyta, blocks.js): collider = footprint + the entrance steps ---
+  const blinks = [];
+  for (const b of map.blocks ?? []) {
+    const far = b.collide === false;
+    const { group, layout, blink } = buildBlock(b, { detail: far ? 0.5 : 1 });
+    scene.add(group);
+    if (blink) blinks.push(blink);
+    if (far) continue;
+    occluders.push(group);
+    const f = layout.footprint;
+    physics.addStaticBox({ x: f.x, y: layout.height / 2, z: f.z }, { x: f.hx, y: layout.height / 2, z: f.hz }, { rotation: yawQuat(f.yaw), surface: 'concrete' });
+    for (const e of blockLayout(b).entrances) {
+      // steps: 1.1 m out from the wall, the entrance point is 1.2 m out → the steps sit 0.65 m back from it
+      const sx = e.x - Math.sin(f.yaw) * 0.65, sz = e.z - Math.cos(f.yaw) * 0.65;
+      physics.addStaticBox({ x: sx, y: 0.18, z: sz }, { x: 1.2, y: 0.18, z: 0.55 }, { rotation: yawQuat(f.yaw), surface: 'concrete' });
+    }
+  }
 
   // --- Objects from the map file ---
   for (const o of map.objects) {
@@ -169,6 +188,7 @@ export async function createMap(scene, physics, map) {
     occluders,
     // time (s), charging: brighter and faster while the battery fills up
     update(time, charging = false) {
+      for (const b of blinks) b.visible = time % 1.6 < 0.5; // the mast's red light
       if (!pad) return;
       const k = charging ? 0.75 + 0.25 * Math.sin(time * 9) : 0.45 + 0.2 * Math.sin(time * 2.2);
       pad.children.forEach((m) => (m.material.opacity = k * m.userData.alpha));

@@ -1,0 +1,45 @@
+{
+  "_help": "Misja: kroki po kolei – opis typów w src/missions/pokaz.json (_help). race: route = trasa z mapy (routes), laps = okrążenia, rival = postać (jej auto: postacie.json → auto), start/meta = początek trasy.",
+  "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
+  "id": "wyscig",
+  "title": "PLACEHOLDER: Wyścig z sąsiadem",
+  "start": { "point": "lot", "battery": 80 },
+  "intro": ["PLACEHOLDER: Sąsiad Zbyszek stoi pod Blokiem 2 przy swoim szesnastozaworowcu. Jak zawsze. Od 1998 roku."],
+  "steps": [
+    {
+      "id": "zaczepka",
+      "type": "talk",
+      "npc": "zbyszek",
+      "dialog": "wyscig-start",
+      "result": "start",
+      "goal": "PLACEHOLDER: Jedź do Zbyszka pod Blokiem 2 (ul. Kosmonautów)",
+      "say": ["PLACEHOLDER: Zbyszek czeka przy głównej. Stań obok niego."],
+      "refuse": ["PLACEHOLDER: Zbyszek wzdycha i poleruje lusterko rękawem. Poczeka."]
+    },
+    {
+      "id": "wyscig",
+      "type": "race",
+      "route": "petla",
+      "laps": 2,
+      "rival": "zbyszek",
+      "goal": "PLACEHOLDER: Wyścig: 2 okrążenia dookoła osiedla, meta pod blokiem",
+      "say": ["PLACEHOLDER: Dookoła osiedla: Kosmonautów, Gagarina, Tereszkowej, Lotników. Dwa razy. Bez skrótów przez podwórko – pani Halina patrzy."],
+      "fail": ["PLACEHOLDER: Zbyszek na mecie pierwszy. Trąbi dwa razy. Długo. Jeszcze raz – ustawiacie się od nowa."],
+      "done": ["PLACEHOLDER: Meta! Zbyszek wjeżdża dopiero po chwili, z miną człowieka, który myje dwa auta."]
+    },
+    {
+      "id": "koniec",
+      "type": "talk",
+      "npc": "zbyszek",
+      "dialog": "wyscig-koniec",
+      "goal": "PLACEHOLDER: Pogadaj ze Zbyszkiem na mecie",
+      "say": ["PLACEHOLDER: Zbyszek wysiada. Chyba chce coś powiedzieć."]
+    }
+  ],
+  "outro": ["PLACEHOLDER: Osiedle ma nowego mistrza. Maszt buczy na jego cześć. Albo na niczyją."],
+  "hints": [
+    { "on": "warn", "once": true, "say": ["PLACEHOLDER: Bateria na wyczerpaniu. W zakrętach bokiem – ładuje i nie trzeba hamować."] },
+    { "on": "dead", "say": ["PLACEHOLDER: Silnik gaśnie. Zbyszek przejeżdża obok i macha."] },
+    { "on": "respawn", "say": ["PLACEHOLDER: Wracasz. Zbyszek czeka pod blokiem, uśmiechnięty."] }
+  ]
+}

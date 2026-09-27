@@ -1,0 +1,9 @@
+{
+  "_help": "Kolejność misji (id z src/missions/*.json). „Kontynuuj” w menu wraca do ostatniej rozpoczętej misji. koniec = narrator po ostatniej misji.",
+  "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
+  "misje": ["paczka", "pokaz", "wyscig"],
+  "koniec": [
+    "PLACEHOLDER: To wszystko na tę noc. Osiedle śpi, maszt buczy, Polonez stygnie.",
+    "PLACEHOLDER: Dalsze misje w kolejnej wersji. Możesz jeździć dalej."
+  ]
+}

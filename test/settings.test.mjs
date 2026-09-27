@@ -48,7 +48,13 @@ test('piksele: rozmiar z rozdzielczości (Średnie ≈ 360 linii), Drobne/Grube'
     assert.ok(px >= 1);
     if (d === 'Średnie' && h >= 720) assert.ok(lines >= 300 && lines <= 480, `${h}p`);
   }
-  assert.ok(pixelSizeFor(1080, 'Drobne') < pixelSizeFor(1080, 'Średnie') && pixelSizeFor(1080, 'Średnie') < pixelSizeFor(1080, 'Grube'));
+  // 1080p: about 540 / 360 / 270 lines
+  assert.deepEqual(['Drobne', 'Średnie', 'Grube'].map((d) => pixelSizeFor(1080, d)), [2, 3, 4]);
+  // Every height (a small frame, a laptop, 4K): three different sizes
+  for (const h of [300, 400, 540, 600, 768, 800, 900, 1080, 1200, 1440, 1600, 2160]) {
+    const [a, b, c] = ['Drobne', 'Średnie', 'Grube'].map((d) => pixelSizeFor(h, d));
+    assert.ok(a < b && b < c, `${h}p: ${a} ${b} ${c}`);
+  }
 });
 
 test('klawisze: zmiana przypisania zabiera klawisz innej akcji, etykiety po polsku', () => {

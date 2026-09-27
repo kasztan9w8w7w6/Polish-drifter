@@ -1,0 +1,18 @@
+{
+  "_help": "Teksty systemowe gry (nie z misji ani rozmów): powrót po „Kontynuuj”, plansza rozładowanej baterii, wyścig, podsumowanie. Etykiety przycisków menu są w src/menu.js.",
+  "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
+  "powrot": "PLACEHOLDER: Wracasz. Mgła ta sama, maszt ten sam, bateria prawie ta sama.",
+  "bateriaPadla": { "tytul": "Bateria padła", "tekst": "PLACEHOLDER: Maszt buczy coraz głośniej. Wracasz do ostatniego zapisu…" },
+  "rozmowa": { "podpowiedz": "rozmowa", "dalej": "dalej", "gracz": "Ty" },
+  "wyscig": {
+    "odliczanie": ["3", "2", "1"],
+    "start": "PLACEHOLDER: Jazda!",
+    "okrazenie": "Okrążenie",
+    "pozycja": "Pozycja",
+    "przewaga": "przewagi",
+    "strata": "straty",
+    "ostatnie": "PLACEHOLDER: Ostatnie okrążenie!"
+  },
+  "pokaz": { "punkty": "pkt", "czas": "zostało" },
+  "podsumowanie": { "koniecMisji": "Misja zakończona", "czas": "Czas", "punkty": "Punkty za drift", "dalej": "Enter / A / dotknij: dalej · N: jeszcze raz" }
+}

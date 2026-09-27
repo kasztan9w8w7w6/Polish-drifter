@@ -7,7 +7,7 @@ const BASE = `${import.meta.env.BASE_URL}assets/kenney/racing/audio/`;
 const dbToGain = (db) => 10 ** (db / 20);
 const lerp = (a, b, k) => a + (b - a) * k;
 
-export const audioSettings = { volume: 0.7, engine: 1, skid: 1, impact: 1, warning: 1 };
+export const audioSettings = { volume: 0.7, engine: 1, skid: 1, impact: 1, warning: 1, typing: 1 };
 
 export function createAudio() {
   let engine, skid, impact, engineId, skidId;
@@ -41,9 +41,10 @@ export function createAudio() {
       engOn = lerp(engOn, engineOn ? 1 : 0, Math.min(1, dt * 3)); // battery flat: the engine dies away
       engine.volume(engVol * engOn * audioSettings.engine, engineId);
       engine.rate(engRate, engineId);
-      // Kenney: screech from drift intensity, −10..0 dB, pitch clamp(speed, 1, 3)
-      const slip = Math.abs(state.slipAngle);
-      const intensity = state.grounded && state.speed > 4 ? Math.min(1, Math.max(0, (slip - 8) / 30)) : 0;
+      // Kenney: screech from drift intensity, −10..0 dB, pitch clamp(speed, 1, 3). Only a sideways slide (sideSlip:
+      // reversing is not a slide) and wheelspin on a full-throttle launch.
+      const slide = state.grounded && state.speed > 4 ? Math.min(1, Math.max(0, (state.sideSlip - 8) / 30)) : 0;
+      const intensity = Math.max(slide, (state.wheelspin ?? 0) * 0.55);
       skidVol = lerp(skidVol, intensity > 0 ? dbToGain(-10 + 10 * intensity) : 0, Math.min(1, dt * 10));
       skidRate = lerp(skidRate, 0.8 + Math.min(1, state.speed / 25) * 0.5, 0.1);
       skid.volume(skidVol * audioSettings.skid, skidId);
@@ -68,6 +69,25 @@ export function createAudio() {
       o.connect(g).connect(Howler.masterGain);
       o.start(t);
       o.stop(t + 0.14);
+    },
+    // Typewriter click for one letter of the narrator / a dialogue: a very short filtered blip, slightly different pitch
+    // every time (so a line doesn't sound like a machine gun). Web Audio, no sound file.
+    type() {
+      const ctx = Howler.ctx;
+      if (!started || !ctx || audioSettings.typing <= 0) return;
+      const t = ctx.currentTime;
+      const o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      o.type = 'square';
+      o.frequency.value = 1500 * 2 ** ((Math.random() - 0.5) * 0.5); // ± a quarter octave
+      f.type = 'bandpass';
+      f.frequency.value = o.frequency.value * 1.5;
+      f.Q.value = 2;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.05 * audioSettings.typing, t + 0.003);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.035);
+      o.connect(f).connect(g).connect(Howler.masterGain);
+      o.start(t);
+      o.stop(t + 0.04);
     },
     // speed in m/s into the obstacle (vehicle.state.crash); Kenney maps impact speed 0..6 to −20..0 dB
     hit(speed) {

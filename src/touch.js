@@ -19,6 +19,7 @@ export function createTouchControls({ actions = {} } = {}) {
       <button data-b="brake" class="brake">hamulec<br><small>wsteczny</small></button>
       <button data-b="gas" class="gas">gaz</button>
     </div>
+    <button id="t-talk" data-a="talk">rozmowa</button>
     <div id="t-top">
       <button data-a="fullscreen" title="Pełny ekran">⛶</button>
       <button data-a="pause" title="Pauza">❚❚</button>

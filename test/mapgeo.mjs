@@ -2,6 +2,7 @@
 // places each model like map.js put() does and computes the same body-height footprint. Used by map.test.mjs.
 import fs from 'node:fs';
 import { Box3, Matrix4, Quaternion, Vector3 } from 'three';
+import { blockLayout } from '../src/blocks.js';
 
 const ROOT = new URL('../public/assets/kenney/', import.meta.url);
 const BAND_LO = 0.1, BAND_HI = 2.2;
@@ -107,6 +108,13 @@ export function colliders(map) {
   if (map.locker) out.push({ path: 'locker', name: 'locker', cx: map.locker.x, cz: map.locker.z, hx: 1.6, hz: 0.4, yaw: map.locker.yaw * DEG, h: 2.2 });
   for (const [x, z, lx, lz] of map.walls) out.push({ path: 'wall', name: 'wall', cx: x, cz: z, hx: lx / 2, hz: lz / 2, yaw: 0, h: 1.2 });
   out.push(...propColliders(map));
+  // blocks of flats (blocks.js): the footprint and the entrance steps, as map.js adds them
+  for (const b of map.blocks ?? []) {
+    if (b.collide === false) continue;
+    const L = blockLayout(b), f = L.footprint;
+    out.push({ path: 'blok', name: b.name, cx: f.x, cz: f.z, hx: f.hx, hz: f.hz, yaw: f.yaw, h: L.height });
+    for (const e of L.entrances) out.push({ path: 'schody', name: `schody ${b.name}`, cx: e.x - Math.sin(f.yaw) * 0.65, cz: e.z - Math.cos(f.yaw) * 0.65, hx: 1.2, hz: 0.55, yaw: f.yaw, h: 0.36 });
+  }
   for (const [x, z] of map.tyres) out.push({ path: 'tyres', name: 'tyres', cx: x, cz: z, hx: 0.65, hz: 0.65, yaw: 0, h: 1.6 });
   return out;
 }

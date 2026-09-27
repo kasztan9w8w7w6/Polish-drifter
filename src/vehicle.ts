@@ -36,7 +36,11 @@ const GROUP_BALL = (0x0001 << 16) | (0xfffd & ~OBSTACLE_GROUP);
 const GROUP_CHASSIS = (0x0002 << 16) | 0xfffd;
 
 const CATCH_ANGLE = 4 * (Math.PI / 180); // Pro/Normalny: a slide this small with no throttle or steering into it is caught
-const SPIN_RATE = 5; // rad/s the body keeps rotating after a spin-out (Pro)
+// Spin-out (Normalny/Pro, over-rotated): the body rotates on, but the rotation is damped from the moment the spin is
+// detected, so it adds exactly SPIN_TURN over proSpinTime (at most one turn in all, never two), then the car stands.
+const SPIN_TURN = 250 * (Math.PI / 180); // rad the body turns on after the spin starts
+const SPIN_DECAY = 2.5; // the rotation falls to e^−2.5 ≈ 8 % over proSpinTime
+const SPIN_COOL = 1; // s after a spin before a new slide can start (no second spin straight away)
 const SPIN_DRAG = 1.6; // 1/s speed lost while spinning
 const CRASH_BRAKE = 4; // 1/s – how fast the bounce after a hit dies out while the engine is cut (crashStun)
 const Y = new Vector3(0, 1, 0);
@@ -103,6 +107,8 @@ export function createVehicle(
   let stuckTimer = 0;
   let unstuckCount = 0;
   let spinTimer = 0; // s left of a spin-out (Pro: over-rotated drift)
+  let spinRate = 0; // rad/s the body still rotates in a spin-out (damped)
+  let spinCool = 0; // s left before a slide can start again after a spin
   let spins = 0;
   const maxAngle = () => (t.realCounter > 0.5 ? t.proSpinAngle : t.driftAngleMax); // degrees
   let crashTimer = 0; // s left without engine power towards the obstacle after a hit
@@ -128,6 +134,8 @@ export function createVehicle(
     speed: 0,
     forwardSpeed: 0,
     slipAngle: 0, // degrees, measured between the nose and the real velocity; + = velocity left of the nose
+    sideSlip: 0, // degrees 0..90: how far the car slides sideways, the same going forwards and backwards (reversing ≠ sliding)
+    wheelspin: 0, // 0..1: full throttle from (almost) standstill, the rear tyres spin up
     driftAngle: 0, // degrees, the commanded heading − travel
     yawRate: 0,
     drifting: false,
@@ -186,7 +194,7 @@ export function createVehicle(
     // Entries (ordinary steering never slides): handbrake + steering above driftMinSpeed, lift-off in a fast corner,
     // or power oversteer (full throttle + hard steering, held, above sharpSpeed)
     const handbrakeEntry = inp.handbrake > 0.5 && Math.abs(steer) > t.handbrakeSteer && speed > t.driftMinSpeed;
-    if (!drifting && spinTimer <= 0 && moving && (handbrakeEntry || liftOff || (sharpTimer > t.sharpTime && speed > t.driftMinSpeed))) {
+    if (!drifting && spinTimer <= 0 && spinCool <= 0 && moving && (handbrakeEntry || liftOff || (sharpTimer > t.sharpTime && speed > t.driftMinSpeed))) {
       drifting = true;
       driftSide = Math.sign(steer);
     } else if (drifting && (!moving || speed < t.driftMinSpeed * 0.6 || noThrottleTimer > t.driftExitDelay)) {
@@ -219,12 +227,15 @@ export function createVehicle(
       target = MathUtils.lerp(same, sideTarget(-driftSide), flip) * DEG;
     }
     const prevAngle = angle;
+    spinCool = Math.max(0, spinCool - h);
     const realCounter = t.realCounter > 0.5;
     if (spinTimer > 0) {
       // Spun out (Pro, over-rotated): the body keeps rotating while the car slides on and scrubs off speed
       spinTimer -= h;
-      angle += driftSide * SPIN_RATE * Math.min(1, spinTimer / 0.4 + 0.2) * h;
+      angle += driftSide * spinRate * h;
+      spinRate *= Math.exp((-SPIN_DECAY / Math.max(t.proSpinTime, 0.1)) * h);
       if (spinTimer <= 0) {
+        spinCool = SPIN_COOL;
         travel = wrap(travel + angle); // it ends up pointing wherever it stopped
         angle = 0;
       }
@@ -248,6 +259,7 @@ export function createVehicle(
       } else if (Math.abs(angle) > t.proSpinAngle * DEG) {
         drifting = false; // too much: spin
         spinTimer = t.proSpinTime;
+        spinRate = (SPIN_TURN * SPIN_DECAY) / Math.max(t.proSpinTime, 0.1) / (1 - Math.exp(-SPIN_DECAY));
         spins++;
       }
     } else {
@@ -545,6 +557,10 @@ export function createVehicle(
     state.forwardSpeed = v.x * fwdX + v.z * fwdZ;
     const left = v.x * fwdZ - v.z * fwdX; // velocity component to the left of the nose (left = −Z at yaw 0)
     state.slipAngle = state.speed > 2 ? Math.atan2(left, state.forwardSpeed) / DEG : 0;
+    // (atan2 gives ~180° when reversing straight: fold it, so only a real sideways slide counts)
+    state.sideSlip = state.speed > 2 ? Math.atan2(Math.abs(left), Math.abs(state.forwardSpeed)) / DEG : 0;
+    const launch = (lastInput.throttle || 0) > 0.85 && state.forwardSpeed > -0.5 && state.forwardSpeed < 5;
+    state.wheelspin = grounded && launch && spinTimer <= 0 ? 1 - Math.max(0, state.forwardSpeed) / 5 : 0;
     state.driftAngle = angle / DEG;
     state.yawRate = turnRate;
     state.drifting = drifting;
@@ -572,7 +588,7 @@ export function createVehicle(
     const steerVis = MathUtils.clamp(MathUtils.lerp(input, counter + (t.realCounter > 0.5 ? input * 0.5 : 0), inDrift), -0.7, 0.7);
     state.steerAngle = approach(state.steerAngle, steerVis, 10, 1 / 60);
 
-    const slipAbs = Math.abs(state.slipAngle);
+    const slipAbs = state.sideSlip;
     const braking = lastInput.brake > 0.5 && state.forwardSpeed > 12;
     WHEELS.forEach((wd, i) => {
       const w = state.wheels[i];
@@ -592,7 +608,7 @@ export function createVehicle(
     body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     body.setAngvel({ x: 0, y: 0, z: 0 }, true);
     travel = yaw;
-    angle = turnRate = engine = driftBlend = sharpTimer = noThrottleTimer = recentThrottle = accel = prevForwardSpeed = stuckTimer = crashTimer = spinTimer = 0;
+    angle = turnRate = engine = driftBlend = sharpTimer = noThrottleTimer = recentThrottle = accel = prevForwardSpeed = stuckTimer = crashTimer = spinTimer = spinRate = spinCool = 0;
     drifting = false;
     driftSide = 0;
     hold = 1;

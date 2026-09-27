@@ -8,10 +8,10 @@ export const KEY_RAMP = { steerUp: 2.5, steerDown: 4, pedalUp: 4, pedalDown: 6 }
 const STEER_DEADZONE = 0.12;
 
 // Gamepad buttons (standard mapping): 0 A, 1 B, 2 X, 3 Y, 4 LB, 5 RB, 6 LT, 7 RT, 8 Back, 9 Start, 12 d-pad up
-export const PAD_ACTIONS = { 3: 'reset', 2: 'camera', 9: 'pause', 12: 'lights', 8: 'mission' };
+export const PAD_ACTIONS = { 3: 'reset', 2: 'camera', 9: 'pause', 12: 'lights', 8: 'mission', 1: 'talk' };
 // Keys the player can rebind come from settings.js (DEFAULT_KEYS); these developer keys are fixed
 const FIXED_KEYS = { KeyG: 'gui', KeyF: 'debug', KeyN: 'mission', Enter: 'confirm' };
-const ONE_SHOT = ['reset', 'camera', 'lights', 'pause'];
+const ONE_SHOT = ['reset', 'camera', 'lights', 'pause', 'talk'];
 // Some remote desktops / virtual keyboards send an empty `code`: rebuild it from the character
 const codeOf = (e) => e.code || (e.key === ' ' ? 'Space' : e.key?.length === 1 ? `Key${e.key.toUpperCase()}` : e.key);
 
@@ -21,7 +21,7 @@ export function rampValue(value, target, dt, up, down) {
   return value + Math.max(-rate * dt, Math.min(rate * dt, target - value));
 }
 
-// actions: { reset, camera, lights, pause, gui, debug, mission, confirm } callbacks; bindings: settings.js keys (live object)
+// actions: { reset, camera, lights, pause, talk, gui, debug, mission, confirm } callbacks; bindings: settings.js keys (live object)
 export function createInput(actions = {}, bindingsOf) {
   const binds = typeof bindingsOf === 'function' ? bindingsOf : () => bindingsOf;
   const down = new Set();

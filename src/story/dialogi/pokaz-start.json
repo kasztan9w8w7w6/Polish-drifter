@@ -1,0 +1,18 @@
+{
+  "_help": "Rozmowa: węzły (nodes) po kolei od start. who = id postaci z postacie.json albo gracz. next = następny węzeł, choices = wybór odpowiedzi (text, next albo end, set = flagi), end = koniec rozmowy z wynikiem (misja może go sprawdzać). Bez next/choices/end = koniec.",
+  "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
+  "id": "pokaz-start",
+  "start": "a",
+  "nodes": {
+    "a": { "who": "seba", "text": "PLACEHOLDER: O, Polonez. Słyszałem, że ty niby umiesz bokiem.", "next": "b" },
+    "b": { "who": "seba", "text": "PLACEHOLDER: Pokaż chłopakom na placu. Trzy tysiące punktów w minutę, to uwierzymy.", "choices": [
+      { "text": "PLACEHOLDER: Dawaj, patrzcie.", "end": "zgoda", "set": { "pokaz": true } },
+      { "text": "PLACEHOLDER: Jak wygram, to co?", "next": "c" },
+      { "text": "PLACEHOLDER: Nie dziś.", "end": "odmowa" }
+    ] },
+    "c": { "who": "seba", "text": "PLACEHOLDER: To powiem ci, gdzie Zbyszek trzyma kluczyki. I dostaniesz szacunek. Szacunek jest ważniejszy.", "choices": [
+      { "text": "PLACEHOLDER: Dobra, jadę.", "end": "zgoda", "set": { "pokaz": true } },
+      { "text": "PLACEHOLDER: Pomyślę.", "end": "odmowa" }
+    ] }
+  }
+}
