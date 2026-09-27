@@ -3,6 +3,26 @@
 Wersje do v0.4c mają lokalne tagi w git (serwer odrzuca wypychanie tagów); od v0.5 wersję znajdziesz po commicie „v0.5a – …”.
 Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
 
+## v0.6a – wszystko bez klawiatury (telefon, pad)
+- **Błąd blokujący:** podsumowanie misji znikało po 20 s i na telefonie nie było już jak przejść do następnej misji.
+  Teraz podsumowanie to panel z przyciskami „Dalej” / „Jeszcze raz” (po ostatniej misji „Wolna jazda”), który czeka na wybór.
+- Nowy `panel.js` (podsumowanie teraz, w v0.6d też stacja, sklep i pusty bak): palec / mysz, klawiatura (strzałki, Enter/E, 1–9, Esc),
+  pad (d-pad lub gałka, A, B). Auto stoi, dopóki panel jest otwarty.
+- Przegląd miejsc z klawiaturą:
+  - rozmowy i wybory odpowiedzi działają dotknięciem i padem (B rozmowa, A dalej, d-pad wybór);
+  - menu, pauza i garaż (przeciąganie) działają dotykiem;
+  - restart misji jest w menu pauzy;
+  - długie światła dostały przycisk „L” na ekranie dotykowym;
+  - ustawienia klawiszy są ukryte na dotyku.
+- Pad:
+  - **Start otwierał pauzę i od razu ją zamykał** (to samo naciśnięcie liczyło się jako „wstecz”);
+  - A w menu nic nie robił, gdy strona nie miała fokusu klawiatury;
+  - oba poprawione.
+- Wyścig: gdy przeciwnik stał już w chwili wygranej, misja nie widziała wyniku i czekała w nieskończoność – poprawione.
+- Test w przeglądarce `scripts/e2e-dotyk.cjs`: misje 1 → 2 → 3 do końca samym dotykiem (Graj, przycisk rozmowy, dotknięcia okienka
+  rozmowy i odpowiedzi, „Dalej” w podsumowaniach); `scripts/e2e-pad.cjs`: menu, pauza, rozmowa z wyborem i panel samym padem.
+- Stała zasada w CLAUDE.md: po każdej wersji PR do `main` i scalenie, gdy testy przechodzą.
+
 ## v0.5c – prawdziwe osiedle
 - **Bloki z wielkiej płyty z kodu** (`src/blocks.js`) zamiast rozciągniętych budynków Kenneya:
   - płyty ze spoinami i zaciekami, rzędy okien (ok. 22% zapalonych: ciepłe, pomarańczowe, zimne, niebieskie od telewizora, z firankami);

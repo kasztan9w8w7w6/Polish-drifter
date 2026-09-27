@@ -28,6 +28,10 @@ osiedle z wielkiej płyty); dopracowanie sterowania mobilnego w v0.15.
 3. **Małe kroki z testami.** Zmiana fizyki = uruchom `npm test` (scenariusze jazdy w Node) i podaj zmierzone wartości.
 4. **Każdy asset** (model, tekstura, dźwięk, font) wpisz do `CREDITS.md` ze źródłem i licencją.
 5. Nie przepisuj niezwiązanego kodu. Dostosowuj go do zmian.
+6. **Stała zasada: po każdej wersji otwórz PR do `main` i scal go, jeśli testy przechodzą** (`npm test`, `npm run typecheck`,
+   build). Potem kolejna praca zaczyna się od świeżego `main`.
+7. Wszystko musi działać bez klawiatury: dotyk (przyciski / „dotknij”) i pad. Wybory = panel.js (przyciski), sprawdzenie:
+   `scripts/e2e-dotyk.cjs` (misje 1→2→3 samym dotykiem) i `scripts/e2e-pad.cjs`.
 
 ## Architektura (v0.3)
 
@@ -85,6 +89,8 @@ src/settings.js – ustawienia gracza w localStorage (try/catch, gra działa bez
 src/dashboard.js – zegary jak w autach z bloku wschodniego (prędkościomierz, obrotomierz, bateria jak zegar paliwa, kontrolki,
                   okienko biegu, bębenkowy licznik punktów): canvas 256×100 powiększony bez wygładzania
 src/turntable.js – obrotnica w garażu (przeciąganie, bezwładność, powrót auto-obrotu), bez DOM
+src/panel.js    – panel wyboru na środku ekranu (podsumowanie misji, stacja, sklep, pusty bak): przyciski dla palca, myszy,
+                  klawiatury (strzałki, Enter/E, 1–9, Esc) i pada (d-pad, A, B); nie znika sam
 src/menu.js     – menu (Graj / Kontynuuj / Garaż / Ustawienia), garaż (obracający się Polonez, lakiery), ustawienia
                   (grafika, dźwięk, sterowanie + trudność), pauza (Esc / Start); mysz, klawiatura, pad, dotyk
 src/drift.js    – punktacja driftu
