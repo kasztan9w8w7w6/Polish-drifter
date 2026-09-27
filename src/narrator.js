@@ -1,4 +1,4 @@
-import { createTypewriter } from './typewriter.js';
+import { createTypewriter, clean } from './typewriter.js';
 
 // Narrator: lines of text at the top of the screen, typed letter by letter like on a typewriter (typewriter.js: stops
 // after commas and full stops, `keys` = letters typed this frame for the click sound), gone after a while.
@@ -18,7 +18,7 @@ export function createNarrator(settings = narratorSettings) {
   const holdFor = (text) => s.hold + text.length * s.perChar;
 
   function say(lines) {
-    for (const l of [].concat(lines)) if (l) queue.push(l);
+    for (const l of [].concat(lines)) if (l) queue.push(clean(l));
     if (!line) next();
   }
   function next() {

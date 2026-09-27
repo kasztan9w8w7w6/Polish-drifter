@@ -3,6 +3,31 @@
 Wersje do v0.4c mają lokalne tagi w git (serwer odrzuca wypychanie tagów); od v0.5 wersję znajdziesz po commicie „v0.5a – …”.
 Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
 
+## v0.5b – postacie, rozmowy, misje 2–3 (MVP)
+- **Postacie na osiedlu:** Seba, Kamil i Dawid przy placu pod Supersamem, Sąsiad Zbyszek pod Blokiem 2,
+  Pani Halina przy Bloku 1, Mietek przy garażach, Pan Zdzisio przed Żappką.
+  - Wygląd: niskopoligonowe bryły z kodu (dresy z paskami, czapki, kaptur, brzuch, papieros, reklamówka),
+    bo modeli CC0 nie dało się pobrać; model `.gltf` podmienia się wpisem w danych.
+  - Ruch: animacja bezczynności (oddech, kiwanie, palenie, ręce za plecami), głowa odwraca się do auta,
+    kolizja jak z człowiekiem, nie przejedziesz przez nich.
+- **Rozmowy:**
+  - stań obok postaci, pojawi się podpowiedź; rozmowę zaczyna E / B na padzie / przycisk „rozmowa” na dotyku;
+  - okienko u dołu z imieniem i pikselowym portretem (rysowanym z kolorów postaci), tekst pisany jak narrator
+    (z kliknięciami), dalej E / Enter / A, wybory odpowiedzi (↑↓, 1–4, dotyk) z rozgałęzieniami i wynikiem rozmowy;
+  - rozmowy to pliki JSON (`src/story/dialogi`).
+- **Misja 2 „Pokaz”:** rozmowa z Sebą (odmowa = poczeka), potem 3000 pkt driftu na placu w 60 s (zegar od wjazdu,
+  liczą się tylko punkty na placu), porażka = kolejna próba. Chłopaki reagują dymkami („dawaj!” przy głębokim
+  szybkim drifcie, „słabo” przy nieśmiałym, coś przy uderzeniu i przy staniu) i podnoszą ręce.
+- **Misja 3 „Wyścig z sąsiadem”:** Zbyszek w aucie z Car Kit, 2 okrążenia dookoła osiedla, meta pod blokiem.
+  - Przeciwnik jedzie po wygładzonej trasie z mapy (Catmull-Rom z three.js): hamuje przed zakrętami, łagodnie
+    dopasowuje tempo do gracza, omija gracza zamiast przez niego przejechać i nie teleportuje się (maks. 0,43 m na klatkę).
+  - Na ekranie: odliczanie, okrążenie, pozycja, przewaga, strzałka na trasę; skrót przez podwórko nie liczy się do postępu.
+  - Przegrana = start od nowa. Po wygranej Zbyszek wysiada przy swoim aucie na rozmowę.
+- **Kolejność misji** w `src/story/kampania.json`. Po podsumowaniu Enter / dotknięcie = następna misja.
+  „Kontynuuj” wraca do ostatniej misji i kroku, po ostatniej misji – wolna jazda.
+- **Teksty:** wszystkie teksty (misje, rozmowy, narrator, okrzyki, teksty systemowe w `src/story/teksty.json`)
+  są oznaczone `PLACEHOLDER` i do podmiany bez kodu – instrukcja w `docs/teksty.md`.
+
 ## v0.5a – szybkie poprawki
 - **Obraz ściśnięty na komputerze (błąd krytyczny):** rozmiar canvasu jest teraz sprawdzany w każdej klatce (i przy `resize`),
   nie tylko po wczytaniu. Wcześniej zmiana rozmiaru okna/ramki w trakcie ładowania (maksymalizacja, ramka artefaktu)

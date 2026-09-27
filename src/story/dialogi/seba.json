@@ -1,0 +1,11 @@
+{
+  "_help": "Rozmowa: węzły (nodes) po kolei od start. who = id postaci z postacie.json albo gracz. next = następny węzeł, choices = wybór odpowiedzi (text, next albo end, set = flagi), end = koniec rozmowy z wynikiem (misja może go sprawdzać). Bez next/choices/end = koniec.",
+  "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
+  "id": "seba",
+  "start": "a",
+  "nodes": {
+    "a": { "who": "seba", "text": "PLACEHOLDER: No siema. Plac jest wolny, ochroniarz śpi od dwudziestej drugiej.", "next": "b" },
+    "b": { "who": "gracz", "text": "PLACEHOLDER: A ten maszt?" , "next": "c" },
+    "c": { "who": "seba", "text": "PLACEHOLDER: Maszt jak maszt. Buczy. Jak się jedzie bokiem, to mniej słychać." }
+  }
+}

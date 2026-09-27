@@ -1,0 +1,14 @@
+{
+  "_help": "Rozmowa: węzły (nodes) po kolei od start. who = id postaci z postacie.json albo gracz. next = następny węzeł, choices = wybór odpowiedzi (text, next albo end, set = flagi), end = koniec rozmowy z wynikiem (misja może go sprawdzać). Bez next/choices/end = koniec.",
+  "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
+  "id": "wyscig-koniec",
+  "start": "a",
+  "nodes": {
+    "a": { "who": "zbyszek", "text": "PLACEHOLDER: Dobra. Wygrałeś. Szesnaście zaworów to nie wszystko, widocznie.", "choices": [
+      { "text": "PLACEHOLDER: To gdzie ta gąbka?", "next": "b" },
+      { "text": "PLACEHOLDER: Rewanż kiedyś?", "next": "c" }
+    ] },
+    "b": { "who": "zbyszek", "text": "PLACEHOLDER: Gąbka jest w Żappce. Za trzy dziewięćdziesiąt dziewięć. Jutro." },
+    "c": { "who": "zbyszek", "text": "PLACEHOLDER: Kiedyś. Jak maszt przestanie buczeć." }
+  }
+}

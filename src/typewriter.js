@@ -3,6 +3,9 @@
 // newly typed letter that is not a space is reported (`keys`), so the caller can play a quiet click for it.
 export const typeSettings = { charsPerSec: 16, comma: 4, stop: 8 };
 
+// Texts in the data files carry a "PLACEHOLDER: " mark for the scriptwriter (docs/teksty.md); the player doesn't see it
+export const clean = (t) => String(t ?? '').replace(/^PLACEHOLDER:\s*/, '');
+
 const PAUSE_COMMA = new Set([',', ';', ':', '–', '—']);
 const PAUSE_STOP = new Set(['.', '!', '?', '…']);
 
@@ -13,7 +16,7 @@ export function createTypewriter(settings = typeSettings) {
   let shown = 0;
 
   function set(str) {
-    text = str ?? '';
+    text = clean(str);
     t = 0;
     shown = 0;
     times = [];

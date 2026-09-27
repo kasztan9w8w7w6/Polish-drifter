@@ -1,0 +1,9 @@
+{
+  "_help": "Rozmowa: węzły (nodes) po kolei od start. who = id postaci z postacie.json albo gracz. next = następny węzeł, choices = wybór odpowiedzi (text, next albo end, set = flagi), end = koniec rozmowy z wynikiem (misja może go sprawdzać). Bez next/choices/end = koniec.",
+  "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
+  "id": "chlopaki",
+  "start": "a",
+  "nodes": {
+    "a": { "who": "kamil", "text": "PLACEHOLDER: Gadaj z Sebą, on tu rządzi. My tylko stoimy." }
+  }
+}

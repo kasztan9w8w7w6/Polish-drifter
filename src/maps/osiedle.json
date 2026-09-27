@@ -1,5 +1,5 @@
 {
- "_help": "Mapa osiedla (plan: docs/mapa.md). Współrzędne w metrach: x = wschód, z = południe (północ = -z), siatka 10 m. roads: odcinki ulic [[x1, z1], [x2, z2]] wzdłuż osi, kafle skrzyżowań i łuków dobierają się same; crossings: pasy dla pieszych. objects: yaw w stopniach: 0 = front modelu na południe, 180 = na północ, 90 = na wschód, -90 = na zachód. Rozmiar: scale, length (najdłuższy bok w m) albo fit [szer., wys., głęb.] w m; y = wysokość nad ziemią. collide (domyślnie true): kolizja z geometrii na wysokości karoserii, surface = materiał (physics.js SURFACES). repeat = rząd kopii co dx/dz. props: rzeczy z własnej geometrii (lawka, trzepak, piaskownica, hustawka, przystanek). lamps: [x, z, yaw, podwójna]. points: miejsca dla misji (r = promień celu), heading auta: 0 = na wschód, 90 = na północ.",
+ "_help": "Mapa osiedla (plan: docs/mapa.md). Współrzędne w metrach: x = wschód, z = południe (północ = -z), siatka 10 m. roads: odcinki ulic [[x1, z1], [x2, z2]] wzdłuż osi, kafle skrzyżowań i łuków dobierają się same; crossings: pasy dla pieszych. objects: yaw w stopniach: 0 = front modelu na południe, 180 = na północ, 90 = na wschód, -90 = na zachód. Rozmiar: scale, length (najdłuższy bok w m) albo fit [szer., wys., głęb.] w m; y = wysokość nad ziemią. collide (domyślnie true): kolizja z geometrii na wysokości karoserii, surface = materiał (physics.js SURFACES). repeat = rząd kopii co dx/dz. props: rzeczy z własnej geometrii (lawka, trzepak, piaskownica, hustawka, przystanek). lamps: [x, z, yaw, podwójna]. points: miejsca dla misji (r = promień celu), heading auta: 0 = na wschód, 90 = na północ. npcs: postacie (id z src/story/postacie.json, x, z, yaw w stopniach); rozmowa: stań obok (< 4,5 m). routes: trasy wyścigów – rogi ulic w kolejności jazdy, zamknięta pętla (start/meta = pierwszy punkt).",
  "name": "Osiedle Kosmonautów",
  "size": 200,
  "roads": [
@@ -202,5 +202,17 @@
   "lot": {"x": 61, "z": 17, "r": 25, "label": "plac pod Supersamem"},
   "delivery": {"x": -66, "z": 40, "r": 4, "label": "Blok 4, punktowiec"},
   "shop": {"x": 0, "z": 79.5, "r": 3, "label": "Żappka 24h"}
+ },
+ "npcs": [
+  {"id": "seba", "x": 34, "z": 10, "yaw": 90},
+  {"id": "kamil", "x": 33.2, "z": 12.6, "yaw": 110},
+  {"id": "dawid", "x": 34.6, "z": 7.4, "yaw": 70},
+  {"id": "zbyszek", "x": -22, "z": 76.8, "yaw": 180},
+  {"id": "halina", "x": -19, "z": -27, "yaw": 0},
+  {"id": "mietek", "x": -62, "z": -72, "yaw": 0},
+  {"id": "zdzisio", "x": 6, "z": 82, "yaw": 180}
+ ],
+ "routes": {
+  "petla": [[-15, 70], [20, 70], [20, -60], [-50, -60], [-50, 70]]
  }
 }

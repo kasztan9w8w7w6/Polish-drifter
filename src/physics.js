@@ -83,6 +83,22 @@ export function createPhysics() {
       return c.handle;
     },
 
+    // Obstacle that moves (the rival's car, a person who walks off): a box without a body, moved by hand every frame.
+    // The car's body box hits it like any obstacle (vehicle.ts collide()). → { set(x, z, yaw), enabled(on) }
+    addMovableBox(half, { surface = 'car', y = half.y } = {}) {
+      const c = world.createCollider(RAPIER.ColliderDesc.cuboid(half.x, half.y, half.z).setTranslation(0, -100, 0).setCollisionGroups(OBSTACLE_GROUPS));
+      surfaces.set(c.handle, surface);
+      return {
+        set(x, z, yaw = 0) {
+          c.setTranslation({ x, y, z });
+          c.setRotation({ x: 0, y: Math.sin(yaw / 2), z: 0, w: Math.cos(yaw / 2) });
+        },
+        enabled(on) {
+          c.setEnabled(on);
+        },
+      };
+    },
+
     // Dynamic cone standing on `pos` (pos.y = bottom) – traffic cones.
     addDynamicCone(pos, radius, height, mass) {
       return makeBody(

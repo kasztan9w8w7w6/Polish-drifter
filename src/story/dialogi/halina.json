@@ -1,0 +1,14 @@
+{
+  "_help": "Rozmowa: węzły (nodes) po kolei od start. who = id postaci z postacie.json albo gracz. next = następny węzeł, choices = wybór odpowiedzi (text, next albo end, set = flagi), end = koniec rozmowy z wynikiem (misja może go sprawdzać). Bez next/choices/end = koniec.",
+  "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
+  "id": "halina",
+  "start": "a",
+  "nodes": {
+    "a": { "who": "halina", "text": "PLACEHOLDER: Młody, ty znowu jeździsz po nocy? Ja wszystko widzę z trzeciego piętra.", "choices": [
+      { "text": "PLACEHOLDER: Dobry wieczór, pani Halino.", "next": "grzecznie" },
+      { "text": "PLACEHOLDER: To pani widzi przez mgłę?", "next": "mgla" }
+    ] },
+    "grzecznie": { "who": "halina", "text": "PLACEHOLDER: Grzeczny. Jak twoja matka. A ta wasza bateria to z Chin, prawda? Wszystko z Chin." },
+    "mgla": { "who": "halina", "text": "PLACEHOLDER: Przez mgłę, przez firankę i przez ścianę. Czterdzieści lat praktyki." }
+  }
+}

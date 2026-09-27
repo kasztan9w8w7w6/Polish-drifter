@@ -1,0 +1,70 @@
+{
+  "_help": "Postacie (NPC). Gdzie stoją – w pliku mapy (npcs: id, x, z, yaw). Tu: imię, wygląd, animacja bezczynności (stoi / pali / kiwa / rece), zwykła rozmowa (dialog: plik z src/story/dialogi) i okrzyki w dymkach (reakcje: dobrze / slabo / uderzenie / czekanie). model: opcjonalnie ścieżka do .gltf w public/models/ (zamiast bryły z kodu), np. \"models/npc/seba.gltf\". Wygląd: kolory skóry, bluzy (gora), spodni (dol), butów, włosów, czapki (czapka: daszek / zimowa / kaptur / null), paski na dresie, brzuch 0–1, wzrost (skala), dodatek (papieros / reklamowka / null).",
+  "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
+  "postacie": {
+    "seba": {
+      "imie": "Seba",
+      "wyglad": { "skora": "#e8b48c", "gora": "#1d2f7a", "paski": "#e8e8e8", "dol": "#1d2f7a", "buty": "#f0f0f0", "wlosy": "#2a1c10", "czapka": "daszek", "czapkaKolor": "#111111", "brzuch": 0, "wzrost": 1.0, "dodatek": null },
+      "idle": "kiwa",
+      "grupa": "chlopaki",
+      "dialog": "seba",
+      "reakcje": {
+        "dobrze": ["PLACEHOLDER: Dawaj!", "PLACEHOLDER: O kurde, bokiem!", "PLACEHOLDER: Jeszcze, jeszcze!"],
+        "slabo": ["PLACEHOLDER: Słabo…", "PLACEHOLDER: Babcia szybciej skręca"],
+        "uderzenie": ["PLACEHOLDER: Uuu, auć", "PLACEHOLDER: Latarnia wygrała"],
+        "czekanie": ["PLACEHOLDER: No i?", "PLACEHOLDER: Stoimy?"]
+      }
+    },
+    "kamil": {
+      "imie": "Kamil",
+      "wyglad": { "skora": "#d9a27a", "gora": "#6b1f1f", "paski": "#1a1a1a", "dol": "#222222", "buty": "#dddddd", "wlosy": "#1a120a", "czapka": "kaptur", "czapkaKolor": "#6b1f1f", "brzuch": 0.2, "wzrost": 0.95, "dodatek": "papieros" },
+      "idle": "pali",
+      "grupa": "chlopaki",
+      "dialog": "chlopaki",
+      "reakcje": {
+        "dobrze": ["PLACEHOLDER: Dawaj!", "PLACEHOLDER: Ale leci!"],
+        "slabo": ["PLACEHOLDER: Słabo.", "PLACEHOLDER: Eee tam"],
+        "uderzenie": ["PLACEHOLDER: Hahaha!"],
+        "czekanie": ["PLACEHOLDER: Zimno…"]
+      }
+    },
+    "dawid": {
+      "imie": "Dawid",
+      "wyglad": { "skora": "#efc19a", "gora": "#2d5a2a", "paski": "#e0d040", "dol": "#2d5a2a", "buty": "#222222", "wlosy": "#c8a060", "czapka": "zimowa", "czapkaKolor": "#c83a2a", "brzuch": 0.5, "wzrost": 1.05, "dodatek": "reklamowka" },
+      "idle": "stoi",
+      "grupa": "chlopaki",
+      "dialog": "chlopaki",
+      "reakcje": {
+        "dobrze": ["PLACEHOLDER: Dawaj, dawaj!", "PLACEHOLDER: Nagrywam!"],
+        "slabo": ["PLACEHOLDER: Słabo", "PLACEHOLDER: To był drift?"],
+        "uderzenie": ["PLACEHOLDER: Ooo nie"],
+        "czekanie": ["PLACEHOLDER: Nudy"]
+      }
+    },
+    "zbyszek": {
+      "imie": "Sąsiad Zbyszek",
+      "wyglad": { "skora": "#e0a882", "gora": "#6a6a5a", "paski": null, "dol": "#3a3a4a", "buty": "#3a2a1a", "wlosy": "#8a8a8a", "czapka": null, "czapkaKolor": null, "brzuch": 0.9, "wzrost": 1.0, "dodatek": null },
+      "idle": "rece",
+      "dialog": "zbyszek",
+      "auto": "cars/sedan-sports"
+    },
+    "halina": {
+      "imie": "Pani Halina",
+      "wyglad": { "skora": "#f0c8a8", "gora": "#7a3a6a", "paski": null, "dol": "#4a3a5a", "buty": "#2a1a1a", "wlosy": "#b04a2a", "czapka": null, "czapkaKolor": null, "brzuch": 0.4, "wzrost": 0.9, "dodatek": "reklamowka" },
+      "idle": "stoi",
+      "dialog": "halina"
+    },
+    "mietek": {
+      "imie": "Mietek",
+      "wyglad": { "skora": "#d8a07a", "gora": "#3a4a6a", "paski": null, "dol": "#3a4a6a", "buty": "#1a1a1a", "wlosy": "#4a3a2a", "czapka": "zimowa", "czapkaKolor": "#2a2a2a", "brzuch": 0.6, "wzrost": 1.02, "dodatek": "papieros" },
+      "idle": "pali",
+      "dialog": "mietek"
+    },
+    "zdzisio": {
+      "imie": "Pan Zdzisio",
+      "wyglad": { "skora": "#e8a080", "gora": "#5a4a2a", "paski": null, "dol": "#2a2a2a", "buty": "#3a2a1a", "wlosy": "#d8d8d8", "czapka": "daszek", "czapkaKolor": "#4a5a3a", "brzuch": 0.7, "wzrost": 0.95, "dodatek": "reklamowka" },
+      "idle": "kiwa",
+      "dialog": "zdzisio"
+    }
+  }
+}

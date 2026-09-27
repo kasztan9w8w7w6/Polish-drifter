@@ -1,12 +1,16 @@
 {
   "_help": "Misja: kroki po kolei. type: reach (point z mapy, stop: true = trzeba stanąć), battery (min %), wait (time s). goal = tekst celu na HUD, say = narrator na początku kroku, done = na końcu. hints: teksty na zdarzenia gry (low, warn, dead, respawn, shop), once = tylko raz.",
+  "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
   "id": "paczka",
-  "title": "Paczka",
-  "start": { "point": "spawn", "battery": 60 },
+  "title": "PLACEHOLDER: Paczka",
+  "start": {
+    "point": "spawn",
+    "battery": 60
+  },
   "intro": [
-    "Osiedle Kosmonautów. Trzecia w nocy. Mgła gęsta jak żurek u teściowej.",
-    "Nad blokami buczy maszt. Sąsiad z parteru mówi, że to 5G. Sąsiad z parteru wie wszystko.",
-    "Twój Polonez ma nowy akumulator. Z Chin. Ładuje się tylko wtedy, kiedy jedziesz bokiem."
+    "PLACEHOLDER: Osiedle Kosmonautów. Trzecia w nocy. Mgła gęsta jak żurek u teściowej.",
+    "PLACEHOLDER: Nad blokami buczy maszt. Sąsiad z parteru mówi, że to 5G. Sąsiad z parteru wie wszystko.",
+    "PLACEHOLDER: Twój Polonez ma nowy akumulator. Z Chin. Ładuje się tylko wtedy, kiedy jedziesz bokiem."
   ],
   "steps": [
     {
@@ -14,31 +18,39 @@
       "type": "reach",
       "point": "locker",
       "stop": true,
-      "goal": "Odbierz przesyłkę z Paczkoboxu przy Bloku 1",
-      "say": ["W Paczkoboxie przy Bloku 1 czeka przesyłka. Nadawca: nieznany. Waga: podejrzanie mała."],
-      "done": ["Skrytka 13 otwiera się z jękiem. W środku pudełko owinięte folią aluminiową. Trzy warstwy."]
+      "goal": "PLACEHOLDER: Odbierz przesyłkę z Paczkoboxu przy Bloku 1",
+      "say": [
+        "PLACEHOLDER: W Paczkoboxie przy Bloku 1 czeka przesyłka. Nadawca: nieznany. Waga: podejrzanie mała."
+      ],
+      "done": [
+        "PLACEHOLDER: Skrytka 13 otwiera się z jękiem. W środku pudełko owinięte folią aluminiową. Trzy warstwy."
+      ]
     },
     {
       "id": "ladowanie",
       "type": "battery",
       "min": 70,
-      "goal": "Naładuj baterię driftem do 70% (plac pod Supersamem)",
+      "goal": "PLACEHOLDER: Naładuj baterię driftem do 70% (plac pod Supersamem)",
       "say": [
-        "Pan Zdzisław z Bloku 4 nie otworzy nikomu, kto przyjedzie na przygaszonych światłach. „Oni tak przyjeżdżają”, mówi.",
-        "Bateria sama się nie naładuje. Plac pod Supersamem, za ul. Gagarina. Bokiem, szeroko i czysto – każde uderzenie to stracona seria."
+        "PLACEHOLDER: Pan Zdzisław z Bloku 4 nie otworzy nikomu, kto przyjedzie na przygaszonych światłach. „Oni tak przyjeżdżają”, mówi.",
+        "PLACEHOLDER: Bateria sama się nie naładuje. Plac pod Supersamem, za ul. Gagarina. Bokiem, szeroko i czysto – każde uderzenie to stracona seria."
       ],
-      "done": ["Reflektory świecą jak u prezesa spółdzielni. Można jechać."]
+      "done": [
+        "PLACEHOLDER: Reflektory świecą jak u prezesa spółdzielni. Można jechać."
+      ]
     },
     {
       "id": "dostawa",
       "type": "reach",
       "point": "delivery",
       "stop": true,
-      "goal": "Dowieź paczkę pod Blok 4 (punktowiec przy ul. Lotników)",
-      "say": ["Blok 4, punktowiec przy Lotników. Domofon nie działa od 1997 roku, ale pan Zdzisław z parteru i tak czuwa."],
+      "goal": "PLACEHOLDER: Dowieź paczkę pod Blok 4 (punktowiec przy ul. Lotników)",
+      "say": [
+        "PLACEHOLDER: Blok 4, punktowiec przy Lotników. Domofon nie działa od 1997 roku, ale pan Zdzisław z parteru i tak czuwa."
+      ],
       "done": [
-        "Okno na parterze uchyla się na dwa palce. Ręka w rękawicy kuchennej zabiera pudełko.",
-        "„Czapka z folii, rozmiar L. Nareszcie”. Okno się zamyka. Zasłony też."
+        "PLACEHOLDER: Okno na parterze uchyla się na dwa palce. Ręka w rękawicy kuchennej zabiera pudełko.",
+        "PLACEHOLDER: „Czapka z folii, rozmiar L. Nareszcie”. Okno się zamyka. Zasłony też."
       ]
     },
     {
@@ -46,19 +58,49 @@
       "type": "reach",
       "point": "shop",
       "stop": true,
-      "goal": "Wróć do Żappki 24h przy głównej i stań na świecącym polu",
-      "say": ["Czas wracać. Żappka 24h to jedyne miejsce na osiedlu, gdzie 5G nie ma zasięgu. Tak twierdzi pani ekspedientka."]
+      "goal": "PLACEHOLDER: Wróć do Żappki 24h przy głównej i stań na świecącym polu",
+      "say": [
+        "PLACEHOLDER: Czas wracać. Żappka 24h to jedyne miejsce na osiedlu, gdzie 5G nie ma zasięgu. Tak twierdzi pani ekspedientka."
+      ]
     }
   ],
   "outro": [
-    "Pani ekspedientka podaje ci hot-doga bez słowa. Zna cię.",
-    "Za oknem maszt buczy dalej. Ale to jutro. Albo za tydzień."
+    "PLACEHOLDER: Pani ekspedientka podaje ci hot-doga bez słowa. Zna cię.",
+    "PLACEHOLDER: Za oknem maszt buczy dalej. Ale to jutro. Albo za tydzień."
   ],
   "hints": [
-    { "on": "low", "once": true, "say": ["Reflektory mrugają. To bateria, nie 5G. Chyba. Drift ją naładuje."] },
-    { "on": "warn", "once": true, "say": ["Piszczy. Zostało dziesięć procent. Bokiem, na parking, już!"] },
-    { "on": "dead", "say": ["Silnik gaśnie. Cisza. Tylko maszt buczy coraz głośniej..."] },
-    { "on": "respawn", "say": ["Budzisz się w aucie. Nikt nie wie, jak tu wróciłeś. Najmniej ty."] },
-    { "on": "shop", "once": true, "say": ["Żappka. Bezpiecznie. Bateria się ładuje, a tu zapisuje się twoje życie."] }
+    {
+      "on": "low",
+      "once": true,
+      "say": [
+        "PLACEHOLDER: Reflektory mrugają. To bateria, nie 5G. Chyba. Drift ją naładuje."
+      ]
+    },
+    {
+      "on": "warn",
+      "once": true,
+      "say": [
+        "PLACEHOLDER: Piszczy. Zostało dziesięć procent. Bokiem, na parking, już!"
+      ]
+    },
+    {
+      "on": "dead",
+      "say": [
+        "PLACEHOLDER: Silnik gaśnie. Cisza. Tylko maszt buczy coraz głośniej..."
+      ]
+    },
+    {
+      "on": "respawn",
+      "say": [
+        "PLACEHOLDER: Budzisz się w aucie. Nikt nie wie, jak tu wróciłeś. Najmniej ty."
+      ]
+    },
+    {
+      "on": "shop",
+      "once": true,
+      "say": [
+        "PLACEHOLDER: Żappka. Bezpiecznie. Bateria się ładuje, a tu zapisuje się twoje życie."
+      ]
+    }
   ]
 }

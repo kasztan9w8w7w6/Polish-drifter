@@ -1,0 +1,14 @@
+{
+  "_help": "Rozmowa: węzły (nodes) po kolei od start. who = id postaci z postacie.json albo gracz. next = następny węzeł, choices = wybór odpowiedzi (text, next albo end, set = flagi), end = koniec rozmowy z wynikiem (misja może go sprawdzać). Bez next/choices/end = koniec.",
+  "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
+  "id": "wyscig-start",
+  "start": "a",
+  "nodes": {
+    "a": { "who": "zbyszek", "text": "PLACEHOLDER: Słyszałem, że chłopaki na placu klaskali. Na placu to każdy umie.", "next": "b" },
+    "b": { "who": "zbyszek", "text": "PLACEHOLDER: Dwa kółka dookoła osiedla. Meta tutaj, pod blokiem. Kto przegra, ten myje oba auta.", "choices": [
+      { "text": "PLACEHOLDER: Wchodzę.", "next": "c" },
+      { "text": "PLACEHOLDER: Jeszcze nie teraz.", "end": "odmowa" }
+    ] },
+    "c": { "who": "zbyszek", "text": "PLACEHOLDER: Ustaw się obok. Na trzy.", "end": "start" }
+  }
+}

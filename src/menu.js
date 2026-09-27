@@ -62,7 +62,7 @@ export function createMenu({ settings, paints, hooks }) {
         <div class="m-keys">${Object.keys(DEFAULT_KEYS)
           .map((a) => `<div><span>${KEY_NAMES[a]}</span><button data-key="${a}">${esc(settings.keys[a].map(keyLabel).join(' / '))}</button></div>`)
           .join('')}</div>
-        <p class="m-hint">Pad: RT gaz · LT hamulec · lewa gałka skręt · A / RB ręczny · Y reset · X kamera · ↑ długie · Start pauza</p>
+        <p class="m-hint">Pad: RT gaz · LT hamulec · lewa gałka skręt · A / RB ręczny · B rozmowa · Y reset · X kamera · ↑ długie · Start pauza</p>
         <nav class="row"><button data-go="defaultKeys">Domyślne klawisze</button></nav>
       </div>
       <nav class="row"><button data-go="back">Wróć</button></nav>`,

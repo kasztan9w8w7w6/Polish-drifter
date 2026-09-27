@@ -37,7 +37,7 @@ z osadzonymi danymi (serwer artefaktów nie serwuje `.glb`) w `public/`. Geometr
 | `public/assets/kenney/roads/*` (drogi, latarnie, śmietniki, roboty drogowe, słupy) | [City Kit (Roads)](https://kenney.nl/assets/city-kit-roads), `assets-src/kenney_city-kit-roads.zip` | Kenney | CC0 |
 | `public/assets/kenney/commercial/*` (bloki, pawilony, sklep, markiza) | [City Kit (Commercial)](https://kenney.nl/assets/city-kit-commercial) 2.1, `assets-src/kenney_city-kit-commercial_2.1.zip` | Kenney | CC0 |
 | `public/assets/kenney/suburban/*` (drzewa, płoty) | [City Kit (Suburban)](https://kenney.nl/assets/city-kit-suburban) 2.0, `assets-src/kenney_city-kit-suburban_20.zip` | Kenney | CC0 |
-| `public/assets/kenney/cars/*` (zaparkowane auta) | [Car Kit](https://kenney.nl/assets/car-kit), `assets-src/kenney_car-kit.zip` | Kenney | CC0 |
+| `public/assets/kenney/cars/*` (zaparkowane auta, auto Sąsiada Zbyszka w wyścigu) | [Car Kit](https://kenney.nl/assets/car-kit), `assets-src/kenney_car-kit.zip` | Kenney | CC0 |
 | `public/assets/kenney/racing/audio/engine.ogg`, `impact.ogg` | [Starter Kit Racing](https://github.com/KenneyNL/Starter-Kit-Racing) `audio/` | Kenney | CC0 |
 | `public/assets/kenney/racing/audio/skid.ogg` | jw. | [Landeplage](https://github.com/Landeplage) | CC0 |
 | `public/assets/kenney/city/*` (garaże) | [Starter Kit City Builder](https://github.com/KenneyNL/Starter-Kit-City-Builder) `models/` | Kenney | CC0 |
@@ -55,3 +55,9 @@ Generowane w kodzie: asfalt, żarówki i światła latarni, szyld „Żappka 24h
 - Model opon z v0.1.5 (usunięty w v0.2a) korzystał z pomysłów: [AC Advanced Gamepad Assist](https://github.com/adam10603/AC-Advanced-Gamepad-Assist): koła podążające za poślizgiem, limit kontry, tłumienie obrotu, skręt zależny od prędkości.
 - [REDLINE sandbox](https://github.com/seancope357/redline-sandbox): ręczny na Rapierze jako blokada tyłu + chwilowy spadek przyczepności tyłu, ograniczenie tempa skrętu.
 - Unity Input Manager „sensitivity/gravity”: płynna rampa klawiszy cyfrowych.
+
+## Postacie (v0.5b)
+
+Postacie na osiedlu i ich portrety w rozmowach są zrobione w kodzie gry (`src/npc.js`: bryły z prostopadłościanów,
+portret rysowany na kanwie 24 × 24) – bez zewnętrznych assetów. Gotowe modele CC0 (Kenney Mini Characters) nie były
+dostępne z tego środowiska; jak je podmienić: `docs/teksty.md` → „Postacie – modele 3D”.

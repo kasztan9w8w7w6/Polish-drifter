@@ -56,7 +56,16 @@ src/survival.js – pętla przetrwania (logika bez DOM, testy w Node): bateria (
                   reflektory (headlightLevel), 0% → gaśnięcie → ciemny ekran → restart z punktu zapisu, pole przed Żappką = 100% + zapis
 src/typewriter.js – pisanie jak na maszynie (przerwy po znakach interpunkcyjnych, `keys` = litery do kliknięć); narrator i dialogi
 src/narrator.js – narrator: tekst u góry, pisany typewriter.js, kliknięcie na literę (audio.type), znika po kilku sekundach, nie pauzuje gry
-src/mission.js  – wykonawca misji z plików danych; src/missions/*.json – kroki (reach / battery / wait), cele, teksty, podpowiedzi
+src/mission.js  – wykonawca misji z plików danych; src/missions/*.json – kroki (reach / battery / wait / talk / score / race),
+                  cele, teksty, podpowiedzi
+src/campaign.js – kolejność misji (src/story/kampania.json) i „Kontynuuj” (postęp { mission, step, save })
+src/story/      – teksty fabularne (wszystkie PLACEHOLDER, docs/teksty.md): postacie.json (imię, wygląd, rozmowa, okrzyki),
+                  dialogi/*.json (węzły, wybory, wynik), teksty.json (systemowe), kampania.json
+src/dialogue.js – logika rozmowy (węzły, wybory, wynik, pisanie), bez DOM; src/dialogueui.js – okienko u dołu z portretem, E/pad/dotyk
+src/npc.js      – postacie: bryły z kodu (albo .gltf z danych), animacja bezczynności, głowa za autem, dymki (DOM), portret pikselowy
+src/crowd.js    – kiedy chłopaki przy placu krzyczą (dobrze / słabo / uderzenie / czekanie), bez DOM
+src/race.js     – wyścig bez DOM: trasa z mapy (densify + CatmullRomCurve3), postęp i okrążenia, przeciwnik po trasie
+                  (hamowanie przed zakrętami, dopasowanie tempa, omijanie gracza); src/rival.js – jego auto (Car Kit, światła, kolizja)
 src/marker.js   – znacznik celu misji: słup światła nad celem + strzałka nad autem
 src/occlusion.js – obiekty zasłaniające auto robią się półprzezroczyste
 src/audio.js    – Howler.js: silnik (pitch z obrotów), pisk opon (z kąta), uderzenia
@@ -94,7 +103,10 @@ Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości n
   (bateria co najmniej `respawnMin`). Misja nie cofa się.
 - Żappka: stój (< 1 m/s) na polu `map.shop.pad` → ładowanie `shopCharge` %/s do 100% → zapis punktu odrodzenia.
 - Misja = plik JSON: `start` (punkt z mapy, bateria), `intro`, `steps` (type, point/min/time, goal, say, done), `outro`, `hints` (on: low/warn/dead/respawn/shop).
-  Punkty celów są w pliku mapy (`points`). Nowa misja = nowy plik, bez kodu (na razie main.js startuje `paczka.json`).
+  Punkty celów są w pliku mapy (`points`), postacie w `npcs` (cel `npc:<id>`), trasy wyścigów w `routes`. Nowa misja = nowy
+  plik + wpis w `src/story/kampania.json`, bez kodu.
+- Kroki v0.5b: `talk` (npc, dialog, result, refuse), `score` (strefa `point`, `min` pkt w `time` s od wjazdu, `fail`),
+  `race` (route, laps, rival – postać z `auto`, `fail`). Rozmowa: stój < 1,5 m/s przy postaci (< 4,5 m), E / pad B / dotyk.
 
 ## Model jazdy (skrót)
 
