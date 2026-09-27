@@ -1,23 +1,111 @@
-// Keyboard state. Handles WASD, arrows and a few one-shot action keys.
-export function createInput(actions = {}) {
+// Keyboard + gamepad (Gamepad API) merged into one analog control state:
+// { throttle 0..1, brake 0..1, steer -1..1 (+ = left), handbrake 0..1 }.
+// Keyboard keys are digital, so their values ramp smoothly (Unity-style sensitivity/gravity)
+// instead of jumping 0 → 1; gamepad triggers and stick are used as-is (proportional, with a stick deadzone).
+
+// units per second: steering 0 → 1 in 0.4 s, back to centre in 0.25 s; pedals a bit quicker
+export const KEY_RAMP = { steerUp: 2.5, steerDown: 4, pedalUp: 4, pedalDown: 6 };
+const STEER_DEADZONE = 0.12;
+
+// Gamepad buttons (standard mapping): 0 A, 1 B, 2 X, 3 Y, 4 LB, 5 RB, 6 LT, 7 RT, 8 Back, 9 Start, 12 d-pad up
+export const PAD_ACTIONS = { 3: 'reset', 2: 'camera', 9: 'pause', 12: 'lights', 8: 'mission' };
+// Keys the player can rebind come from settings.js (DEFAULT_KEYS); these developer keys are fixed
+const FIXED_KEYS = { KeyG: 'gui', KeyF: 'debug', KeyN: 'mission', Enter: 'confirm' };
+const ONE_SHOT = ['reset', 'camera', 'lights', 'pause'];
+// Some remote desktops / virtual keyboards send an empty `code`: rebuild it from the character
+const codeOf = (e) => e.code || (e.key === ' ' ? 'Space' : e.key?.length === 1 ? `Key${e.key.toUpperCase()}` : e.key);
+
+// Move `value` towards `target` at `up` units/s when pushing further out, `down` when returning or reversing
+export function rampValue(value, target, dt, up, down) {
+  const rate = Math.abs(target) > Math.abs(value) && Math.sign(target) !== -Math.sign(value) ? up : down;
+  return value + Math.max(-rate * dt, Math.min(rate * dt, target - value));
+}
+
+// actions: { reset, camera, lights, pause, gui, debug, mission, confirm } callbacks; bindings: settings.js keys (live object)
+export function createInput(actions = {}, bindingsOf) {
+  const binds = typeof bindingsOf === 'function' ? bindingsOf : () => bindingsOf;
   const down = new Set();
+  let capture = null; // the menu waits for a key to rebind
   addEventListener('keydown', (e) => {
-    if (!down.has(e.code) && actions[e.code]) actions[e.code]();
-    down.add(e.code);
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return; // typing in lil-gui
+    const code = codeOf(e);
+    if (capture) {
+      e.preventDefault();
+      const cb = capture;
+      capture = null;
+      cb(code);
+      return;
+    }
+    const action = FIXED_KEYS[code] ?? ONE_SHOT.find((a) => binds()[a]?.includes(code));
+    // e.repeat instead of "was it already down": a keyup lost to a focus change can't block the key any more
+    if (action && !e.repeat) actions[action]?.();
+    down.add(code);
     if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
   });
-  addEventListener('keyup', (e) => down.delete(e.code));
+  addEventListener('keyup', (e) => down.delete(codeOf(e)));
   addEventListener('blur', () => down.clear());
+  document.addEventListener('visibilitychange', () => down.clear());
 
-  const any = (...codes) => codes.some((c) => down.has(c));
+  const held = (action) => (binds()[action] ?? []).some((c) => down.has(c));
+  const keys = { throttle: 0, brake: 0, steer: 0, handbrake: 0 };
+  const ramp = (value, target, dt, up, down) => rampValue(value, target, dt, up, down);
+  let padButtons = [];
+  let padConnected = false;
+  const sources = []; // more controls read every frame (touch.js), merged like the pad
+  let enabled = true;
+
+  function readPad() {
+    const pad = [...(navigator.getGamepads?.() ?? [])].find((p) => p?.connected);
+    padConnected = !!pad;
+    if (!pad) return null;
+    const pressed = pad.buttons.map((b) => b.pressed);
+    for (const [i, action] of Object.entries(PAD_ACTIONS)) if (pressed[i] && !padButtons[i]) actions[action]?.();
+    padButtons = pressed;
+    const x = pad.axes[0] ?? 0;
+    const stick = Math.abs(x) < STEER_DEADZONE ? 0 : Math.sign(x) * (Math.abs(x) - STEER_DEADZONE) / (1 - STEER_DEADZONE);
+    return {
+      throttle: pad.buttons[7]?.value ?? 0,
+      brake: pad.buttons[6]?.value ?? 0,
+      steer: -stick,
+      handbrake: Math.max(pad.buttons[0]?.value ?? 0, pad.buttons[5]?.value ?? 0),
+    };
+  }
+
   return {
-    read() {
-      return {
-        throttle: any('KeyW', 'ArrowUp'),
-        brake: any('KeyS', 'ArrowDown'),
-        steer: (any('KeyA', 'ArrowLeft') ? 1 : 0) - (any('KeyD', 'ArrowRight') ? 1 : 0),
-        handbrake: any('Space'),
-      };
+    get gamepadConnected() {
+      return padConnected;
+    },
+    // Next key press goes to cb(code) instead of the game (rebinding in the menu)
+    captureKey(cb) {
+      capture = cb;
+    },
+    // Another control source: read(dt) → { throttle, brake, steer, handbrake }
+    addSource(read) {
+      sources.push(read);
+    },
+    // Paused: everything reads as released (keys held while the app went away don't stick)
+    set enabled(on) {
+      enabled = on;
+      if (!on) down.clear();
+    },
+    read(dt) {
+      keys.throttle = ramp(keys.throttle, held('gas') ? 1 : 0, dt, KEY_RAMP.pedalUp, KEY_RAMP.pedalDown);
+      keys.brake = ramp(keys.brake, held('brake') ? 1 : 0, dt, KEY_RAMP.pedalUp, KEY_RAMP.pedalDown);
+      keys.steer = ramp(keys.steer, (held('left') ? 1 : 0) - (held('right') ? 1 : 0), dt, KEY_RAMP.steerUp, KEY_RAMP.steerDown);
+      keys.handbrake = held('handbrake') ? 1 : 0; // handbrake stays instant – it's a yank, not a pedal
+      const pad = readPad();
+      const all = [pad, ...sources.map((r) => r(dt))].filter(Boolean);
+      if (!enabled) return { throttle: 0, brake: 0, steer: 0, handbrake: 0 };
+      // Whichever device gives the bigger value wins, so both can be used at once
+      const pick = (a, b) => (Math.abs(a) >= Math.abs(b) ? a : b);
+      const out = { ...keys };
+      for (const o of all) {
+        out.throttle = Math.max(out.throttle, o.throttle);
+        out.brake = Math.max(out.brake, o.brake);
+        out.steer = pick(out.steer, o.steer);
+        out.handbrake = Math.max(out.handbrake, o.handbrake);
+      }
+      return out;
     },
   };
 }

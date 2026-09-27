@@ -3,17 +3,24 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Polish Drifter</title>
+  <title>Agro Drifter</title>
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
   <div id="hud">
-    <div id="speed">0 <small>km/h</small></div>
+    <canvas id="dashboard" width="256" height="100" aria-label="Zegary: prędkość, obroty, bateria"></canvas>
+    <div id="narrator"></div>
+    <div id="goal"></div>
     <div id="drift"><span id="drift-points"></span><span id="drift-combo"></span></div>
-    <div id="total">Wynik: <b id="score">0</b> · Rekord: <b id="best">0</b></div>
+    <div id="telemetry"></div>
+    <div id="total">Rekord: <b id="best">0</b></div>
+    <div id="toast"></div>
   </div>
+  <div id="fade"><div id="fade-msg"><b>Bateria padła</b><span>Maszt buczy coraz głośniej. Wracasz do ostatniego zapisu…</span></div></div>
+  <div id="summary" hidden></div>
+  <div id="rotate"><div class="phone"></div><b>Obróć telefon</b><span>Agro Drifter działa w poziomie</span></div>
   <div id="help">
-    <b>W/S</b> gaz/hamulec · <b>A/D</b> skręt · <b>Spacja</b> ręczny · <b>R</b> reset · <b>C</b> kamera · <b>G</b> panel tuningu · <b>F</b> debug fizyki
+    <b>W/S</b> gaz/hamulec · <b>A/D</b> skręt · <b>Spacja</b> ręczny · <b>R</b> reset · <b>C</b> kamera · <b>G</b> tuning · <b>F</b> kolizje · <b>L</b> długie · <b>Esc</b> menu · pad: RT/LT, lewa gałka, A ręczny, Y reset, X kamera, ↑ długie, Start menu
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>

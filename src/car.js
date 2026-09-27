@@ -1,118 +1,159 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
+import { loadGltf } from './gltf.js';
 
-// Live-tunable parameters (exposed in lil-gui).
-export const tuning = {
-  engineForce: 2600,
-  brakeForce: 80,
-  maxSteer: 0.6,
-  steerSpeed: 4, // rad/s the wheels turn towards the target
-  frontGrip: 3.2,
-  rearGrip: 2.2,
-  handbrakeGrip: 0.7,
-  handbrakeForce: 40,
-};
+// Visual side of the car only. Physics lives in vehicle.ts; this module just mirrors its state.
+// Model: "1993 FSO Polonez MR93 (LP)" by KrStolorz (Sketchfab, see CREDITS.md), converted by
+// scripts/convert-assets.mjs (logo removed, fictional plate). The wheels are bones of the skinned body,
+// so they spin and steer by rotating those bones. If the model can't be loaded, a primitive car is used.
+const WHEEL_RADIUS = 0.3;
+const RIDE_HEIGHT = 0.72; // car origin above the ground (vehicle.ts)
+export const headlightSettings = { intensity: 30, range: 45 }; // decay 1: a long, even beam on the asphalt
+export const carLook = { colour: '', paint: '#c9b48a' }; // colour = name from the profile's palette, paint = hex
 
-// cannon-es RaycastVehicle defaults: forward = +X, up = +Y, right(axle) = +Z.
-const WHEELS = [
-  { x: 1.3, z: 0.85, front: true },
-  { x: 1.3, z: -0.85, front: true },
-  { x: -1.3, z: 0.85, front: false },
-  { x: -1.3, z: -0.85, front: false },
-];
-const WHEEL_RADIUS = 0.36;
+// profile: car profile (src/cars/*.json) – model path, length, paint material and palette
+export async function createCarView(scene, profile) {
+  const look = profile.look;
+  carLook.colour = look.defaultPaint;
+  carLook.paint = look.paints[look.defaultPaint];
+  const root = new THREE.Group(); // follows the physics pose
+  const body = new THREE.Group(); // visual lean inside it
+  root.add(body);
+  scene.add(root);
 
-export function createCar(scene, world, material) {
-  const chassisBody = new CANNON.Body({ mass: 1100, material });
-  chassisBody.addShape(new CANNON.Box(new CANNON.Vec3(2.1, 0.35, 0.9)), new CANNON.Vec3(0, 0.1, 0));
-  chassisBody.addShape(new CANNON.Box(new CANNON.Vec3(1.1, 0.3, 0.8)), new CANNON.Vec3(-0.3, 0.7, 0));
-  chassisBody.angularDamping = 0.4;
-
-  const vehicle = new CANNON.RaycastVehicle({ chassisBody });
-  for (const w of WHEELS) {
-    vehicle.addWheel({
-      radius: WHEEL_RADIUS,
-      directionLocal: new CANNON.Vec3(0, -1, 0),
-      axleLocal: new CANNON.Vec3(0, 0, 1),
-      chassisConnectionPointLocal: new CANNON.Vec3(w.x, -0.05, w.z),
-      suspensionStiffness: 35,
-      suspensionRestLength: 0.35,
-      maxSuspensionTravel: 0.3,
-      maxSuspensionForce: 1e5,
-      dampingRelaxation: 2.3,
-      dampingCompression: 4.4,
-      frictionSlip: w.front ? tuning.frontGrip : tuning.rearGrip,
-      rollInfluence: 0.02,
-      useCustomSlidingRotationalSpeed: true,
-      customSlidingRotationalSpeed: -30,
+  let wheels = []; // { bone, rest, up, axle, front } for the model, or meshes for the fallback
+  let fallbackWheels = null;
+  try {
+    const gltf = await loadGltf(`${import.meta.env.BASE_URL}${look.model}`);
+    wheels = fitPolonez(gltf.scene, body, look.length);
+    if (new URLSearchParams(location.search).has('debugcar')) {
+      root.updateMatrixWorld(true);
+      console.log('wheels', JSON.stringify(wheels.map((w) => [w.bone.name, w.bone.getWorldPosition(new THREE.Vector3()).toArray().map((v) => +v.toFixed(3))])));
+      console.log('box', JSON.stringify(new THREE.Box3().setFromObject(body, true)));
+    }
+  } catch (err) {
+    console.warn('Polonez model not loaded, using the primitive car', err);
+    body.add(buildChassisMesh());
+    fallbackWheels = Array.from({ length: 4 }, () => {
+      const m = buildWheelMesh();
+      scene.add(m);
+      return m;
     });
   }
-  vehicle.addToWorld(world);
 
-  const chassisMesh = buildChassisMesh();
-  scene.add(chassisMesh);
-  const wheelMeshes = vehicle.wheelInfos.map(() => {
-    const m = buildWheelMesh();
-    scene.add(m);
-    return m;
+  const q = new THREE.Quaternion();
+  function sync(state) {
+    root.position.copy(state.position);
+    root.quaternion.copy(state.quaternion);
+    body.rotation.set(state.bodyRoll ?? 0, 0, state.bodyPitch ?? 0); // visual lean only
+    if (fallbackWheels) {
+      state.wheels.forEach((w, i) => {
+        fallbackWheels[i].position.copy(w.position);
+        fallbackWheels[i].quaternion.copy(w.quaternion);
+      });
+      return;
+    }
+    for (const w of wheels) {
+      w.bone.quaternion.copy(w.rest);
+      if (w.front) w.bone.quaternion.multiply(q.setFromAxisAngle(w.up, state.steerAngle));
+      w.bone.quaternion.multiply(q.setFromAxisAngle(w.axle, -state.wheelSpin));
+    }
+  }
+
+  // Headlights: two spot lights on the bonnet, aimed a bit down the road
+  const headlights = [0.6, -0.6].map((z) => {
+    const l = new THREE.SpotLight(0xfff1d0, headlightSettings.intensity, headlightSettings.range, 0.42, 0.45, 1);
+    l.position.set(2.1, 0.0, z);
+    l.target.position.set(20, -0.9, z * 3);
+    root.add(l, l.target);
+    return l;
   });
-
-  const spawn = { position: new CANNON.Vec3(0, 1.5, 0), quaternion: new CANNON.Quaternion() };
-  let steer = 0;
-
-  function reset() {
-    chassisBody.position.copy(spawn.position);
-    chassisBody.quaternion.copy(spawn.quaternion);
-    chassisBody.velocity.setZero();
-    chassisBody.angularVelocity.setZero();
-  }
-  reset();
-
-  function applyInput(input, dt) {
-    // Speed along the car's forward axis decides whether S brakes or reverses.
-    const fwd = chassisBody.quaternion.vmult(new CANNON.Vec3(1, 0, 0));
-    const fwdSpeed = fwd.dot(chassisBody.velocity);
-
-    let engine = 0;
-    let brake = 0;
-    if (input.throttle) engine = tuning.engineForce;
-    if (input.brake) {
-      if (fwdSpeed > 1) brake = tuning.brakeForce;
-      else engine = -tuning.engineForce * 0.5;
+  // Battery (survival.js headlightLevel): brightness and reach 0..1; high beams brighter and further
+  const power = { brightness: 1, reach: 1, high: false };
+  const lampMats = [];
+  function applyHeadlights() {
+    const k = power.high ? 1.6 : 1;
+    for (const l of headlights) {
+      l.intensity = headlightSettings.intensity * power.brightness * k;
+      l.distance = headlightSettings.range * (0.2 + 0.8 * power.reach) * (power.high ? 1.5 : 1);
+      l.angle = power.high ? 0.5 : 0.42;
     }
-
-    const target = (input.steer || 0) * tuning.maxSteer;
-    steer += THREE.MathUtils.clamp(target - steer, -tuning.steerSpeed * dt, tuning.steerSpeed * dt);
-
-    for (let i = 0; i < 4; i++) {
-      const front = WHEELS[i].front;
-      vehicle.setSteeringValue(front ? steer : 0, i);
-      vehicle.applyEngineForce(front ? 0 : engine, i); // RWD, obviously
-      vehicle.setBrake(brake + (!front && input.handbrake ? tuning.handbrakeForce : 0), i);
-      vehicle.wheelInfos[i].frictionSlip = front
-        ? tuning.frontGrip
-        : input.handbrake ? tuning.handbrakeGrip : tuning.rearGrip;
-    }
+    // (collected on first use: pixelart.js swaps the materials for toon ones after the car is built)
+    if (!lampMats.length) root.traverse((o) => o.isMesh && [].concat(o.material).forEach((m) => m.name === 'Headlight' && lampMats.push(m)));
+    for (const m of lampMats) m.emissiveIntensity = 2.5 * Math.max(0.05, power.brightness);
   }
-
-  function sync() {
-    chassisMesh.position.copy(chassisBody.position);
-    chassisMesh.quaternion.copy(chassisBody.quaternion);
-    for (let i = 0; i < 4; i++) {
-      // updateWheelTransform() clears isInContact as a side effect; keep the value from the last step
-      const contact = vehicle.wheelInfos[i].isInContact;
-      vehicle.updateWheelTransform(i);
-      vehicle.wheelInfos[i].isInContact = contact;
-      const t = vehicle.wheelInfos[i].worldTransform;
-      wheelMeshes[i].position.copy(t.position);
-      wheelMeshes[i].quaternion.copy(t.quaternion);
-    }
+  function setLights(brightness, reach, high) {
+    Object.assign(power, { brightness, reach, high });
+    applyHeadlights();
   }
+  // (materials are swapped for toon ones later, so look the paint up by name)
+  function applyLook() {
+    root.traverse((o) => o.isMesh && [].concat(o.material).forEach((m) => m.name === look.paintMaterial && m.color.set(carLook.paint)));
+  }
+  applyLook();
 
-  return { vehicle, chassisBody, chassisMesh, wheelMeshes, applyInput, sync, reset, isRear: (i) => !WHEELS[i].front };
+  return { root, sync, applyHeadlights, setLights, applyLook, hasModel: !fallbackWheels };
 }
 
-// Boxy 80s Polish sedan silhouette built from primitives (placeholder for a GLTF model).
+// Scale the model to `length`, turn it so the headlights point along +X, stand it on the ground and
+// find the wheel bones.
+function fitPolonez(model, parent, length) {
+  parent.add(model);
+  model.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(model, true);
+  const size = box.getSize(new THREE.Vector3());
+  const centre = box.getCenter(new THREE.Vector3());
+  // Front = where the headlight glass is
+  let headlight = null;
+  model.traverse((o) => {
+    if (o.isMesh && /headlight/i.test([].concat(o.material)[0]?.name ?? '')) headlight = o;
+  });
+  const front = headlight ? new THREE.Box3().setFromObject(headlight, true).getCenter(new THREE.Vector3()).sub(centre) : new THREE.Vector3(0, 0, 1);
+  front.y = 0;
+  const yaw = Math.atan2(-front.z, front.x); // rotate this much the other way to face +X
+  const holder = new THREE.Group();
+  parent.add(holder);
+  holder.add(model);
+  holder.rotation.y = -yaw;
+  holder.scale.setScalar(length / Math.max(size.x, size.z));
+  holder.updateMatrixWorld(true);
+  const fitted = new THREE.Box3().setFromObject(holder, true);
+  const c2 = fitted.getCenter(new THREE.Vector3());
+  holder.position.set(-c2.x, -RIDE_HEIGHT - fitted.min.y, -c2.z);
+  holder.updateMatrixWorld(true);
+
+  // Materials: lights glow, glass tinted
+  model.traverse((o) => {
+    if (!o.isMesh) return;
+    o.frustumCulled = false; // skinned bounds don't follow the bones
+    for (const m of [].concat(o.material)) {
+      if (m.name === 'Headlight') Object.assign(m, { emissive: new THREE.Color(0xfff4d8), emissiveIntensity: 2.5 });
+      if (m.name === 'Tail_lights') Object.assign(m, { emissive: new THREE.Color(0xff2010), emissiveIntensity: 1.6 });
+      if (m.name === 'Fog_lights' || m.name === 'Reverse_lights') m.color?.set(0x9a9a90);
+      if (m.name === 'Glass') Object.assign(m, { opacity: 0.35, color: new THREE.Color(0x203040) });
+    }
+  });
+
+  // Wheel bones (F_wheel.L, B_wheel.R, …): rotation axes expressed in each bone's own space
+  const wheels = [];
+  const parentInv = new THREE.Quaternion();
+  const bodyQ = parent.getWorldQuaternion(new THREE.Quaternion());
+  model.traverse((o) => {
+    if (!o.isBone || !/wheel/i.test(o.name)) return;
+    o.parent.getWorldQuaternion(parentInv);
+    const boneWorld = parentInv.clone().multiply(o.quaternion);
+    const toLocal = boneWorld.clone().invert().multiply(bodyQ);
+    wheels.push({
+      bone: o,
+      rest: o.quaternion.clone(),
+      front: /^F_/i.test(o.name),
+      up: new THREE.Vector3(0, 1, 0).applyQuaternion(toLocal).normalize(),
+      axle: new THREE.Vector3(0, 0, 1).applyQuaternion(toLocal).normalize(),
+    });
+  });
+  return wheels;
+}
+
+// Boxy 80s Polish sedan silhouette built from primitives (fallback if the model doesn't load).
 function buildChassisMesh() {
   const g = new THREE.Group();
   const paint = new THREE.MeshStandardMaterial({ color: 0xc8102e, metalness: 0.4, roughness: 0.35 });
@@ -120,37 +161,28 @@ function buildChassisMesh() {
   const glass = new THREE.MeshStandardMaterial({ color: 0x223344, metalness: 0.9, roughness: 0.1 });
   const lamp = new THREE.MeshStandardMaterial({ color: 0xffffee, emissive: 0xffffcc, emissiveIntensity: 3 });
   const tail = new THREE.MeshStandardMaterial({ color: 0x550000, emissive: 0xff1100, emissiveIntensity: 2 });
-
   const add = (geo, mat, x, y, z) => {
     const m = new THREE.Mesh(geo, mat);
     m.position.set(x, y, z);
-    m.castShadow = true;
     g.add(m);
     return m;
   };
-  add(new THREE.BoxGeometry(4.2, 0.35, 1.8), white, 0, -0.05, 0); // lower half white
-  add(new THREE.BoxGeometry(4.2, 0.35, 1.8), paint, 0, 0.3, 0); // upper half red
-  add(new THREE.BoxGeometry(2.2, 0.55, 1.6), paint, -0.3, 0.72, 0);
-  add(new THREE.BoxGeometry(2.25, 0.4, 1.62), glass, -0.3, 0.72, 0);
+  add(new THREE.BoxGeometry(4.3, 0.32, 1.68), white, 0, -0.14, 0); // lower half white
+  add(new THREE.BoxGeometry(4.3, 0.32, 1.68), paint, 0, 0.18, 0); // upper half red
+  add(new THREE.BoxGeometry(2.1, 0.5, 1.54), paint, -0.3, 0.58, 0);
+  add(new THREE.BoxGeometry(2.15, 0.36, 1.56), glass, -0.3, 0.58, 0);
   for (const z of [0.6, -0.6]) {
-    add(new THREE.BoxGeometry(0.05, 0.18, 0.4), lamp, 2.11, 0.25, z);
-    add(new THREE.BoxGeometry(0.05, 0.16, 0.45), tail, -2.11, 0.3, z);
+    add(new THREE.BoxGeometry(0.05, 0.18, 0.4), lamp, 2.16, 0.14, z);
+    add(new THREE.BoxGeometry(0.05, 0.16, 0.45), tail, -2.16, 0.18, z);
   }
   return g;
 }
 
 function buildWheelMesh() {
   const g = new THREE.Group();
-  const tyre = new THREE.Mesh(
-    new THREE.CylinderGeometry(WHEEL_RADIUS, WHEEL_RADIUS, 0.28, 20),
-    new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.9 }),
-  );
+  const tyre = new THREE.Mesh(new THREE.CylinderGeometry(WHEEL_RADIUS, WHEEL_RADIUS, 0.28, 20), new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.9 }));
   tyre.rotation.x = Math.PI / 2; // cylinder axis Y -> axle Z
-  tyre.castShadow = true;
-  const rim = new THREE.Mesh(
-    new THREE.CylinderGeometry(WHEEL_RADIUS * 0.6, WHEEL_RADIUS * 0.6, 0.3, 8),
-    new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.9, roughness: 0.3 }),
-  );
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(WHEEL_RADIUS * 0.6, WHEEL_RADIUS * 0.6, 0.3, 8), new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.9, roughness: 0.3 }));
   rim.rotation.x = Math.PI / 2;
   g.add(tyre, rim);
   return g;

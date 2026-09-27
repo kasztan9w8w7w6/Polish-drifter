@@ -1,12 +1,125 @@
 html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-family: system-ui, sans-serif; color: #fff; }
 canvas { display: block; }
 #hud { position: fixed; inset: 0; pointer-events: none; text-shadow: 0 2px 6px #000a; }
-#speed { position: absolute; right: 24px; bottom: 20px; font-size: 48px; font-weight: 800; }
-#speed small { font-size: 18px; opacity: .7; }
+#hud { font-family: 'Silkscreen', monospace; }
 #drift { position: absolute; top: 18%; width: 100%; text-align: center; font-weight: 900; }
 #drift-points { display: block; font-size: 56px; color: #ffdf4a; }
 #drift-combo { font-size: 24px; color: #ff4a4a; }
 #drift.banked #drift-points { color: #6bff8a; transition: color .2s; }
 #drift.lost #drift-points { color: #ff4a4a; text-decoration: line-through; }
 #total { position: absolute; left: 24px; top: 16px; font-size: 20px; }
-#help { position: fixed; left: 0; right: 0; bottom: 8px; text-align: center; font-size: 13px; opacity: .75; pointer-events: none; }
+#help { position: fixed; left: 0; right: 0; bottom: 8px; text-align: center; font-size: 11px; opacity: .6; pointer-events: none; }
+#telemetry { position: absolute; left: 24px; top: 44px; font-size: 14px; opacity: .8; font-variant-numeric: tabular-nums; }
+#json-box { position: fixed; z-index: 10; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100% - 32px));
+  background: #111c; backdrop-filter: blur(6px); border: 1px solid #fff3; border-radius: 8px; padding: 12px 16px; font-size: 14px; }
+#json-box textarea { width: 100%; height: 50vh; box-sizing: border-box; background: #000a; color: #dfe; font: 12px ui-monospace, monospace; border: 1px solid #fff3; }
+#json-box button { margin: 8px 8px 0 0; padding: 6px 14px; font: inherit; cursor: pointer; }
+#toast { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); font-size: 22px; color: #ffdf4a; opacity: 0; transition: opacity .3s; }
+#toast.on { opacity: 1; transition: none; }
+
+/* Narrator: typed text at the top */
+#narrator { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); width: min(620px, calc(100% - 380px)); text-align: center;
+  font-size: 17px; line-height: 1.45; color: #e8f0d8; text-wrap: balance; }
+#narrator:not(:empty) { padding: 8px 14px; background: #000b; border: 2px solid #ffffff22; }
+#goal { position: absolute; left: 24px; top: 70px; max-width: 40ch; font-size: 13px; color: #ffd24a; }
+#goal small { color: #fff; opacity: .7; }
+/* Battery flat: the screen goes dark */
+#fade { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; display: grid; place-items: center; font-family: 'Silkscreen', monospace; }
+#fade-msg { text-align: center; opacity: 0; transition: opacity .6s; display: grid; gap: 10px; padding-inline: 16px; }
+#fade-msg b { font-size: 34px; color: #ff4a4a; }
+#fade-msg span { font-size: 15px; color: #ccc; }
+#fade.dark #fade-msg { opacity: 1; }
+/* Mission summary */
+#summary { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 5; min-width: min(360px, calc(100% - 32px)); padding: 16px 22px;
+  background: #000d; border: 2px solid #ffd24a; font-family: 'Silkscreen', monospace; text-align: center; display: grid; gap: 8px; }
+#summary[hidden] { display: none; }
+#summary h2 { margin: 0; font-size: 22px; color: #ffd24a; }
+#summary p { margin: 0; display: flex; justify-content: space-between; gap: 24px; font-size: 15px; }
+#summary small { opacity: .7; font-size: 11px; }
+@media (max-width: 820px) { #narrator { top: 110px; width: calc(100% - 32px); font-size: 14px; } }
+
+
+/* ---------- Touch devices (body.touch, touchstate.js isTouchDevice) ---------- */
+#rotate { display: none; }
+body.touch #help { display: none; }
+#touch { position: fixed; inset: 0; z-index: 4; pointer-events: none; font-family: 'Silkscreen', monospace; user-select: none; -webkit-user-select: none;
+  -webkit-touch-callout: none; touch-action: none; }
+#touch button { pointer-events: auto; touch-action: none; font: inherit; color: #fff; background: #0008; border: 3px solid #ffffff55;
+  border-radius: 0; box-shadow: inset -4px -4px 0 #0006, inset 4px 4px 0 #ffffff18; text-transform: uppercase; }
+#touch button.on { background: #ffdf4a66; border-color: #ffdf4a; }
+#t-stick { position: absolute; left: 0; top: 30%; bottom: 0; width: 45%; pointer-events: auto; touch-action: none; }
+#t-arrows { position: absolute; left: max(16px, env(safe-area-inset-left)); bottom: 18px; display: none; gap: 12px; }
+#touch.arrows #t-stick { display: none; }
+#touch.arrows #t-arrows { display: flex; }
+#t-arrows button { width: 84px; height: 84px; font-size: 28px; }
+#t-pedals { position: absolute; right: max(16px, env(safe-area-inset-right)); bottom: 18px; display: grid; gap: 10px;
+  grid-template-columns: 78px 96px; grid-template-rows: 64px 96px; grid-template-areas: 'hb hb' 'brake gas'; }
+#t-pedals .hb { grid-area: hb; font-size: 13px; }
+#t-pedals .brake { grid-area: brake; font-size: 11px; line-height: 1.2; }
+#t-pedals .brake small { font-size: 9px; opacity: .7; }
+#t-pedals .gas { grid-area: gas; font-size: 18px; background: #0b300d99; border-color: #9dff6a88; }
+#t-pedals .gas.on { background: #9dff6a66; border-color: #9dff6a; }
+#t-top { position: absolute; left: 50%; transform: translateX(-50%); bottom: 10px; display: flex; gap: 8px; }
+#t-top button { width: 42px; height: 34px; font-size: 13px; opacity: .8; }
+/* HUD on a small landscape screen: compact dash top right, narrator narrower, goal smaller */
+body.touch #total { left: max(12px, env(safe-area-inset-left)); top: 8px; font-size: 14px; }
+body.touch #telemetry { left: max(12px, env(safe-area-inset-left)); top: 28px; font-size: 11px; }
+body.touch #goal { left: max(12px, env(safe-area-inset-left)); top: 46px; font-size: 11px; max-width: 30ch; }
+body.touch #narrator { top: 66px; left: max(12px, env(safe-area-inset-left)); transform: none; width: calc(100% - 350px); min-width: 220px; font-size: 13px; line-height: 1.35; text-align: left; }
+body.touch #narrator:not(:empty) { padding: 6px 10px; }
+body.touch #drift { top: 26%; }
+body.touch #drift-points { font-size: 38px; }
+body.touch #toast { font-size: 16px; top: 40%; }
+body.touch .lil-gui.root { max-height: 80vh; }
+@media (max-width: 700px) { body.touch #narrator { top: 110px; width: calc(100% - 32px); } }
+/* Portrait phone: the game is landscape – a board asks to turn it (iPhone can't lock the orientation) */
+@media (orientation: portrait) {
+  body.touch #rotate { position: fixed; inset: 0; z-index: 30; display: grid; place-content: center; justify-items: center; gap: 14px; background: #050507;
+    font-family: 'Silkscreen', monospace; text-align: center; padding-inline: 16px; }
+  body.touch #rotate b { font-size: 26px; color: #ffdf4a; }
+  body.touch #rotate span { font-size: 13px; opacity: .75; }
+  body.touch #rotate .phone { width: 46px; height: 80px; border: 4px solid #ffdf4a; animation: turn 2s steps(4) infinite; }
+  body.touch #touch { display: none; }
+}
+@keyframes turn { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+#t-stick .back, #t-stick .front { border-radius: 0 !important; } /* pixel look for the nipplejs joystick */
+
+/* Dashboard (dashboard.js): a small canvas scaled up without smoothing */
+#dashboard { position: absolute; right: 16px; bottom: 26px; width: clamp(300px, 38vw, 512px); max-width: calc(100% - 32px); height: auto; image-rendering: pixelated;
+  filter: drop-shadow(0 0 6px #ff9a3a22); }
+body.touch #dashboard { top: 4px; bottom: auto; right: max(8px, env(safe-area-inset-right)); width: 300px; }
+body.paused #hud, body.paused #touch, body.paused #help { visibility: hidden; }
+
+/* Menu (menu.js): dark, pixel font, warm amber */
+#menu { position: fixed; inset: 0; z-index: 25; display: grid; place-items: center; font-family: 'Silkscreen', monospace; color: #e8dcc0;
+  background: radial-gradient(ellipse at 50% 60%, #0000 0%, #000c 60%, #000f 100%); padding-inline: 16px; overflow-y: auto; }
+#menu[hidden] { display: none; }
+#menu.m-garage { background: linear-gradient(90deg, #000e 0%, #0009 32%, #0000 60%); place-items: center start; }
+.m-box { display: grid; gap: 14px; width: min(460px, 100%); padding-block: 20px; }
+#menu.m-settings .m-box { width: min(640px, 100%); }
+.m-title h1 { margin: 0; font-size: clamp(30px, 6vw, 54px); line-height: 1; color: #ffb347; text-shadow: 3px 3px 0 #5a2a08, 0 0 18px #ff7a1a55; letter-spacing: 2px; }
+.m-title.small h1 { font-size: 30px; }
+.m-title p { margin: 8px 0 0; font-size: 12px; opacity: .7; letter-spacing: 1px; }
+#menu nav { display: grid; gap: 8px; }
+#menu nav.row { grid-auto-flow: column; justify-content: start; }
+#menu button { font: inherit; font-size: 16px; text-align: left; color: #e8dcc0; background: #120c08e6; border: 2px solid #3a2a1c; padding: 10px 14px;
+  cursor: pointer; box-shadow: inset -3px -3px 0 #0008; }
+#menu button:hover, #menu button:focus-visible { border-color: #ffb347; color: #ffb347; outline: none; }
+#menu button:focus-visible::before, #menu nav button:not(:disabled):hover::before { content: '▶ '; }
+#menu button:disabled { opacity: .35; cursor: default; }
+#menu button.on { border-color: #ffb347; background: #3a2208; color: #ffd28a; }
+.m-foot { margin: 0; font-size: 11px; opacity: .5; }
+.m-tabs, .m-choice { display: flex; flex-wrap: wrap; gap: 6px; }
+.m-tabs button, .m-choice button { font-size: 13px !important; padding: 6px 10px !important; }
+.m-panel { display: grid; gap: 10px; }
+.m-panel[hidden] { display: none; }
+.m-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; }
+.m-row input[type=range] { width: min(220px, 100%); accent-color: #ffb347; }
+.m-hint { margin: 0; font-size: 11px; opacity: .6; line-height: 1.5; }
+.m-keys { display: grid; gap: 4px 18px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.m-keys div { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12px; }
+.m-keys button { font-size: 12px !important; padding: 4px 10px !important; min-width: 110px; text-align: center !important; }
+.m-paints { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.m-paints button { display: flex; align-items: center; gap: 8px; font-size: 12px !important; padding: 8px !important; }
+.m-paints i { width: 18px; height: 18px; flex: none; border: 2px solid #0008; }
+body.plan #hud, body.plan #help, body.plan #menu, body.plan #touch { display: none !important; }
