@@ -58,11 +58,11 @@ test('misja 1 „Paczka”: przejście krok po kroku, z podsumowaniem', (t) => {
   car.money = 5;
   tick(0.5);
   assert.equal(at(), 'zarobek', '5 zł to za mało');
-  car.money = 26;
+  car.money = 31;
   car.score = 5400;
   tick(0.1);
   assert.equal(at(), 'tankowanie');
-  // Fuel step: 25 % in the tank is not enough, fill up to 60 %
+  // Fuel step: 25 % in the tank is not enough, fill up to 40 %
   tick(0.5);
   assert.equal(at(), 'tankowanie');
   car.fuelPct = 64;

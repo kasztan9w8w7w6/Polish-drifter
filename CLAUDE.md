@@ -91,7 +91,7 @@ src/touch.js    – warstwa dotykowa (tylko na urządzeniach dotykowych): joysti
                   pełny ekran + screen.orientation.lock; w main.js: niższa jakość, FPS w panelu, pauza w tle, plansza „Obróć telefon”
 src/settings.js – ustawienia gracza w localStorage (try/catch, gra działa bez), klawisze do przypisania, piksele wg rozdzielczości
                   (Drobne/Średnie/Grube ≈ 540/360/270 linii, zawsze różne), postęp dla „Kontynuuj”
-src/dashboard.js – zegary jak w autach z bloku wschodniego (prędkościomierz, obrotomierz, bateria jak zegar paliwa, kontrolki,
+src/dashboard.js – zegary jak w autach z bloku wschodniego (prędkościomierz, obrotomierz, zegar paliwa, kontrolki (rezerwa),
                   okienko biegu, bębenkowy licznik punktów): canvas 256×100 powiększony bez wygładzania
 src/turntable.js – obrotnica w garażu (przeciąganie, bezwładność, powrót auto-obrotu), bez DOM
 src/panel.js    – panel wyboru na środku ekranu (podsumowanie misji, stacja, sklep, pusty bak): przyciski dla palca, myszy,
@@ -100,7 +100,7 @@ src/menu.js     – menu (Graj / Kontynuuj / Garaż / Ustawienia), garaż (obrac
                   (grafika, dźwięk, sterowanie + trudność), pauza (Esc / Start); mysz, klawiatura, pad, dotyk
 src/drift.js    – punktacja driftu
 src/effects.js  – dym i ślady opon
-src/main.js     – scena nocna (mgła radialna), HUD (w tym bateria), lil-gui (G), debug kolizji (F), klej bateria/misja/narrator, pętla
+src/main.js     – scena nocna (mgła radialna), HUD (kasa, szacun), lil-gui (G), debug kolizji (F), klej paliwo/stacja/Żappka/misja/narrator, pętla
 public/assets/  – assety (Kenney CC0), public/models/polonez/ – Polonez; każdy wpisany w CREDITS.md
 assets-src/     – źródła assetów (zipy Kenneya, .glb Poloneza, tablica); scripts/convert-assets.mjs → public/
 test/           – testy scenariuszy jazdy (`npm test`, node:test, bez przeglądarki; Node ≥ 22.18 czyta .ts)
