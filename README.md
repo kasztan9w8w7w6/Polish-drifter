@@ -25,7 +25,7 @@ Zasada projektu: **składamy gotowe klocki zamiast pisać własne**.
 | Tuning | [lil-gui](https://lil-gui.georgealways.com) | suwaki, presety, eksport/import JSON (klawisz **G**) |
 | Pad | Gamepad API przeglądarki | analogowy gaz, hamulec i skręt |
 | Dotyk | [nipplejs](https://github.com/yoannmoinet/nipplejs) | joystick skrętu na telefonie |
-| Ostrzeżenie baterii | Web Audio (przez kontekst Howlera) | krótki pisk generowany w kodzie, bez pliku |
+| Ostrzeżenie (rezerwa paliwa) | Web Audio (przez kontekst Howlera) | krótki pisk generowany w kodzie, bez pliku |
 | Testy | `node:test` (wbudowany w Node ≥ 22.18, czyta TypeScript) | scenariusze jazdy bez przeglądarki |
 | Typy | [TypeScript](https://www.typescriptlang.org) | `vehicle.ts`, `camera.ts`, `tuning.ts`; sprawdzanie `npm run typecheck` |
 | Build | [Vite](https://vite.dev) | dev server z HMR, produkcyjny build |
@@ -59,7 +59,7 @@ npm run build    # statyczny build do dist/
 
 Po R, C i automatycznym wypchnięciu z przeszkody na środku ekranu pojawia się krótki komunikat.
 Dźwięk startuje po pierwszym klawiszu/kliknięciu (wymóg przeglądarek). Parametr `?spawn=x,z,kąt` w adresie ustawia auto w innym miejscu,
-`?bat=5` startuje z 5% baterii (do sprawdzenia migania i gaśnięcia).
+`?paliwo=3` startuje z 3 l w baku (do sprawdzenia rezerwy i pustego baku).
 
 ## Menu, garaż, ustawienia
 
@@ -72,8 +72,8 @@ Gra startuje w **menu głównym**: Graj (misja 1 od początku), Kontynuuj (od os
 - `?graj` w adresie pomija menu (testy).
 
 **Zegary** w prawym dolnym rogu wyglądają jak deska rozdzielcza auta z lat 70–80: prędkościomierz 0–160, obrotomierz ×1000 z czerwonym
-polem, bateria jak stary zegar paliwa (0 – ½ – 1), kontrolki (ładowanie driftem, światła: zielona krótkie / niebieska długie,
-silnik: miga przy niskiej baterii, świeci po zgaśnięciu, ręczny), okienko biegu i bębenkowy licznik punktów.
+polem, zegar paliwa (0 – ½ – 1), kontrolki (rezerwa paliwa, światła: zielona krótkie / niebieska długie,
+silnik: świeci przy pustym baku, ręczny), okienko biegu i bębenkowy licznik punktów.
 
 **Obraz:** kamera Diorama patrzy 35° w dół i jest obrócona 28° od osi mapy (suwaki w panelu G). Rozmiar piksela dobiera się do
 wysokości ekranu: Średnie ≈ 360 linii (1080p: piksel 3), Drobne ≈ 540, Grube ≈ 240.
@@ -125,7 +125,14 @@ i **Łatwy** – dawna jazda z asystą (kąt trzyma się sam, bez bączków), ja
 - pawilony i Żappka 24h przy głównej z parkingiem;
 - market „Supersam” z wielkim placem do driftu (wjazdy z Gagarina i z głównej);
 - paczkomat przy wejściu do Bloku 1, śmietniki przy blokach, auta tylko na parkingach i placach.
-- postacie: chłopaki przy placu, Sąsiad Zbyszek, Pani Halina, Mietek, Pan Zdzisio (rozmowa: stań obok, E / pad B / dotyk).
+- postacie: chłopaki przy placu, Sąsiad Zbyszek, Pani Halina, Mietek, Pan Zdzisio (rozmowa: stań obok, E / pad B / dotyk);
+- stacja paliw „Kometa” przy głównej.
+
+**Pętla gry (v0.6d):** jeździsz, driftujesz, zarabiasz, wydajesz, odblokowujesz.
+- **Paliwo:** pełny bak starcza na ok. 10 min, drift pali więcej. Pusty bak to nie koniec gry: pchasz albo dzwonisz po kumpla.
+- **Kasa:** za misje i za drift w misjach, najwięcej w pokazach.
+- **Szacun:** za misje i drift przy ludziach; odblokowuje kolejne misje i zmienia to, co mówią postacie.
+- **Żappka:** zapis gry i energetyk.
 
 Kolizja każdego obiektu to obrys jego geometrii na wysokości karoserii (drzewo zderza się pniem, latarnia słupem).
 `?plan` w adresie pokazuje całą mapę z góry.
@@ -153,24 +160,33 @@ W panelu są też foldery:
 
 Przycisk **Eksport ustawień (JSON)** kopiuje wszystkie parametry do schowka (i pokazuje je w okienku), a **Wczytaj JSON** wczytuje wklejone.
 
-## Bateria, Żappka i misja 1
+## Paliwo, kasa, szacun, stacja i Żappka
 
-- **Bateria** szybko się rozładowuje: bez driftu auto gaśnie po ok. 80 s jazdy przy 54 km/h (64 s przy 80 km/h, szybciej na długich, L).
-  Ładuje ją **tylko porządny drift**: co najmniej 20° i 32 km/h, tym szybciej, im większy kąt i prędkość i im dłużej drift jest czysty
-  (30° przy 54 km/h: +2% w pierwszej sekundzie, +5,5% w czwartej). Uderzenie przerywa serię i na 2 s blokuje ładowanie.
-  W praktyce: co ok. 30 s potrzebujesz 2–3 dobrych driftów.
-- **Reflektory** słabną razem z baterią; poniżej 20% migoczą, poniżej 10% pasek miga i słychać pisk.
-- **0%:** silnik gaśnie, auto się toczy, ekran ciemnieje, komunikat, restart z ostatniego punktu zapisu (z co najmniej 30% baterii).
-- **Żappka 24h:** zatrzymaj się na świecącym zielonym polu przed wejściem. Bateria ładuje się do 100% (ok. 2 s) i tu zapisuje się punkt odrodzenia.
-- **Misja 1 „Paczka”** startuje sama: narrator (u góry ekranu) wprowadza w klimat, cel i odległość są w lewym górnym rogu, nad celem stoi
-  żółty słup światła, a nad autem strzałka. Kroki: odbierz paczkę z Paczkoboxu przy Bloku 1 → naładuj baterię driftem do 70%
-  (duży parking) → dowieź paczkę pod Blok 2 → wróć na pole przed Żappką. Na końcu podsumowanie: czas i punkty za drift.
-  Misja to plik `src/missions/paczka.json` (kroki, cele, teksty narratora), a punkty celów są w pliku mapy.
-- Wszystkie liczby są w panelu (G), w folderze „Bateria i misja”.
+- **Paliwo:**
+  - zegar paliwa na desce, a poniżej 15% zapala się kontrolka rezerwy i słychać pisk;
+  - pełny bak (45 l) starcza na ok. 10 min zwykłej jazdy, drift pali więcej.
+- **Pusty bak:** silnik gaśnie. Wybierasz:
+  - **Pchaj** – gaz popycha auto powoli, sterujesz;
+  - **Zadzwoń po kumpla** – 30 zł, holuje cię pod dystrybutor.
+  Kasa może zejść do −40 zł, więc gra się nigdy nie blokuje.
+- **Stacja „Kometa”** (przy głównej, na wschodzie): stań przy dystrybutorze, pojawi się panel: do pełna / za 20 zł / za 50 zł (2,99 zł/l).
+- **Kasa:** za misje i za drift w trakcie misji, najwięcej w pokazach.
+- **Szacun:** za misje i za widowiskowy drift przy ludziach. Poziomy mają nazwy (od „Frajera z parteru”). Szacun odblokowuje
+  kolejne misje (pokaz od 50, wyścig od 150) i zmienia to, co mówią postacie.
+- **Żappka 24h:** stań na zielonym polu przed wejściem, żeby zapisać grę. W sklepie jest energetyk: przez minutę szacun rośnie 2× szybciej.
+- **Misja 1 „Paczka”:**
+  1. odbierz paczkę z Paczkoboxu przy Bloku 1;
+  2. zarób 30 zł driftem na placu pod Supersamem;
+  3. zatankuj na „Kometa” (co najmniej 40%);
+  4. dowieź paczkę pod Blok 4;
+  5. wróć do Żappki.
+  Na końcu podsumowanie i nagroda.
+- `?paliwo=3` startuje z 3 l w baku (do sprawdzenia rezerwy i pustego baku).
+- Wszystkie liczby są w panelu (G), w folderze „Paliwo, kasa, szacun i misja”.
 
 ## Punktacja
 
-HUD w prawym dolnym rogu: prędkość, wirtualny bieg, obrotomierz i punkty. Biegi są tylko na pokaz i do dźwięku, fizyka ich nie ma.
+HUD w prawym dolnym rogu: prędkość, bieg, obrotomierz (prawdziwe obroty z napędu) i punkty.
 
 Punkty rosną z kątem poślizgu × prędkością, a mnożnik co 2 s ciągłego driftu. Po ~1,2 s bez driftu punkty trafiają do wyniku.
 Uderzenie w przeszkodę (od ~20 km/h) w trakcie driftu = punkty przepadają. Rekord zapisywany w `localStorage`.

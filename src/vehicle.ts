@@ -667,5 +667,18 @@ export function createVehicle(
   reset();
   read();
 
-  return { state, update, afterStep, read, reset, applyParams, body, chassisCollider, ballCollider: ball };
+  // Pushing the car by hand (empty tank, v0.6d): speed along the heading, with the matching roll, up to `max` m/s
+  function push(dv: number, max = 1.6) {
+    const v = body.linvel();
+    const heading = travel + angle;
+    const fx = Math.cos(heading), fz = -Math.sin(heading);
+    const along = v.x * fx + v.z * fz;
+    const add = Math.max(0, Math.min(dv, max - along));
+    if (add <= 0) return;
+    body.setLinvel({ x: v.x + fx * add, y: v.y, z: v.z + fz * add }, true);
+    const w = body.angvel();
+    body.setAngvel({ x: w.x + fz * add / BALL_RADIUS, y: w.y, z: w.z - fx * add / BALL_RADIUS }, true);
+  }
+
+  return { state, update, afterStep, read, reset, push, applyParams, body, chassisCollider, ballCollider: ball };
 }

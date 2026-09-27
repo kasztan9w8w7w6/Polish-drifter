@@ -58,6 +58,7 @@ test('misje 1–3: każdy cel, każda postać i trasa wyścigu osiągalne autem 
     }
   }
   for (const p of map.npcs) targets.push([`postać ${p.id}`, p, 4.5]);
+  targets.push(['stacja paliw (dystrybutor)', map.points.stacja, 2], ['Żappka (pole zapisu)', map.points.shop, 2]);
   const route = createRoute(map.routes.petla);
   let routeOk = 0, routeN = 0;
   for (let s = 0; s < route.length; s += 2, routeN++) if (near(route.at(s).x, route.at(s).z, 1)) routeOk++;

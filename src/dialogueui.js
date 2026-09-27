@@ -103,8 +103,9 @@ export function createDialogueUI({ people, texts = {} }) {
 
   return {
     // def: dialogue file, id: who is being talked to, cb({ npc, dialog, result, flags }) when it ends
-    start(def, id, cb) {
-      d = createDialogue(def);
+    // ctx: { szacun, kasa, flags } for the dialogue's conditions (dialogue.js when())
+    start(def, id, cb, ctx = {}) {
+      d = createDialogue(def, undefined, ctx);
       npc = id;
       onEnd = cb;
       root.hidden = false;

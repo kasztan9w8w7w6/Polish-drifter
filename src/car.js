@@ -67,7 +67,7 @@ export async function createCarView(scene, profile) {
     root.add(l, l.target);
     return l;
   });
-  // Battery (survival.js headlightLevel): brightness and reach 0..1; high beams brighter and further
+  // Brightness and reach 0..1 (main.js: full, or parking lights with an empty tank); high beams brighter and further
   const power = { brightness: 1, reach: 1, high: false };
   const lampMats = [];
   function applyHeadlights() {

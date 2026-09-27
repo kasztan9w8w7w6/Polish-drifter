@@ -132,7 +132,7 @@ export async function createMap(scene, physics, map) {
     const shopLight = new THREE.PointLight(0x7cffb0, 12, 20, 1);
     shopLight.position.set(...map.shop.light);
     scene.add(shopLight);
-    // The safe spot in front of the entrance (survival.js): a softly glowing, pulsing frame on the asphalt
+    // The save spot in front of the entrance (main.js: stop on it → saved, the shop): a softly glowing, pulsing frame on the asphalt
     pad = safePad(map.shop.pad);
     scene.add(pad);
   }
@@ -145,6 +145,59 @@ export async function createMap(scene, physics, map) {
     locker.rotation.y = l.yaw * DEG;
     scene.add(locker);
     physics.addStaticBox({ x: l.x, y: 1.1, z: l.z }, { x: LOCKER.w / 2, y: 1.1, z: LOCKER.d / 2 }, { rotation: yawQuat(l.yaw * DEG), surface: 'metal' });
+  }
+
+  // --- Fuel station (own geometry, in the style of an old CPN, fictional name): a canopy on posts with fluorescent
+  // tubes, two pump islands, a kiosk. The car stops next to the pumps (map.points.stacja) and fills up (main.js).
+  if (map.station) {
+    const st = map.station;
+    const g = new THREE.Group();
+    g.position.set(st.x, 0, st.z);
+    const concrete = new THREE.MeshStandardMaterial({ color: 0x8a8880, roughness: 0.95 });
+    const white = new THREE.MeshStandardMaterial({ color: 0xd8d4c8, roughness: 0.8 });
+    const red = new THREE.MeshStandardMaterial({ color: 0xa02a1e, roughness: 0.7 });
+    const glass = new THREE.MeshStandardMaterial({ color: 0x1a2430, roughness: 0.3, emissive: 0x3a4a30, emissiveIntensity: 0.6 });
+    const tube = new THREE.MeshBasicMaterial({ color: 0xe8fff0 });
+    const box = (w, h, d, m, x, y, z) => {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+      b.position.set(x, y, z);
+      g.add(b);
+      return b;
+    };
+    box(20, 0.5, 10, white, 0, 4.75, 0); // canopy
+    box(20.2, 0.6, 0.3, red, 0, 4.7, -5.1); // red fascia
+    box(20.2, 0.6, 0.3, red, 0, 4.7, 5.1);
+    for (const x of [-7, -3, 3, 7]) box(0.15, 0.08, 6, tube, x, 4.47, 0); // fluorescent tubes
+    for (const ix of [-5, 5]) {
+      box(4.4, 0.2, 1.2, concrete, ix, 0.1, 0); // island
+      for (const px of [-1.1, 1.1]) {
+        box(0.7, 1.7, 0.5, white, ix + px, 1.05, 0); // pump
+        box(0.5, 0.35, 0.05, glass, ix + px, 1.45, -0.27);
+        box(0.08, 0.5, 0.08, red, ix + px + 0.3, 1.2, -0.3); // nozzle
+      }
+      box(0.3, 4.3, 0.3, white, ix - 2, 2.35, 0); // posts
+      box(0.3, 4.3, 0.3, white, ix + 2, 2.35, 0);
+      physics.addStaticBox({ x: st.x + ix, y: 0.9, z: st.z }, { x: 2.2, y: 0.9, z: 0.6 }, { surface: 'metal' });
+    }
+    box(8, 3.2, 5, white, 15, 1.6, 4.5); // kiosk
+    box(4, 1.4, 0.05, glass, 14, 1.7, 1.98);
+    box(8.2, 0.5, 5.2, red, 15, 3.4, 4.5);
+    physics.addStaticBox({ x: st.x + 15, y: 1.6, z: st.z + 4.5 }, { x: 4, y: 1.6, z: 2.5 }, { surface: 'concrete' });
+    const sign = shopSign(st.name ?? 'KOMETA', ['#1a0606', '#ffd24a', '#ff6a3a']);
+    sign.position.set(0, 5.6, -5.3);
+    sign.rotation.y = Math.PI; // facing the main street (north)
+    sign.scale.setScalar(0.75);
+    g.add(sign);
+    const back = sign.clone(); // (and on the other side: the diorama camera looks from the south)
+    back.position.z = 5.3;
+    back.rotation.y = 0;
+    g.add(back);
+    signs.push(sign, back);
+    const light = new THREE.PointLight(0xe8fff0, 16, 22, 1);
+    light.position.set(0, 4.2, 0);
+    g.add(light);
+    scene.add(g);
+    occluders.push(g);
   }
 
   // --- Potholes (visual only) and painted parking bays ---

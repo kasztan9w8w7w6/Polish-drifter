@@ -4,8 +4,28 @@
   "id": "seba",
   "start": "a",
   "nodes": {
-    "a": { "who": "seba", "text": "PLACEHOLDER: No siema. Plac jest wolny, ochroniarz śpi od dwudziestej drugiej.", "next": "b" },
-    "b": { "who": "gracz", "text": "PLACEHOLDER: A ten maszt?" , "next": "c" },
-    "c": { "who": "seba", "text": "PLACEHOLDER: Maszt jak maszt. Buczy. Jak się jedzie bokiem, to mniej słychać." }
-  }
+    "a": {
+      "who": "seba",
+      "text": "PLACEHOLDER: No siema. Plac jest wolny, ochroniarz śpi od dwudziestej drugiej.",
+      "next": "b",
+      "alt": [
+        {
+          "if": {
+            "szacun": 150
+          },
+          "text": "PLACEHOLDER: O, kierowca z osiedla! Plac twój, jak chcesz. Ochroniarz i tak śpi."
+        }
+      ]
+    },
+    "b": {
+      "who": "gracz",
+      "text": "PLACEHOLDER: A ten maszt?",
+      "next": "c"
+    },
+    "c": {
+      "who": "seba",
+      "text": "PLACEHOLDER: Maszt jak maszt. Buczy. Jak się jedzie bokiem, to mniej słychać."
+    }
+  },
+  "_warunki": "Przykład warunków (v0.6d): alt = inny tekst przy szacunie ≥ 150; opis w docs/teksty.md."
 }

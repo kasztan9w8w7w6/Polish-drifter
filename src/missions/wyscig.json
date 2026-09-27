@@ -3,8 +3,13 @@
   "_teksty": "PLACEHOLDER – tymczasowe teksty, do podmiany przez scenarzystę (docs/teksty.md)",
   "id": "wyscig",
   "title": "PLACEHOLDER: Wyścig z sąsiadem",
-  "start": { "point": "lot", "battery": 80 },
-  "intro": ["PLACEHOLDER: Sąsiad Zbyszek stoi pod Blokiem 2 przy swoim szesnastozaworowcu. Jak zawsze. Od 1998 roku."],
+  "start": {
+    "point": "lot",
+    "paliwo": 60
+  },
+  "intro": [
+    "PLACEHOLDER: Sąsiad Zbyszek stoi pod Blokiem 2 przy swoim szesnastozaworowcu. Jak zawsze. Od 1998 roku."
+  ],
   "steps": [
     {
       "id": "zaczepka",
@@ -13,8 +18,12 @@
       "dialog": "wyscig-start",
       "result": "start",
       "goal": "PLACEHOLDER: Jedź do Zbyszka pod Blokiem 2 (ul. Kosmonautów)",
-      "say": ["PLACEHOLDER: Zbyszek czeka przy głównej. Stań obok niego."],
-      "refuse": ["PLACEHOLDER: Zbyszek wzdycha i poleruje lusterko rękawem. Poczeka."]
+      "say": [
+        "PLACEHOLDER: Zbyszek czeka przy głównej. Stań obok niego."
+      ],
+      "refuse": [
+        "PLACEHOLDER: Zbyszek wzdycha i poleruje lusterko rękawem. Poczeka."
+      ]
     },
     {
       "id": "wyscig",
@@ -23,9 +32,15 @@
       "laps": 2,
       "rival": "zbyszek",
       "goal": "PLACEHOLDER: Wyścig: 2 okrążenia dookoła osiedla, meta pod blokiem",
-      "say": ["PLACEHOLDER: Dookoła osiedla: Kosmonautów, Gagarina, Tereszkowej, Lotników. Dwa razy. Bez skrótów przez podwórko – pani Halina patrzy."],
-      "fail": ["PLACEHOLDER: Zbyszek na mecie pierwszy. Trąbi dwa razy. Długo. Jeszcze raz – ustawiacie się od nowa."],
-      "done": ["PLACEHOLDER: Meta! Zbyszek wjeżdża dopiero po chwili, z miną człowieka, który myje dwa auta."]
+      "say": [
+        "PLACEHOLDER: Dookoła osiedla: Kosmonautów, Gagarina, Tereszkowej, Lotników. Dwa razy. Bez skrótów przez podwórko – pani Halina patrzy."
+      ],
+      "fail": [
+        "PLACEHOLDER: Zbyszek na mecie pierwszy. Trąbi dwa razy. Długo. Jeszcze raz – ustawiacie się od nowa."
+      ],
+      "done": [
+        "PLACEHOLDER: Meta! Zbyszek wjeżdża dopiero po chwili, z miną człowieka, który myje dwa auta."
+      ]
     },
     {
       "id": "koniec",
@@ -33,13 +48,31 @@
       "npc": "zbyszek",
       "dialog": "wyscig-koniec",
       "goal": "PLACEHOLDER: Pogadaj ze Zbyszkiem na mecie",
-      "say": ["PLACEHOLDER: Zbyszek wysiada. Chyba chce coś powiedzieć."]
+      "say": [
+        "PLACEHOLDER: Zbyszek wysiada. Chyba chce coś powiedzieć."
+      ]
     }
   ],
-  "outro": ["PLACEHOLDER: Osiedle ma nowego mistrza. Maszt buczy na jego cześć. Albo na niczyją."],
+  "outro": [
+    "PLACEHOLDER: Osiedle ma nowego mistrza. Maszt buczy na jego cześć. Albo na niczyją."
+  ],
   "hints": [
-    { "on": "warn", "once": true, "say": ["PLACEHOLDER: Bateria na wyczerpaniu. W zakrętach bokiem – ładuje i nie trzeba hamować."] },
-    { "on": "dead", "say": ["PLACEHOLDER: Silnik gaśnie. Zbyszek przejeżdża obok i macha."] },
-    { "on": "respawn", "say": ["PLACEHOLDER: Wracasz. Zbyszek czeka pod blokiem, uśmiechnięty."] }
-  ]
+    {
+      "on": "rezerwa",
+      "once": true,
+      "say": [
+        "PLACEHOLDER: Rezerwa. Na placu da się zarobić na paliwo, a stacja jest przy głównej."
+      ]
+    },
+    {
+      "on": "pusty",
+      "say": [
+        "PLACEHOLDER: Bak pusty. Pchaj albo dzwoń po kumpla – i tak wszyscy patrzą."
+      ]
+    }
+  ],
+  "reward": {
+    "kasa": 150,
+    "szacun": 200
+  }
 }

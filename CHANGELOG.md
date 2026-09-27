@@ -3,6 +3,33 @@
 Wersje do v0.4c mają lokalne tagi w git (serwer odrzuca wypychanie tagów); od v0.5 wersję znajdziesz po commicie „v0.5a – …”.
 Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
 
+## v0.6d – paliwo, kasa, szacun (zamiast baterii)
+- **Bateria usunięta:** kod (`survival.js`), HUD, teksty, testy; reflektory zawsze świecą (przy pustym baku postojowe).
+- **Paliwo** (`src/economy.js`):
+  - bak 45 l; spalanie z prawdziwych obrotów i obciążenia (bsfc silnika), drift pali ×1,35;
+  - pełny bak ≈ 10 min zwykłej gry (`fuelScale` 22);
+  - na desce zegar paliwa i kontrolka rezerwy.
+- **Pusty bak:** silnik gaśnie, panel do wyboru:
+  - pchanie (auto toczy się ok. 6 km/h, sterujesz);
+  - telefon do kumpla (30 zł, holowanie pod dystrybutor).
+  Brak game over; dług do −40 zł sprawia, że gra się nie blokuje.
+- **Stacja paliw „Kometa”** przy głównej (wiata na słupach ze świetlówkami, dystrybutory, kiosk, szyld; w klimacie CPN):
+  panel „Do pełna / Za 20 zł / Za 50 zł”, 2,99 zł/l.
+- **Kasa i szacun:**
+  - kasa za misje i za drift w misji (0,01 zł/pkt) i w pokazie (0,03 zł/pkt);
+  - szacun za misje i widowiskowy drift przy ludziach;
+  - 5 poziomów z nazwami (PLACEHOLDER).
+  Szacun odblokowuje misje: pokaz od 50, wyścig od 150, a nagrody kolejnych misji je pokrywają. Zmienia też kwestie postaci:
+  warunki w rozmowach JSON (`alt`, `if`, `else`), np. Seba mówi inaczej przy szacunie 150, a Halina ma dodatkową odpowiedź, gdy masz kasę.
+- **Żappka:** punkt zapisu + sklep (energetyk „Tygrys 5G”: 6 zł, przez 60 s szacun ×2).
+- **Misja 1 od nowa:** paczka → zarób 30 zł driftem na placu → zatankuj ≥ 40% na „Kometa” → dostawa → Żappka. Nagrody misji w JSON.
+- **HUD i zapis:** kasa i szacun w pikselowym stylu pod rekordem; zapis postępu obejmuje paliwo, kasę, szacun i flagi rozmów.
+- **Testy:**
+  - `test/economy.test.mjs`: czas na baku, zużycie, stacja, dług, holowanie, stawki, energetyk, poziomy, zapis, odblokowanie, warunki w rozmowach;
+  - misja 1 i podpowiedzi przerobione;
+  - stacja w teście osiągalności;
+  - E2E dotykiem z tankowaniem.
+
 ## v0.6c – realne parametry aut i przelicznik
 - **Model hybrydowy** (`docs/fizyka-aut.md`, z omówieniem Marco Monstera, Edy's Vehicle Physics, ArcadeCarPhysics i
   wassimulatora): **napęd z realnych danych**, prowadzenie i drift bez zmian (kula arcade).

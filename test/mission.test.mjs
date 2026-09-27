@@ -3,7 +3,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createMission, formatTime } from '../src/mission.js';
 import { createNarrator } from '../src/narrator.js';
-import { createSurvival } from '../src/survival.js';
+import { createEconomy } from '../src/economy.js';
+import gle from '../src/engines/fso-16-gle.json' with { type: 'json' };
 import paczka from '../src/missions/paczka.json' with { type: 'json' };
 import map from '../src/maps/osiedle.json' with { type: 'json' };
 
@@ -39,7 +40,7 @@ test('misja 1 „Paczka”: przejście krok po kroku, z podsumowaniem', (t) => {
   const said = [];
   const log = (ev) => ev.forEach((e) => (e.type === 'say' ? said.push(...e.lines) : e.type === 'step' ? said.push(`[${e.step.id}]`) : null));
   log(m.start(1000));
-  const car = { x: P.spawn.x, z: P.spawn.z, speed: 0, battery: 30, score: 1000 };
+  const car = { x: P.spawn.x, z: P.spawn.z, speed: 0, money: 0, fuelPct: 25, score: 1000 };
   const tick = (s = 1) => { for (let i = 0; i < s * 60; i++) log(m.update(DT, car)); };
   const steps = [];
   const at = () => { steps.push(`${m.state.step?.id ?? 'koniec'}`); return m.state.step?.id; };
@@ -52,12 +53,19 @@ test('misja 1 „Paczka”: przejście krok po kroku, z podsumowaniem', (t) => {
   assert.equal(at(), 'odbior', 'przejazd obok nie odbiera paczki');
   car.speed = 0.5;
   tick(0.1);
-  assert.equal(at(), 'ladowanie');
-  // Battery step: not done at 30 %, done after drifting it up
-  tick(2);
-  assert.equal(at(), 'ladowanie');
-  car.battery = 72;
+  assert.equal(at(), 'zarobek');
+  // Cash step: counts what is earned from its start (drifting on the lot during the mission)
+  car.money = 5;
+  tick(0.5);
+  assert.equal(at(), 'zarobek', '5 zł to za mało');
+  car.money = 26;
   car.score = 5400;
+  tick(0.1);
+  assert.equal(at(), 'tankowanie');
+  // Fuel step: 25 % in the tank is not enough, fill up to 60 %
+  tick(0.5);
+  assert.equal(at(), 'tankowanie');
+  car.fuelPct = 64;
   tick(0.1);
   assert.equal(at(), 'dostawa');
   assert.equal(m.target().id, 'delivery');
@@ -70,29 +78,22 @@ test('misja 1 „Paczka”: przejście krok po kroku, z podsumowaniem', (t) => {
   at();
   t.diagnostic(`kroki: ${steps.join(' → ')}; podsumowanie: czas ${formatTime(summary.time)}, punkty za drift ${summary.driftPoints}; narrator: ${said.filter((s) => !s.startsWith('[')).length} linii`);
   assert.ok(m.state.complete && summary.driftPoints === 4400);
+  assert.deepEqual(summary.reward, paczka.reward, 'nagroda: kasa i szacun');
   assert.ok(said.some((s) => /5G/.test(s)) && said.some((s) => /mgła/i.test(s)), 'klimat: mgła i 5G');
 });
 
-test('misja + bateria: podpowiedzi narratora, śmierć i powrót do punktu zapisu nie cofają misji', (t) => {
+test('misja + paliwo: rezerwa i pusty bak dają podpowiedzi narratora, misja się nie cofa', (t) => {
   const m = createMission(paczka, P);
   m.start();
-  const sv = createSurvival({ level: 25, save: { x: P.spawn.x, z: P.spawn.z, heading: 90 }, pad: map.shop.pad });
+  const eco = createEconomy({ engine: gle, tankL: 45, fuel: 7.2 });
   const hints = [];
-  const car = { x: 0, z: 0, heading: 0, speed: 15, topSpeed: 30, angle: 0, grounded: true, highBeam: true };
-  let respawned = false;
-  for (let time = 0; time < 200 && !respawned; time += DT) {
-    for (const e of sv.update(DT, car)) {
-      for (const ev of m.notify(e)) hints.push(`${e}: ${ev.lines[0].slice(0, 30)}…`);
-      if (e === 'respawn') respawned = true;
-    }
-    m.update(DT, { ...car, battery: sv.state.level, score: 0 });
+  for (let time = 0; time < 600 && !eco.state.empty; time += DT) {
+    for (const e of eco.update(DT, { rpm: 4000, load: 0.8, drifting: false, running: true })) for (const ev of m.notify(e)) hints.push(`${e}: ${ev.lines[0].slice(0, 30)}…`);
+    m.update(DT, { x: 0, z: 0, speed: 10, money: 0, fuelPct: (100 * eco.state.fuel) / 45, score: 0 });
   }
-  t.diagnostic(`${hints.join(' | ')}; po restarcie krok: ${m.state.step.id}, bateria ${fmt(sv.state.level, 0)}%`);
-  assert.deepEqual(hints.map((h) => h.split(':')[0]), ['low', 'warn', 'dead', 'respawn']);
+  t.diagnostic(`${hints.join(' | ')}; krok: ${m.state.step.id}`);
+  assert.deepEqual(hints.map((h) => h.split(':')[0]), ['rezerwa', 'pusty']);
   assert.equal(m.state.step.id, 'odbior');
-  // Once-only hints stay once
-  sv.restart({ x: 0, z: 0, heading: 0 }, 21);
-  const again = [];
-  for (let time = 0; time < 30; time += DT) for (const e of sv.update(DT, car)) again.push(...m.notify(e).map(() => e));
-  assert.ok(!again.includes('low'));
+  // once-only hints stay once
+  assert.deepEqual(m.notify('rezerwa'), []);
 });

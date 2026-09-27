@@ -7,14 +7,36 @@ import { createTypewriter, typeSettings, clean } from './typewriter.js';
 //
 //   { "id": "…", "start": "a", "nodes": { "a": { "who": "seba", "text": "…", "next": "b" },
 //     "b": { "who": "gracz", "text": "…", "choices": [ { "text": "…", "next": "c" }, { "text": "…", "end": "odmowa" } ] } } }
-export function createDialogue(def, settings = typeSettings) {
+//
+// Conditions (v0.6d): what people say can depend on the player's respect, cash or flags from earlier talks.
+//   a node's "alt": [ { "if": { "szacun": 150 }, "text": "…" } ] – the first alternative whose condition holds replaces `text`
+//   a choice's "if": { … } – the answer is only offered when it holds
+//   a node's "if" + "else": the node is skipped (→ "else" node) when the condition doesn't hold
+//   conditions: { "szacun": n } respect ≥ n, { "kasa": n } cash ≥ n, { "flaga": "name" } a flag set earlier (all must hold)
+// ctx: { szacun, kasa, flags } – the game's state when the talk starts
+export function when(cond, ctx = {}) {
+  if (!cond) return true;
+  if (cond.szacun !== undefined && (ctx.szacun ?? 0) < cond.szacun) return false;
+  if (cond.kasa !== undefined && (ctx.kasa ?? 0) < cond.kasa) return false;
+  if (cond.flaga !== undefined && !(ctx.flags ?? {})[cond.flaga]) return false;
+  if (cond.nie !== undefined && when(cond.nie, ctx)) return false;
+  return true;
+}
+
+export function createDialogue(def, settings = typeSettings, ctx = {}) {
   const typer = createTypewriter(settings);
   const flags = {};
   const state = { node: null, id: null, text: '', choices: null, selected: 0, over: false, result: null };
 
-  function go(id) {
-    const node = def.nodes?.[id];
+  function go(id, depth = 0) {
+    let node = def.nodes?.[id];
     if (!node) return finish('koniec');
+    if (node.if && !when(node.if, { ...ctx, flags: { ...ctx.flags, ...flags } })) return depth < 20 && node.else ? go(node.else, depth + 1) : finish('koniec');
+    // the text for this player: the first alternative that holds
+    const alt = (node.alt ?? []).find((a) => when(a.if, { ...ctx, flags: { ...ctx.flags, ...flags } }));
+    if (alt) node = { ...node, text: alt.text };
+    const choices = node.choices?.filter((c) => when(c.if, { ...ctx, flags: { ...ctx.flags, ...flags } }));
+    if (node.choices) node = { ...node, choices };
     state.id = id;
     state.node = node;
     state.choices = null;

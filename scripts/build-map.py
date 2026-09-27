@@ -29,6 +29,7 @@ areas = [
     {'name': 'bruk przed pawilonami', 'kind': 'bruk', 'rect': [-48, 79.5, -12, 85]},
     {'name': 'bruk przed pawilonami', 'kind': 'bruk', 'rect': [12, 79.5, 48, 85]},
     {'name': 'piasek placu zabaw', 'kind': 'ziemia', 'rect': [-32, -28, -18, -16]},
+    {'name': 'stacja paliw „Kometa”', 'kind': 'asfalt', 'rect': [58, 77, 98, 99]},
 ]
 # --- Paths across the yards (paving) ---
 paths = [
@@ -97,7 +98,7 @@ trees = [
     [-34, 24], [4, 34], [20, 22], [-44, 34], [-26, 34], [14, 12], [-40, 12],                      # south yard
     [-92, 55], [-92, 5], [-70, 55], [-70, -48], [-92, -52], [-88, 10],                            # west
     [36, -50], [36, -12], [36, 12], [36, 50], [100 - 4, -96], [-20, -96], [10, -92], [-60, -94],   # east verge, north edge
-    [-92, 90], [-60, 94], [60, 94], [92, 92], [-80, 60], [20, 60], [-50, 60],                     # south, main street verge
+    [-92, 90], [-60, 94], [52, 97], [-80, 60], [20, 60], [-50, 60],                                # south, main street verge
 ]
 for x, z in trees:
     add('suburban/tree-large' if (x + z) % 3 else 'suburban/tree-small', x, z, scale=10, surface='tree')
@@ -108,8 +109,8 @@ for t in range(-90, 91, 45):
 lamps = []
 for x in [-90, -70, -50, -30, -10, 10, 50, 70, 90]:
     lamps.append([x, 65.8, 180, False])  # main street, north sidewalk
-for x in [-80, -60, -40, -20, 20, 40, 60, 80]:
-    lamps.append([x, 78.2, 0, False])  # main street, south sidewalk
+for x in [-80, -60, -40, -20, 20, 40, 56]:
+    lamps.append([x, 78.2, 0, False])  # main street, south sidewalk (none in front of the station)
 for z in [-45, -20, 22, 48]:
     lamps.append([-56.2, z, 90, False])  # ul. Lotników, east sidewalk
     lamps.append([26.2, z, -90, False])  # ul. Gagarina, west sidewalk
@@ -130,7 +131,7 @@ m = {
              'objects: modele Kenneya, yaw w stopniach: 0 = front modelu na południe, 180 = na północ, 90 = na wschód, -90 = na zachód. Rozmiar: scale, length (najdłuższy bok w m) '
              'albo fit [szer., wys., głęb.] w m; y = wysokość nad ziemią. collide (domyślnie true): kolizja z geometrii na wysokości karoserii, '
              'surface = materiał (physics.js SURFACES). repeat = rząd kopii co dx/dz. props: rzeczy z własnej geometrii (lawka, trzepak, piaskownica, hustawka, przystanek). '
-             'lamps: [x, z, yaw, podwójna]. points: miejsca dla misji (r = promień celu), heading auta: 0 = na wschód, 90 = na północ. '
+             'station: stacja paliw (x, z = środek wiaty; dystrybutory na osi wschód–zachód, podjazd od północy). lamps: [x, z, yaw, podwójna]. points: miejsca dla misji (r = promień celu), heading auta: 0 = na wschód, 90 = na północ. '
              'npcs: postacie (id z src/story/postacie.json, x, z, yaw w stopniach); rozmowa: stań obok (< 4,5 m). '
              'routes: trasy wyścigów – rogi ulic w kolejności jazdy, zamknięta pętla (start/meta = pierwszy punkt).',
     'name': 'Osiedle Kosmonautów',
@@ -177,6 +178,7 @@ m = {
         {'text': 'SUPERSAM', 'at': [70, 6.5, -70.6], 'yaw': 0, 'colors': ['#2a0606', '#ffd24a', '#ff5a4a']},
     ],
     'shop': {'light': [0, 3, 82.5], 'pad': {'x': 0, 'z': 80.5, 'w': 6, 'd': 4}},
+    'station': {'name': 'KOMETA', 'x': 76, 'z': 90},
     'locker': {'name': 'Paczkobox 24/7', 'x': -3, 'z': -38.9, 'yaw': 0},
     'points': {
         'spawn': {'x': -30, 'z': 59.5, 'heading': 0, 'label': 'parking pod Blokiem 2'},
@@ -185,6 +187,7 @@ m = {
         'lot': {'x': 68, 'z': 0, 'r': 25, 'label': 'plac pod Supersamem'},
         'delivery': {'x': -66, 'z': 30, 'r': 4, 'label': 'Blok 4, punktowiec'},
         'shop': {'x': 0, 'z': 80.5, 'r': 3, 'label': 'Żappka 24h'},
+        'stacja': {'x': 76, 'z': 87.4, 'r': 3.5, 'heading': 0, 'label': 'stacja paliw „Kometa”, przy dystrybutorze'},
     },
     'npcs': [
         {'id': 'seba', 'x': 37.2, 'z': -6, 'yaw': 90},

@@ -17,14 +17,32 @@ Kiedy zaczniesz wpisywać teksty docelowe, zmień ten test na sprawdzanie `_teks
 
 | Plik | Co w nim jest |
 |---|---|
-| `src/missions/*.json` | misje: tytuł (`title`), wstęp i zakończenie narratora (`intro`, `outro`), kroki z celem na ekranie (`goal`), narrator na początku i końcu kroku (`say`, `done`), po porażce (`fail`), po odmowie w rozmowie (`refuse`), podpowiedzi na zdarzenia (`hints`: `low`, `warn`, `dead`, `respawn`, `shop`) |
+| `src/missions/*.json` | misje: tytuł (`title`), wstęp i zakończenie narratora (`intro`, `outro`), kroki z celem na ekranie (`goal`), narrator na początku i końcu kroku (`say`, `done`), po porażce (`fail`), po odmowie w rozmowie (`refuse`), podpowiedzi na zdarzenia (`hints`: `rezerwa`, `pusty`, `holowanie`, `stacja`, `zapis`) |
 | `src/story/dialogi/*.json` | rozmowy: węzły (`nodes`), każdy ma mówiącego (`who`: id postaci albo `gracz`) i tekst (`text`); wybory odpowiedzi (`choices`: `text` + `next` albo `end`) |
 | `src/story/postacie.json` | postacie: imię (`imie`), wygląd, zwykła rozmowa (`dialog`), okrzyki w dymkach (`reakcje`: `dobrze`, `slabo`, `uderzenie`, `czekanie` – jeden losowany) |
-| `src/story/kampania.json` | kolejność misji (`misje`) i narrator po ostatniej (`koniec`) |
-| `src/story/teksty.json` | teksty systemowe: powrót po „Kontynuuj”, plansza rozładowanej baterii, wyścig (odliczanie, „ostatnie okrążenie”), podsumowanie misji |
+| `src/story/kampania.json` | kolejność misji (`misje`), wymagany szacun (`wymagania`), narrator po ostatniej (`koniec`), gdy brak szacunu (`brakSzacunu`) |
+| `src/story/teksty.json` | teksty systemowe: powrót po „Kontynuuj”, stacja paliw, pusty bak, Żappka (sklep), poziomy szacunu, wyścig (odliczanie, „ostatnie okrążenie”), podsumowanie misji |
 
 Etykiety przycisków menu (Graj, Ustawienia…) i krótkie komunikaty techniczne (np. „Reset”) są w kodzie
 (`src/menu.js`, `src/main.js`) – to interfejs, nie scenariusz.
+
+## Warunki w rozmowach (v0.6d)
+
+Kwestie mogą zależeć od szacunu, kasy i flag z wcześniejszych rozmów:
+
+```json
+"a": { "who": "seba", "text": "Zwykły tekst.", "alt": [ { "if": { "szacun": 150 }, "text": "Tekst dla kogoś z szacunem." } ] },
+"b": { "who": "halina", "text": "…", "choices": [ { "if": { "kasa": 10 }, "text": "Odpowiedź tylko, gdy gracz ma 10 zł", "next": "c" } ] },
+"c": { "if": { "flaga": "pokaz" }, "else": "d", "who": "seba", "text": "Węzeł tylko po pokazie (inaczej przejście do „d”)." }
+```
+
+Warunki (`if`):
+- `szacun` – szacun co najmniej tyle;
+- `kasa` – co najmniej tyle zł;
+- `flaga` – flaga ustawiona wcześniej wyborem z `set`;
+- `nie` – odwrotność warunku.
+
+Wszystkie warunki w jednym `if` muszą być spełnione. Nazwy poziomów szacunu są w `src/story/teksty.json` → `szacun`.
 
 ## Rozmowy – format
 

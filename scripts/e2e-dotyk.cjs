@@ -38,16 +38,30 @@ const { chromium } = require(process.env.PLAYWRIGHT ?? 'playwright');
   // Mission 1
   for (let guard = 0; guard < 8 && !(await ev(() => agro.mission.state.complete)); guard++) {
     const s = await ev(() => agro.mission.state.step);
-    if (s.type === 'battery') await ev(() => agro.survival.restart(agro.survival.state.save, 90));
-    else { const q = await pt(); await tp(q.x, q.z); }
+    if (s.type === 'money') await ev((min) => (agro.economy.state.money += min + 5), s.min); // (as if earned drifting on the lot)
+    else if (s.type === 'refuel') {
+      // the station by touch: drive up to the pump, the panel shows up, tap "Do pełna"
+      const st = await ev(() => agro.points.stacja);
+      await tp(st.x, st.z);
+      await wait(1500);
+      log.push('stacja: ' + (await ev(() => document.querySelector('#panel h2')?.textContent)));
+      await tap('#panel button:nth-child(1)');
+      log.push('bak po tankowaniu: ' + (await ev(() => agro.economy.state.fuel.toFixed(1))) + ' l, kasa ' + (await ev(() => agro.economy.state.money.toFixed(2))));
+    } else { const q = await pt(); await tp(q.x, q.z); }
     await wait(1500);
     log.push(await step());
   }
   await wait(500);
+  // at Żappka the shop panel comes first (touch "Wyjdź"), then the summary
+  for (let i = 0; i < 3 && !/Misja/.test((await ev(() => document.querySelector('#panel h2')?.textContent)) ?? ''); i++) {
+    log.push('panel: ' + (await ev(() => document.querySelector('#panel h2')?.textContent)));
+    await tap('#panel button:last-child');
+    await wait(800);
+  }
   log.push('panel: ' + (await ev(() => document.querySelector('#panel h2')?.textContent)));
   await tap('#panel button:nth-child(1)');
   await wait(800);
-  log.push('Dalej → ' + (await step()));
+  log.push('Dalej → ' + (await step()) + ', szacun ' + (await ev(() => Math.round(agro.economy.state.respect))));
   // Mission 2
   let q = await pt();
   await tp(q.x + 3.2, q.z);

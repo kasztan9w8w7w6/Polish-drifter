@@ -4,7 +4,22 @@
   "id": "zbyszek",
   "start": "a",
   "nodes": {
-    "a": { "who": "zbyszek", "text": "PLACEHOLDER: Dobry wieczór. Znaczy, dobranoc. Znaczy – czego?", "next": "b" },
-    "b": { "who": "zbyszek", "text": "PLACEHOLDER: Moje auto ma szesnaście zaworów. Twoje ma szesnaście rdzy." }
+    "a": {
+      "who": "zbyszek",
+      "text": "PLACEHOLDER: Dobry wieczór. Znaczy, dobranoc. Znaczy – czego?",
+      "next": "b"
+    },
+    "b": {
+      "who": "zbyszek",
+      "text": "PLACEHOLDER: Moje auto ma szesnaście zaworów. Twoje ma szesnaście rdzy.",
+      "alt": [
+        {
+          "if": {
+            "szacun": 300
+          },
+          "text": "PLACEHOLDER: Moje auto ma szesnaście zaworów. Twoje ma… szacun. Niech ci będzie."
+        }
+      ]
+    }
   }
 }
