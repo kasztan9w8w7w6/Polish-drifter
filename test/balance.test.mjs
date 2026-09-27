@@ -8,17 +8,19 @@ import { createSim } from './sim.mjs';
 const kmh = (s) => s.speed * 3.6;
 const fmt = (n, d = 1) => Number(n).toFixed(d);
 
-async function driftAt(preset, v = 60) {
-  const sim = await createSim({ preset });
+async function driftAt(preset, v = 60, drive = false) {
+  const sim = await createSim({ preset, drive });
   sim.run(0.5, {});
   sim.run(14, (s) => ({ throttle: Math.max(0, Math.min(1, v / 108 + (v - kmh(s)) / 8)) }));
   sim.run(0.35, { steer: 1, handbrake: 1, throttle: 0.8 }); // handbrake entry, left
   return sim;
 }
 
-for (const preset of ['Normalny', 'Pro']) {
-  test(`${preset}: pełny gaz bez korekt – kąt rośnie stopniowo, obrót dopiero po czasie, z ostrzeżeniem`, async (t) => {
-    const sim = await driftAt(preset);
+// both drives: the old arcade one and the real powertrain the game uses (v0.6c)
+for (const [preset, drive] of [['Normalny', false], ['Pro', false], ['Normalny', true], ['Pro', true]]) {
+  const tag = `${preset}${drive ? ' (napęd realny)' : ''}`;
+  test(`${tag}: pełny gaz bez korekt – kąt rośnie stopniowo, obrót dopiero po czasie, z ostrzeżeniem`, async (t) => {
+    const sim = await driftAt(preset, 60, drive);
     const t0 = sim.time;
     let at35 = null, dangerAt = null, spunAt = null, warnMax = 0, warnAtHalf = null;
     const danger = sim.tuning.proDangerAngle;
@@ -38,10 +40,10 @@ for (const preset of ['Normalny', 'Pro']) {
     assert.ok(warnMax > 0.9, 'ostrzeżenie przed obrotem');
   });
 
-  test(`${preset}: reakcja w oknie ostrzeżenia ratuje auto; pół gazu trzyma kąt, odpuszczenie go zmniejsza`, async (t) => {
+  test(`${tag}: reakcja w oknie ostrzeżenia ratuje auto; pół gazu trzyma kąt, odpuszczenie go zmniejsza`, async (t) => {
     // Full throttle until the warning reaches 60 %, then react: counter-steer, or back off the throttle
     const react = async (fix) => {
-      const sim = await driftAt(preset);
+      const sim = await driftAt(preset, 60, drive);
       let reacted = null, spun = false, minAfter = 90;
       sim.run(6, (s) => {
         if (reacted === null && s.spinWarning >= 0.6) reacted = sim.time;
@@ -55,7 +57,7 @@ for (const preset of ['Normalny', 'Pro']) {
     const counter = await react((s) => ({ throttle: 0.6, steer: -Math.sign(s.driftAngle) * (Math.abs(s.driftAngle) > 30 ? 0.8 : 0.2) }));
     const lift = await react(() => ({ throttle: 0.2, steer: 0 }));
     // Half throttle holds, backing off reduces (measured from ~30°)
-    const sim = await driftAt(preset);
+    const sim = await driftAt(preset, 60, drive);
     sim.run(3, (s) => ({ throttle: Math.abs(s.driftAngle) < 30 ? 1 : 0.5, steer: 0 }));
     const a0 = Math.abs(sim.car.state.driftAngle);
     sim.run(1.5, { throttle: 0.5, steer: 0 });

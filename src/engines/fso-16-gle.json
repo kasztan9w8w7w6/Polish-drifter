@@ -1,0 +1,17 @@
+{
+  "id": "fso-16-gle",
+  "name": "FSO 1.6 GLE (87 KM)",
+  "_source": "Moc i moment: 87 KM (64 kW) przy 5200 obr/min, 132 Nm przy 3800 obr/min, 1598 cm³ – dane z zadania i zgodne z katalogami (AutoCentrum.pl, automotyw.com, automobile-catalog.com: FSO Polonez Caro 1.6 GLE 1993–1997). Obroty biegu jałowego, maks. i zużycie (bsfc) – przyjęte typowo dla benzynowego OHV z lat 80./90. (oszacowanie). Źródeł nie dało się otworzyć bezpośrednio (proxy), tylko wyniki wyszukiwania.",
+  "fuel": "benzyna",
+  "displacementCc": 1598,
+  "powerKw": 64,
+  "powerHp": 87,
+  "powerRpm": 5200,
+  "torqueNm": 132,
+  "torqueRpm": 3800,
+  "idleRpm": 850,
+  "launchRpm": 2800,
+  "redlineRpm": 6000,
+  "bsfc": 310,
+  "idleLph": 0.9
+}

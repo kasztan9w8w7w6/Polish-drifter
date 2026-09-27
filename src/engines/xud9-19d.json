@@ -1,0 +1,18 @@
+{
+  "id": "xud9-19d",
+  "name": "Citroën XUD9 1.9 D (69 KM)",
+  "_source": "PSA XUD9, 1905 cm³, diesel: 69 KM (51 kW) przy 4600 obr/min, 120 Nm (przy ok. 2000 obr/min) – automobile-catalog.com (1995/1996 FSO Polonez Caro 1.9 GLD), auto-data.net (FSO Polonez III 1.9 D 70 KM), en.wikipedia.org (PSA XUD engine) – wyniki wyszukiwania. Obroty momentu maks., obroty maks. i bsfc – oszacowanie typowe dla XUD9.",
+  "fuel": "diesel",
+  "displacementCc": 1905,
+  "powerKw": 51,
+  "powerHp": 69,
+  "powerRpm": 4600,
+  "torqueNm": 120,
+  "torqueRpm": 2000,
+  "idleRpm": 800,
+  "launchRpm": 1800,
+  "redlineRpm": 5100,
+  "bsfc": 250,
+  "fuelDensity": 835,
+  "idleLph": 0.6
+}

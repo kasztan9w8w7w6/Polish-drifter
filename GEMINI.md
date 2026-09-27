@@ -42,8 +42,12 @@ src/vehicle.ts  – auto arcade (port Kenney Starter Kit Racing, vehicle.gd): to
                   Wyjście: vehicle.state { position, quaternion, velocity, speed, slipAngle, driftAngle, drifting,
                   sideSlip (0–90°, cofanie ≠ poślizg), wheelspin, bodyRoll, bodyPitch, wheels[] }
 src/tuning.ts   – wszystkie parametry jazdy i kamery + presety „Normalny” (domyślny, wymagający), „Pro”, „Łatwy” (dostępność)
-src/cars/*.json – profile aut (realne dane + wartości arcade, przełożenia, paleta lakierów, model); nowe auto = nowy plik
-src/cars.js     – applyCar (masa, moc z prędkości maks., napęd → tuning), gearsOf (biegi i obroty dla gearbox.js)
+src/cars/*.json – profile aut (real: silnik, przełożenia, opony, Cd, masa, bak, źródła; arcade: odniesienie prowadzenia; paleta
+                  lakierów FSO z kodami, model); nowe auto = nowy plik
+src/engines/*.json – silniki (moc/obroty, moment/obroty, obroty jałowe/maks., zużycie, źródła) – pod swapy w garażu
+src/engine.js   – NAPĘD z realnych danych (docs/fizyka-aut.md): krzywa momentu z punktów, automatyczna skrzynia, przełożenie
+                  główne, sprawność, opór powietrza i toczenia, masy wirujące, czynnik zabawy `fun` (lil-gui); bez DOM
+src/cars.js     – applyCar (masa, odniesienie prowadzenia → tuning), carDrivetrain (profil + silnik → engine.js)
 src/camera.ts   – kamera „Diorama” (orto, 35° w dół, obrócona 28° od osi mapy, przyciągana do siatki pikseli) i „Za autem” (port view.gd), klawisz C
 src/car.js      – wygląd auta: model Poloneza (koła = kości, kręcą się i skręcają), przechył, reflektory; zastępcze bryły
 src/track.js    – podłoże fizyczne i trawa za płotem, ściany, słupki opon, pachołki (pozycje z mapy)
@@ -78,7 +82,6 @@ src/race.js     – wyścig bez DOM: trasa z mapy (densify + CatmullRomCurve3), 
 src/marker.js   – znacznik celu misji: słup światła nad celem + strzałka nad autem
 src/occlusion.js – obiekty zasłaniające auto robią się półprzezroczyste
 src/audio.js    – Howler.js: silnik (pitch z obrotów), pisk opon (z kąta), uderzenia
-src/gearbox.js  – wirtualne biegi/obroty dla HUD i dźwięku (fizyka nie ma biegów)
 src/input.js    – klawiatura (płynna rampa) + pad (Gamepad API, standard mapping) + dodatkowe źródła (dotyk), wyłączenie na pauzę
 src/touchstate.js – dotyk bez DOM (testy w Node): isTouchDevice (po możliwościach, nie user-agencie; ?touch=1/0 wymusza),
                   stan przycisków dla kilku palców, rampy jak klawiatura
@@ -121,8 +124,12 @@ Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości n
 
 ## Model jazdy (skrót)
 
+- **Napęd (v0.6c, hybryda):** w grze auto napędza `engine.js` (realne dane Caro 1.6 GLE): przyspieszenie z silnika przez
+  biegi minus opory trafia wprost do prędkości kuli wzdłuż toru + pasujący obrót (ω = v/r); hamulec 8,5 m/s²; tłumienia
+  kuli = 0. Kalibracja (fun = 1): 0–100 16,1 s, vmax 158 km/h (katalog 16,3 s / 155). `fun` (domyślnie 1,7) = lżejsza
+  masa efektywna: szybciej, vmax bez zmian. Bez `drivetrain` (stare testy) działa dawny napęd Kenneya niżej.
 - **Kula (Kenney):** masa z profilu auta (Polonez 1110 kg), gravity scale 1,5, tarcie 5. Gaz dodaje obrót kuli wokół osi prostopadłej do kierunku jazdy;
-  prędkość maks. ≈ `power / angularDamping`. Bez gazu działa `coastDamping` (hamowanie silnikiem).
+  prędkość maks. ≈ `power / angularDamping` (w grze już tylko odniesienie prowadzenia: 108 km/h). Bez gazu działa `coastDamping` (hamowanie silnikiem).
   `sideGrip` wygasza ruch w bok, więc kula trzyma się toru.
 - **Model auta** to osobny obiekt: pozycja kuli − promień, obrót = kurs, nachylenie do normalnej z raycastu w dół (lerp 0,2). Nie może dachować.
 - **Dwa kąty:** `travel` (tor ruchu) i kurs maski = `travel + angle`. W przyczepności `angle` = 0.

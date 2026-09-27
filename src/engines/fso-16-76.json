@@ -1,0 +1,17 @@
+{
+  "id": "fso-16-76",
+  "name": "FSO 1.6 (76 KM)",
+  "_source": "76 KM (56 kW) przy 5000 obr/min, 121 Nm przy 3600 obr/min, 1598 cm³; Caro 1.6 1991–1997: vmax 154 km/h, 0–100 18,1 s – wg AutoCentrum.pl (FSO Polonez Caro 1.6 76KM 1991-1997, dane techniczne; wynik wyszukiwania). Obroty maks./jałowe, bsfc – oszacowanie.",
+  "fuel": "benzyna",
+  "displacementCc": 1598,
+  "powerKw": 56,
+  "powerHp": 76,
+  "powerRpm": 5000,
+  "torqueNm": 121,
+  "torqueRpm": 3600,
+  "idleRpm": 850,
+  "launchRpm": 2700,
+  "redlineRpm": 5800,
+  "bsfc": 320,
+  "idleLph": 0.9
+}
