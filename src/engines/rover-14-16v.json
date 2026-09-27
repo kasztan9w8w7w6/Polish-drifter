@@ -1,0 +1,18 @@
+{
+  "id": "rover-14-16v",
+  "name": "Rover 1.4 16V (103 KM)",
+  "_source": "Rover serii K, 1396 cm³: 103 KM (76 kW) przy 6000 obr/min, 127 Nm przy 5000 obr/min – AutoCentrum.pl (FSO Polonez Caro 1.4 103KM 1993–1997), automobile-catalog.com (1996 FSO Polonez Caro 1.4 GLi 16V), ultimatespecs.com (FSO Caro 1.4i 16v) – wyniki wyszukiwania. Przełożenie główne 4,3 dla wersji z Roverem – wątek na elektroda.pl („Polonez – czy skrzynie biegów różnią się w wersjach 1.4, 1.6, 1.9?”). Obroty maks. i bsfc – oszacowanie.",
+  "fuel": "benzyna",
+  "displacementCc": 1396,
+  "powerKw": 76,
+  "powerHp": 103,
+  "powerRpm": 6000,
+  "torqueNm": 127,
+  "torqueRpm": 5000,
+  "idleRpm": 800,
+  "launchRpm": 3200,
+  "redlineRpm": 6800,
+  "finalDrive": 4.3,
+  "bsfc": 290,
+  "idleLph": 0.8
+}

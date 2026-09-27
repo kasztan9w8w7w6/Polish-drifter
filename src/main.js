@@ -18,8 +18,8 @@ import { createPixelComposer, installRadialFog, pixelizeScene, pixelArt } from '
 import { createOcclusion, occlusionSettings } from './occlusion.js';
 import { headlightSettings, carLook } from './car.js';
 import { createAudio, audioSettings } from './audio.js';
-import { createGearbox } from './gearbox.js';
-import { applyCar, gearsOf } from './cars.js';
+import { applyCar, carDrivetrain } from './cars.js';
+import { driveSettings } from './engine.js';
 import { createSurvival, headlightLevel, batterySettings } from './survival.js';
 import { createNarrator, narratorSettings } from './narrator.js';
 import { createMission, formatTime } from './mission.js';
@@ -82,6 +82,9 @@ applyNight();
 const settings = loadSettings();
 const CARS = Object.fromEntries(Object.values(import.meta.glob('./cars/*.json', { eager: true, import: 'default' })).map((p) => [p.id, p]));
 const profile = CARS.polonez ?? Object.values(CARS)[0];
+// Engines (src/engines/*.json) and the car's real powertrain (engine.js: torque curve, gears, drag – v0.6c)
+const ENGINES = Object.fromEntries(Object.values(import.meta.glob('./engines/*.json', { eager: true, import: 'default' })).map((e) => [e.id, e]));
+const drivetrain = carDrivetrain(profile, ENGINES);
 if (presets[settings.difficulty]) applyPreset(settings.difficulty);
 applyCar(tuning, profile);
 
@@ -94,7 +97,7 @@ const track = createTrack(scene, physics, map);
 const spawnArg = new URLSearchParams(location.search).get('spawn')?.split(',').map(Number);
 const home = map.points.spawn;
 const [sx, sz, sh] = spawnArg?.length === 3 ? spawnArg : [home.x, home.z, home.heading];
-const car = createVehicle(physics, { spawn: { x: sx, y: 1, z: sz }, spawnYaw: (sh * Math.PI) / 180 });
+const car = createVehicle(physics, { spawn: { x: sx, y: 1, z: sz }, spawnYaw: (sh * Math.PI) / 180, drivetrain });
 const carView = await createCarView(scene, profile);
 if (settings.paint && profile.look.paints[settings.paint]) {
   carLook.colour = settings.paint;
@@ -131,7 +134,6 @@ const markers = createMarkers(scene); // (after pixelizeScene: unlit, keeps its 
 const occlusion = createOcclusion();
 for (const o of district.occluders) occlusion.add(o);
 const audio = createAudio();
-const gearbox = createGearbox(gearsOf(profile));
 // Browsers only allow sound after a user gesture
 for (const ev of ['keydown', 'pointerdown']) addEventListener(ev, () => audio.start(), { once: true });
 
@@ -338,6 +340,10 @@ for (const [title, keys] of Object.entries(groups)) {
     if (title === 'Kula (Kenney)') c.onChange(() => car.applyParams());
   }
 }
+const driveFolder = gui.addFolder('Napęd (realne dane)').close();
+driveFolder.add(driveSettings, 'fun', 1, 3, 0.05).name('czynnik zabawy (przyspieszenie ×)');
+driveFolder.add(driveSettings, 'shiftTime', 0.1, 1.2, 0.05).name('czas zmiany biegu (s)');
+driveFolder.add(driveSettings, 'engineBrake', 0, 0.4, 0.01).name('hamowanie silnikiem');
 const gfx = gui.addFolder('Grafika (noc, pixel-art)').close();
 gfx.add(pixelArt, 'pixelSize', 1, 8, 1).name('rozmiar piksela').onChange(applyPixel);
 gfx.add(pixelArt, 'edges', 0, 1.5, 0.05).name('obrysy (normalne)').onChange(applyPixel);
@@ -784,13 +790,15 @@ function tick(time) {
   hudBat.narrator.style.opacity = nr.opacity;
 
   // Dashboard: speed, virtual gear, rev counter
-  const { gear, rpm, load } = gearbox.update(dt, state, controls.throttle);
-  audio.update(dt, state, load, controls.throttle, survival.engineOn);
+  // Rev counter, gear and engine sound from the real powertrain (engine.js through vehicle state)
+  const { gear, rpm, load } = state;
+  const rpmFrac = drivetrain ? Math.max(0, Math.min(1, (rpm - drivetrain.idleRpm) / (drivetrain.redRpm - drivetrain.idleRpm))) : load;
+  audio.update(dt, state, rpmFrac, controls.throttle, survival.engineOn); // (engine pitch from the real rpm)
   const blink = Math.floor(timer.getElapsed() * 3) % 2 === 0;
   dashboard.draw({
     speedKmh: state.speed * 3.6,
     rpm: survival.engineOn ? rpm : 0, // battery flat: the engine is off
-    redRpm: gearbox.gears.redRpm,
+    redRpm: drivetrain?.redRpm ?? 6000,
     gear,
     battery: sv.level,
     charging: sv.driftCharge > 0 || sv.charging,

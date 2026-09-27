@@ -30,7 +30,7 @@ export function createAudio() {
     get started() {
       return started;
     },
-    // state: vehicle.state, load = rpm between idle (0) and redline (1) from gearbox, throttle 0..1, dt seconds
+    // state: vehicle.state, load = rpm between idle (0) and redline (1) from the powertrain (engine.js), throttle 0..1, dt seconds
     update(dt, state, load, throttle, engineOn = true) {
       if (!started) return;
       Howler.volume(audioSettings.volume);

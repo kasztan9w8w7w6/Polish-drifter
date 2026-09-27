@@ -109,6 +109,9 @@ W poślizgu nic nie trzyma kąta za ciebie:
 - za mocna kontra przy wyjściu **zarzuca w drugą stronę**; wyjście z wyczuciem: odpuść gaz i lekko kontruj;
 - auto ma **pęd**: w szybkim zakręcie i w drifcie wynosi je na zewnątrz, więc da się przestrzelić zakręt.
 
+**Napęd:** realne dane Poloneza Caro 1.6 GLE (87 KM, 5 biegów, automatyczna zmiana), opory i masy – 0–100 i vmax jak w katalogu;
+w grze żwawiej dzięki czynnikowi zabawy (G → Napęd). Szczegóły: [`docs/fizyka-aut.md`](docs/fizyka-aut.md).
+
 Presety (G → Preset, później w menu Ustawienia): **Normalny** (domyślny), **Pro** (wyższe progi, tył ucieka szybciej, obrót od 55°)
 i **Łatwy** – dawna jazda z asystą (kąt trzyma się sam, bez bączków), jako opcja dostępności.
 

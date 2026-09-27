@@ -44,13 +44,20 @@ const SPIN_COOL = 1; // s after a spin before a new slide can start (no second s
 const SPIN_DRAG = 1.6; // 1/s speed lost while spinning
 const CRASH_BRAKE = 4; // 1/s – how fast the bounce after a hit dies out while the engine is cut (crashStun)
 const Y = new Vector3(0, 1, 0);
+// Real powertrain (engine.js createDrivetrain): when given, it drives the car instead of Kenney's spin-and-damping;
+// handling and drift stay the same (v0.6c, docs/fizyka-aut.md)
+type Drivetrain = {
+  update(dt: number, v: number, throttle: number, reverse?: number): { accel: number; rpm: number; gear: number; load: number };
+  reset(): void;
+};
+const BRAKE_DECEL = 8.5; // m/s² at full brake with the real powertrain (≈ 0.87 g)
 const DEG = Math.PI / 180;
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 const approach = (value: number, target: number, rate: number, dt: number) => value + (target - value) * (1 - Math.exp(-rate * dt));
 
 export function createVehicle(
   physics: Physics,
-  { tuning = globalTuning, spawn = { x: 0, y: BALL_RADIUS, z: 0 }, spawnYaw = 0 }: { tuning?: Tuning; spawn?: { x: number; y: number; z: number }; spawnYaw?: number } = {},
+  { tuning = globalTuning, spawn = { x: 0, y: BALL_RADIUS, z: 0 }, spawnYaw = 0, drivetrain = null }: { tuning?: Tuning; spawn?: { x: number; y: number; z: number }; spawnYaw?: number; drivetrain?: Drivetrain | null } = {},
 ) {
   const { RAPIER, world } = physics;
   const t = tuning;
@@ -81,8 +88,8 @@ export function createVehicle(
   function applyParams() {
     ball.setMass(t.mass);
     body.setGravityScale(t.gravityScale, true);
-    body.setAngularDamping(t.angularDamping);
-    body.setLinearDamping(t.linearDamping);
+    body.setAngularDamping(drivetrain ? 0 : t.angularDamping);
+    body.setLinearDamping(drivetrain ? 0 : t.linearDamping); // (the powertrain has its own air drag and rolling resistance)
   }
   applyParams();
 
@@ -110,6 +117,7 @@ export function createVehicle(
   let spinRate = 0; // rad/s the body still rotates in a spin-out (damped)
   let spinCool = 0; // s left before a slide can start again after a spin
   let danger = 0; // s spent over proDangerAngle without correcting (the balance zone)
+  let rpm = 0, gear = 0, load = 0; // from the real powertrain (0 without one)
   let spins = 0;
   const maxAngle = () => (t.realCounter > 0.5 ? t.proSpinAngle : t.driftAngleMax); // degrees
   let crashTimer = 0; // s left without engine power towards the obstacle after a hit
@@ -142,6 +150,9 @@ export function createVehicle(
     drifting: false,
     spinning: false, // Pro: spun out after over-rotating a drift
     spinWarning: 0, // 0..1: how close the balance zone is to a spin (squeal, camera shake)
+    rpm: 0, // engine rpm, gear (−1 reverse) and load 0..1 – from the real powertrain (engine.js), 0 without one
+    gear: 0,
+    load: 0,
     spins: 0,
     driftFactor: 0,
     steerAngle: 0, // visual front-wheel angle (rad)
@@ -302,11 +313,30 @@ export function createVehicle(
     if (crashTimer > 0 && throttleTarget * crashSide > 0) throttleTarget = 0; // just hit it: stop and bounce off first (backing away works)
     if (spinTimer > 0) throttleTarget = 0; // spinning: the wheels are just along for the ride
     engine = approach(engine, throttleTarget, t.throttleResponse, h);
-    body.setAngularDamping(Math.abs(throttleTarget) > 0.05 ? t.angularDamping : t.coastDamping);
+    if (!drivetrain) body.setAngularDamping(Math.abs(throttleTarget) > 0.05 ? t.angularDamping : t.coastDamping);
     const backingOff = throttleTarget * crashSide < 0;
     if (crashTimer > 0 && !backingOff) spin *= Math.exp(-CRASH_BRAKE * h); // after a hit the wheels brake: the bounce dies out
-    spin += engine * t.power * (1 - t.driftSpeedLoss * driftBlend) * h;
-    if (inp.brake > 0 && forwardSpeed > 0.5) spin = Math.max(0, spin - inp.brake * t.brakePower * h);
+    if (drivetrain) {
+      // Real powertrain: its acceleration (engine through the gears minus drag and rolling resistance, engine.js) goes
+      // straight into the speed along the line of travel, with the matching roll of the sphere (ω = v / r), so the sphere
+      // rolls without slipping. Through the spin alone only 2/7 of it would reach the ground (a solid sphere's inertia).
+      const along = v.x * dX + v.z * dZ;
+      const r = drivetrain.update(h, along, Math.max(0, engine), Math.max(0, -engine));
+      let dv = r.accel * h;
+      if (dv > 0) dv *= 1 - t.driftSpeedLoss * driftBlend;
+      if (inp.brake > 0 && along > 0.5) dv -= Math.min(along, inp.brake * BRAKE_DECEL * h);
+      if (grounded) {
+        v.x += dX * dv;
+        v.z += dZ * dv;
+        spin += dv / BALL_RADIUS;
+      }
+      rpm = r.rpm;
+      gear = r.gear;
+      load = r.load;
+    } else {
+      spin += engine * t.power * (1 - t.driftSpeedLoss * driftBlend) * h;
+      if (inp.brake > 0 && forwardSpeed > 0.5) spin = Math.max(0, spin - inp.brake * t.brakePower * h);
+    }
     if (inp.handbrake > 0) spin -= Math.sign(spin) * Math.min(Math.abs(spin), inp.handbrake * t.handbrakeDrag * h);
     if (spinTimer > 0) spin *= Math.exp(-SPIN_DRAG * h);
     if (grounded) {
@@ -574,6 +604,9 @@ export function createVehicle(
     state.yawRate = turnRate;
     state.drifting = drifting;
     state.spinning = spinTimer > 0;
+    state.rpm = rpm;
+    state.gear = gear;
+    state.load = load;
     state.spinWarning = spinTimer > 0 || !drifting ? 0 : Math.min(1, danger / Math.max(t.proSpinDelay, 0.1));
     state.spins = spins;
     state.driftFactor = driftBlend;
@@ -619,6 +652,7 @@ export function createVehicle(
     body.setAngvel({ x: 0, y: 0, z: 0 }, true);
     travel = yaw;
     angle = turnRate = engine = driftBlend = sharpTimer = noThrottleTimer = recentThrottle = accel = prevForwardSpeed = stuckTimer = crashTimer = spinTimer = spinRate = spinCool = danger = 0;
+    drivetrain?.reset();
     drifting = false;
     driftSide = 0;
     hold = 1;

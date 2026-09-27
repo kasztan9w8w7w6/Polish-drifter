@@ -67,3 +67,9 @@ dostępne z tego środowiska; jak je podmienić: `docs/teksty.md` → „Postaci
 Bloki z wielkiej płyty (`src/blocks.js`), ich tekstury (malowane w kodzie na kanwie) i podłoże osiedla (`src/ground.js`)
 są zrobione na potrzeby gry – bez zewnętrznych assetów. `BufferGeometryUtils.mergeGeometries` z `three/addons` (MIT)
 łączy detale bloków w kilka siatek.
+
+## Dane aut (v0.6c)
+
+Dane techniczne Poloneza Caro i silników (`src/cars/polonez.json`, `src/engines/*.json`) pochodzą z publicznych katalogów
+i forów (AutoCentrum.pl, automobile-catalog.com, automotyw.com, elektroda.pl, fora FSO), a kody lakierów z forów miłośników
+FSO. Źródła są wpisane w plikach (`_source`). Kolory RGB lakierów to przybliżenia dobrane na oko, nie próbki lakieru.

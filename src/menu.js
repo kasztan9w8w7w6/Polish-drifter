@@ -36,7 +36,7 @@ export function createMenu({ settings, paints, hooks }) {
         <button data-go="toMenu">Wyjście do menu</button>
       </nav>`,
     garage: () => `
-      <div class="m-title small"><h1>Garaż</h1><p>Polonez 1500 · lakier z epoki</p></div>
+      <div class="m-title small"><h1>Garaż</h1><p>Polonez Caro 1.6 GLE · lakiery FSO z kodami</p></div>
       <div class="m-paints">${Object.entries(paints)
         .map(([name, hex]) => `<button data-paint="${esc(name)}" class="${name === settings.paint ? 'on' : ''}"><i style="background:${hex}"></i>${esc(name)}</button>`)
         .join('')}</div>

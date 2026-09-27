@@ -4,9 +4,17 @@ import { createVehicle } from '../src/vehicle.ts';
 import { presets } from '../src/tuning.ts';
 import { applyCar } from '../src/cars.js';
 import polonez from '../src/cars/polonez.json' with { type: 'json' };
+import { carDrivetrain } from '../src/cars.js';
+import fs from 'node:fs';
+
+// Engine files (src/engines/*.json) for the real powertrain
+export const ENGINES = Object.fromEntries(fs.readdirSync(new URL('../src/engines/', import.meta.url)).map((f) => { const e = JSON.parse(fs.readFileSync(new URL(`../src/engines/${f}`, import.meta.url))); return [e.id, e]; }));
 
 // (preset: the older scenario tests describe the assisted Łatwy model; Normalny/Pro tests pass their preset)
-export async function createSim({ preset = 'Łatwy', car: profile = polonez, walls = false, ramps = false, bumps = false, obstacles = false } = {}) {
+// drive: the real powertrain (engine.js) like in the game – true, or { engine, fun }; false = the old arcade drive
+export async function createSim({ preset = 'Łatwy', car: profile = polonez, walls = false, ramps = false, bumps = false, obstacles = false, drive = process.env.DRIVE ? true : false } = {}) {
+  // (DRIVE=1 npm test runs everything on the real powertrain; the crash tests and two Łatwy/Pro entry tests assume the
+  // arcade drive's quicker acceleration – test/engine.test.mjs and test/balance.test.mjs cover the real one)
   await initPhysics();
   const physics = createPhysics();
   physics.addStaticBox({ x: 0, y: -1, z: 0 }, { x: 5000, y: 1, z: 5000 }, { friction: 0.8 });
@@ -39,7 +47,8 @@ export async function createSim({ preset = 'Łatwy', car: profile = polonez, wal
     physics.addStaticBox({ x: 12, y: 1.5, z: -17.5 }, { x: 4, y: 1.5, z: 0.5 }, o);
   }
   const tuning = applyCar({ ...presets[preset] }, profile);
-  const car = createVehicle(physics, { tuning });
+  const drivetrain = drive ? carDrivetrain(profile, ENGINES, drive.engine, { fun: drive.fun ?? 1.7, shiftTime: 0.6, engineBrake: 0.12 }) : null;
+  const car = createVehicle(physics, { tuning, drivetrain });
   let time = 0;
   const log = [];
 
@@ -58,7 +67,7 @@ export async function createSim({ preset = 'Łatwy', car: profile = polonez, wal
     }
     return car.read();
   }
-  return { physics, car, tuning, run, log, get time() { return time; } };
+  return { physics, car, tuning, drivetrain, run, log, get time() { return time; } };
 }
 
 export function yawOf(s) {

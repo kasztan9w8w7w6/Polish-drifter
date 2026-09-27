@@ -3,6 +3,35 @@
 Wersje do v0.4c mają lokalne tagi w git (serwer odrzuca wypychanie tagów); od v0.5 wersję znajdziesz po commicie „v0.5a – …”.
 Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
 
+## v0.6c – realne parametry aut i przelicznik
+- **Model hybrydowy** (`docs/fizyka-aut.md`, z omówieniem Marco Monstera, Edy's Vehicle Physics, ArcadeCarPhysics i
+  wassimulatora): **napęd z realnych danych**, prowadzenie i drift bez zmian (kula arcade).
+- **Nowy `src/engine.js`:**
+  - krzywa momentu z danych katalogowych, obroty z prędkości, biegu i promienia koła, poślizg sprzęgła przy ruszaniu;
+  - automatyczna skrzynia (zmiana tam, gdzie następny bieg ciągnie mocniej), ogranicznik obrotów, hamowanie silnikiem;
+  - opór powietrza i toczenia, masy wirujące.
+  Prędkość maksymalna wynika z fizyki.
+- **Czynnik zabawy** (`fun`, domyślnie 1,7, lil-gui → „Napęd”): działa jak lżejsza masa efektywna.
+  Proporcje między autami i silnikami są realne, vmax się nie zmienia.
+- **Obrotomierz, bieg i dźwięk silnika** biorą prawdziwe obroty. Wirtualny `gearbox.js` usunięty.
+- **Profil: Polonez Caro 1.6 GLE** (1993–97):
+  - silnik: 87 KM @ 5200, 132 Nm @ 3800, 1110 kg, 185/70 R13, bak 45 l, 4318 × 1650 × 1420 mm, rozstaw osi 2509 mm;
+  - skrzynia: I 3,753, II 2,132, III 1,378, IV 1,000, V 0,881, R 3,867, przełożenie główne 3,9;
+  - źródła w pliku; strony były zablokowane, więc dane pochodzą z wyników wyszukiwania.
+- **Kalibracja** (fun = 1, pełna fizyka): 0–100 **16,1 s** (katalog 16,3 s), vmax **158 km/h** (katalog ok. 155).
+  Sprawdzian na drugim silniku (1.6 76 KM): 18,2 s / 150 km/h przy katalogowych 18,1 s / 154 km/h.
+- **Silniki pod swapy** (`src/engines/`, bez UI):
+  - 1.6 76 KM: 18,2 s, 150 km/h;
+  - Rover 1.4 16V 103 KM, przełożenie główne 4,3: 15,0 s, 166 km/h;
+  - XUD9 1.9 D 69 KM: 19,9 s, 143 km/h.
+- **Lakiery FSO z kodami** (garaż):
+  - kolory: L-45 Niebieski oceaniczny, L-46 Burgund, 69E Złoty metalik, 74U Czerwony, 92U Srebrny metalik,
+    42U Zielono-granatowy mika, L-117 Ciemnozielony metalik, L-49 Kakaowy, L-59 Niebieski bałtycki, L-61 Morelowy;
+  - RGB to przybliżenia, oznaczone w pliku; źródła: fora FSO.
+- **Testy:**
+  - `test/engine.test.mjs`: krzywa, kalibracja, proporcje silników, czynnik zabawy;
+  - testy strefy balansu na obu napędach.
+
 ## v0.6b – drift: strefa balansu (Normalny, Pro)
 - **Kąt:** pełny gaz pogłębia kąt stopniowo (Normalny +12°/s, Pro +15°/s; wcześniej ok. 29°/s); ok. pół gazu trzyma kąt,
   odpuszczenie go zmniejsza; kontra reguluje.
