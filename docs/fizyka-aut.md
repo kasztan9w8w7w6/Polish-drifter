@@ -1,4 +1,4 @@
-# Fizyka aut – jak to robią inni i jak robi to Agro Drifter (v0.6c)
+# Fizyka aut – jak to robią inni i jak robi to Polish Drifter (v0.6c)
 
 **Krótko:** napęd jest z realnych danych, a prowadzenie i drift to arcade.
 

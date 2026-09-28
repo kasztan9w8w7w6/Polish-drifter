@@ -1,10 +1,10 @@
-# Agro Drifter – pamięć projektu
+# Polish Drifter – pamięć projektu
 
 > Ten plik czytają asystenci AI pracujący nad repo (kopia: `GEMINI.md`). Aktualizuj oba razem.
 
 ## O grze
 
-**Agro Drifter** to mroczna, groteskowa gra fabularna o jeździe starym polskim autem
+**Polish Drifter** to mroczna, groteskowa gra fabularna o jeździe starym polskim autem
 (Polonez, napęd na tył) nocą po osiedlu. Estetyka: czysty pixel-art 3D jak diorama (kamera 3/4), polish doomer, satyra:
 gracz ucieka przed „promieniowaniem 5G”.
 
@@ -19,8 +19,8 @@ gracz ucieka przed „promieniowaniem 5G”.
 
 ## Warstwy (roadmapa)
 
-Tabela wersji jest w [`ROADMAP.md`](ROADMAP.md) (tam dopisuj nowe). Teraz: v0.5 – MVP (misje, postacie, dialogi,
-osiedle z wielkiej płyty); dopracowanie sterowania mobilnego w v0.15.
+Tabela wersji jest w [`ROADMAP.md`](ROADMAP.md) (tam dopisuj nowe). Teraz: v0.6 – po MVP (telefon, balans driftu, realny napęd, paliwo i kasa, 5G);
+dalej dopracowanie sterowania mobilnego w v0.15.
 
 ## Zasady pracy
 
