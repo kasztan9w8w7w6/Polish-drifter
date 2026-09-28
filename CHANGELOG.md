@@ -3,6 +3,13 @@
 Wersje do v0.4c mają lokalne tagi w git (serwer odrzuca wypychanie tagów); od v0.5 wersję znajdziesz po commicie „v0.5a – …”.
 Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
 
+## Sesja porządkowa (bez zmian w grze)
+- `docs/referencje/README.md`: jak wgrać zdjęcia, drony, eksporty OSM i screeny (foldery, `opis.txt`, nazwy plików).
+- `scripts/referencje.py`: HEIC → JPG, zmniejszenie do 2000 px, obrót z EXIF, usunięcie metadanych (GPS), zmiana nazw z pliku, paleta kolorów.
+- `docs/BRAKI.md`: czego brakuje do kolejnych sesji (zdjęcia, modele, dźwięki, muzyka), priorytety, top 10, podział „z kodu” / „do dostarczenia”.
+- `ROADMAP.md`: podział na sesje (S2 v0.7 jazda/dźwięk/orientacja, S3 v0.8 polski świat, S4 v0.9 większa mapa, S5 fabuła, później trasa nad wodą) i decyzje o kasie za drift w wolnej jeździe oraz tankowaniu „na zeszyt”.
+- `KATALOG.md`, `STYL.md` i `plan-mapy.md` powstaną po wgraniu zdjęć (folder `docs/referencje/` był pusty).
+
 ## v0.6f – nowa nazwa: Polish Drifter
 - Gra nazywa się teraz **Polish Drifter** (menu, tytuł strony, plansza „Obróć telefon”, README, dokumentacja).
 - Klucze zapisu w przeglądarce (`agro-settings`, `agro-progress`) zostają bez zmian, żeby ustawienia i postęp nie przepadły.

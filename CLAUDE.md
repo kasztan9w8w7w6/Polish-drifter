@@ -19,8 +19,8 @@ gracz ucieka przed „promieniowaniem 5G”.
 
 ## Warstwy (roadmapa)
 
-Tabela wersji jest w [`ROADMAP.md`](ROADMAP.md) (tam dopisuj nowe). Teraz: v0.6 – po MVP (telefon, balans driftu, realny napęd, paliwo i kasa, 5G);
-dalej dopracowanie sterowania mobilnego w v0.15.
+Tabela wersji jest w [`ROADMAP.md`](ROADMAP.md) (tam dopisuj nowe). Teraz: v0.6 zrobione; dalej sesje S2 v0.7 jazda/dźwięk/orientacja, S3 v0.8 polski świat, S4 v0.9 większa mapa, S5 fabuła;
+braki do nich: `docs/BRAKI.md`, referencje: `docs/referencje/`.
 
 ## Zasady pracy
 

@@ -27,8 +27,38 @@ Wersje po kolei. Szczegóły modułów: [`CLAUDE.md`](CLAUDE.md), zmiany w każd
 | v0.6d | paliwo, kasa, szacun zamiast baterii; stacja „Kometa”, Żappka ze sklepem, warunki w rozmowach | zrobione |
 | v0.6e | 5G jako klimat przy masztach | zrobione |
 | v0.6f | nowa nazwa: Polish Drifter | zrobione |
-| v0.7 | teksty docelowe od scenarzysty, kolejne misje, swapy silników i lakiery w garażu (UI), radio, uszkodzenia | następne |
+| — | sesja porządkowa: referencje (`docs/referencje/`), braki (`docs/BRAKI.md`), podział na sesje S2–S5 | zrobione |
+| v0.7 (S2) | jazda, dźwięk, orientacja | następne |
+| v0.8 (S3) | polski świat | planowane |
+| v0.9 (S4) | większa mapa | planowane |
+| S5 | fabuła | planowane |
+| później | trasa nad wodą; garaż i tuning (UI swapów silników, lakiery), uszkodzenia | planowane |
 | v0.15 | dopracowanie sterowania mobilnego (po testach na telefonach) | planowane |
+
+## Sesje S2–S5
+
+Co jest potrzebne do każdej sesji (zdjęcia, modele, dźwięki): [`docs/BRAKI.md`](docs/BRAKI.md).
+
+- **S2 – v0.7: jazda, dźwięk, orientacja.**
+  - Jazda: dopracowanie po testach (drift, strefa balansu, napęd).
+  - Ekonomia (decyzje z rozmowy po v0.6):
+    - kasa za drift w wolnej jeździe tylko przy ludziach (chłopaki „rzucają drobne”), ok. 1/3 stawki z misji; drift w pustym miejscu daje 0 zł;
+    - tankowanie „na zeszyt” u pana ze stacji: limit −40 zł zostaje, a przy następnym tankowaniu najpierw spłacasz dług.
+  - Dźwięk: silnik Poloneza, uderzenia wg materiału, ambient nocnego osiedla, radio (muzyka, szum strojenia; może zmieniać mgłę i przyczepność).
+  - Orientacja: minimapa albo kompas, strzałka do celu, tabliczki z nazwami ulic, nazwy stref.
+- **S3 – v0.8: polski świat.**
+  - Paleta i światło według `docs/STYL.md` (ze zdjęć): latarnie sodowe, okna, szyldy.
+  - Auta z epoki na parkingach, pawilony, kioski, garaże blaszaki, detale podwórek.
+  - Postacie z modeli.
+- **S4 – v0.9: większa mapa.**
+  - Mapa według `docs/plan-mapy.md` (eksport OSM, drony, screeny): kilka osiedli, główne drogi, stacja, sklepy, garaże, plac do driftu.
+  - Skrypt OSM → mapa.
+- **S5 – fabuła.** Teksty docelowe od scenarzysty (`docs/teksty.md`), kolejne misje i rozmowy, rozwój postaci.
+- **Później:**
+  - trasa nad wodą jako osobna strefa;
+  - garaż i tuning (UI swapów silników z `src/engines/`, lakiery);
+  - uszkodzenia;
+  - v0.15 – sterowanie mobilne po testach.
 
 ## Sterowanie mobilne
 
