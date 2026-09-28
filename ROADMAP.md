@@ -1,4 +1,4 @@
-# Roadmapa – Agro Drifter
+# Roadmapa – Polish Drifter
 
 Wersje po kolei. Szczegóły modułów: [`CLAUDE.md`](CLAUDE.md), zmiany w każdej wersji: [`CHANGELOG.md`](CHANGELOG.md).
 
@@ -26,6 +26,7 @@ Wersje po kolei. Szczegóły modułów: [`CLAUDE.md`](CLAUDE.md), zmiany w każd
 | v0.6c | napęd z realnych danych (Polonez Caro 1.6 GLE, silniki pod swapy, lakiery FSO), docs/fizyka-aut.md | zrobione |
 | v0.6d | paliwo, kasa, szacun zamiast baterii; stacja „Kometa”, Żappka ze sklepem, warunki w rozmowach | zrobione |
 | v0.6e | 5G jako klimat przy masztach | zrobione |
+| v0.6f | nowa nazwa: Polish Drifter | zrobione |
 | v0.7 | teksty docelowe od scenarzysty, kolejne misje, swapy silników i lakiery w garażu (UI), radio, uszkodzenia | następne |
 | v0.15 | dopracowanie sterowania mobilnego (po testach na telefonach) | planowane |
 

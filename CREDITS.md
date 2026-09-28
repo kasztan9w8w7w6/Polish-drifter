@@ -33,7 +33,7 @@ z osadzonymi danymi (serwer artefaktów nie serwuje `.glb`) w `public/`. Geometr
 | Plik(i) | Źródło | Autor | Licencja |
 |---|---|---|---|
 | `public/models/polonez/polonez.gltf` (źródło `assets-src/polonez-mr93-lp.glb`) | [„1993 FSO Polonez MR93 (LP)”, Sketchfab](https://sketchfab.com/3d-models/1993-fso-polonez-mr93-lp-f191456e08a041ad81264ce67f4ed1d1). Zmiany: usunięte logo FSO, tablica rejestracyjna zamieniona na fikcyjną | [KrStolorz (Krzysztof Stolorz)](https://sketchfab.com/KrStolorz) | **Sketchfab Standard** (tak zapisano w metadanych pliku; to nie CC0, patrz niżej) |
-| `assets-src/plate-agro.png` (tablica „AGR 5G01”) | wygenerowana na potrzeby gry | Agro Drifter | CC0 |
+| `assets-src/plate-agro.png` (tablica „AGR 5G01”) | wygenerowana na potrzeby gry | Polish Drifter | CC0 |
 | `public/assets/kenney/roads/*` (latarnie, śmietniki, słupy; kafle dróg nieużywane od v0.5c) | [City Kit (Roads)](https://kenney.nl/assets/city-kit-roads), `assets-src/kenney_city-kit-roads.zip` | Kenney | CC0 |
 | `public/assets/kenney/commercial/*` (pawilony, sklep, market, markiza) | [City Kit (Commercial)](https://kenney.nl/assets/city-kit-commercial) 2.1, `assets-src/kenney_city-kit-commercial_2.1.zip` | Kenney | CC0 |
 | `public/assets/kenney/suburban/*` (drzewa, płoty) | [City Kit (Suburban)](https://kenney.nl/assets/city-kit-suburban) 2.0, `assets-src/kenney_city-kit-suburban_20.zip` | Kenney | CC0 |

@@ -1,4 +1,4 @@
-# Agro Drifter 🇵🇱 (v0.5)
+# Polish Drifter 🇵🇱 (v0.6)
 
 Przeglądarkowa gra o driftowaniu Polonezem nocą po osiedlu: pixel-art 3D z kamerą jak nad dioramą
 i ucieczka przed „promieniowaniem 5G” (opis projektu i roadmapa w [`CLAUDE.md`](CLAUDE.md)).

@@ -1,7 +1,11 @@
-# Changelog – Agro Drifter
+# Changelog – Polish Drifter
 
 Wersje do v0.4c mają lokalne tagi w git (serwer odrzuca wypychanie tagów); od v0.5 wersję znajdziesz po commicie „v0.5a – …”.
 Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
+
+## v0.6f – nowa nazwa: Polish Drifter
+- Gra nazywa się teraz **Polish Drifter** (menu, tytuł strony, plansza „Obróć telefon”, README, dokumentacja).
+- Klucze zapisu w przeglądarce (`agro-settings`, `agro-progress`) zostają bez zmian, żeby ustawienia i postęp nie przepadły.
 
 ## v0.6e – 5G jako klimat
 - **Maszty 5G:** na Bloku 1 (był), na Bloku 5 i wolnostojąca kratownica 26 m za garażami. Wszystkie mają migające czerwone światło.

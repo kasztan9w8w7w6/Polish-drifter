@@ -19,7 +19,7 @@ export function createMenu({ settings, paints, hooks }) {
 
   const screens = {
     main: () => `
-      <div class="m-title"><h1>Agro Drifter</h1><p>Osiedle Kosmonautów · 3:00 w nocy · mgła</p></div>
+      <div class="m-title"><h1>Polish Drifter</h1><p>Osiedle Kosmonautów · 3:00 w nocy · mgła</p></div>
       <nav>
         <button data-go="play">Graj</button>
         <button data-go="continue" ${hooks.hasProgress() ? '' : 'disabled'}>Kontynuuj</button>
