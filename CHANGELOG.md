@@ -3,6 +3,12 @@
 Wersje do v0.4c mają lokalne tagi w git (serwer odrzuca wypychanie tagów); od v0.5 wersję znajdziesz po commicie „v0.5a – …”.
 Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
 
+## v0.7a – fabuła MVP „W nocy robota”: analiza wdrożenia
+- Pliki od scenarzysty w `docs/fabula/` (scenariusz, dane, plan, projekt, biblia stylu, audyt) – jedyne źródło prawdy o fabule.
+- `docs/wdrozenie-fabuly.md`: sceny → miejsca → polecenia ⚙ → mechaniki (istnieje / zmiana / nowa, koszt), układ mapy MVP
+  (Park, Miasto, Wylotówka, Wieś, droga zamknięta na zalew), co wyłączam flagami, słownik nazw (Orlen → Kometa, Żabka →
+  Nocny 24h, Biedronka → dyskont), 16 rozstrzygniętych niejasności, definicja „czystego wejścia” na słupek.
+
 ## Sesja porządkowa (bez zmian w grze)
 - `docs/referencje/README.md`: jak wgrać zdjęcia, drony, eksporty OSM i screeny (foldery, `opis.txt`, nazwy plików).
 - `scripts/referencje.py`: HEIC → JPG, zmniejszenie do 2000 px, obrót z EXIF, usunięcie metadanych (GPS), zmiana nazw z pliku, paleta kolorów.
