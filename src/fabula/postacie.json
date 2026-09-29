@@ -1,0 +1,15 @@
+{
+  "_help": "Postacie fabuły (plan-mvp §7) – warstwa gry: jak kogo pokazać (imię w oknie rozmowy, wygląd bryły z kodu i portretu, animacja bezczynności). Klucz = KTO ze scenariusza. Gdzie stoją: src/fabula/mapa.json → postacie. Wygląd: jak w src/story/postacie.json (skora, gora, dol, buty, wlosy, czapka, czapkaKolor, paski, brzuch, wzrost, dodatek, kamizelka).",
+  "postacie": {
+    "MIREK": { "imie": "Mirek", "idle": "kiwa", "wyglad": { "skora": "#d9a07a", "gora": "#3b4a2a", "dol": "#2a2a30", "buty": "#3a2a1a", "wlosy": "#5a4a3a", "czapka": null, "brzuch": 0.7, "wzrost": 1.0, "dodatek": null } },
+    "KAMIL": { "imie": "Kamil", "idle": "stoi", "wyglad": { "skora": "#e6b48e", "gora": "#6a6f78", "dol": "#1f2a44", "buty": "#e8e8e8", "wlosy": "#3a2616", "czapka": null, "brzuch": 0, "wzrost": 0.97, "dodatek": null } },
+    "ODBIORCA": { "imie": "Odbiorca", "idle": "rece", "wyglad": { "skora": "#d8a47e", "gora": "#2e3440", "dol": "#2a2a2a", "buty": "#1a1a1a", "wlosy": "#8a8a8a", "czapka": "zimowa", "czapkaKolor": "#2e3440", "brzuch": 0.3, "wzrost": 1.02, "dodatek": null } },
+    "FACET Z TERMOSEM": { "imie": "Facet z termosem", "idle": "kiwa", "wyglad": { "skora": "#d4a07c", "gora": "#4a3a2a", "dol": "#2a2a3a", "buty": "#2a1a10", "wlosy": "#7a7a7a", "czapka": "zimowa", "czapkaKolor": "#3a2a1a", "brzuch": 0.6, "wzrost": 1.0, "dodatek": null } },
+    "HENIO": { "imie": "Henio", "idle": "rece", "wyglad": { "skora": "#e0aa84", "gora": "#ff8a1a", "dol": "#2a3a5a", "buty": "#2a2a2a", "wlosy": "#9a9a9a", "czapka": null, "brzuch": 0.8, "wzrost": 1.03, "dodatek": null, "kamizelka": "#ff8a1a" } },
+    "ZDZICHU": { "imie": "Zdzichu", "idle": "stoi", "wyglad": { "skora": "#dca27a", "gora": "#e8e03a", "dol": "#2a3a5a", "buty": "#2a2a2a", "wlosy": "#2a1c10", "czapka": "daszek", "czapkaKolor": "#2a3a5a", "brzuch": 0.4, "wzrost": 1.0, "dodatek": null } },
+    "JUREK": { "imie": "Jurek", "idle": "kiwa", "wyglad": { "skora": "#e6b08a", "gora": "#ffb01a", "dol": "#2a3a5a", "buty": "#2a2a2a", "wlosy": "#6a4a2a", "czapka": null, "brzuch": 0.1, "wzrost": 0.98, "dodatek": "papieros" } },
+    "ROLKARZ1": { "imie": "Rolkarz", "idle": "stoi", "wyglad": { "skora": "#e8b890", "gora": "#2a6a6a", "dol": "#1a1a1a", "buty": "#e0e0e0", "wlosy": "#1a120a", "czapka": null, "wzrost": 0.95 } },
+    "ROLKARZ2": { "imie": "Rolkarka", "idle": "stoi", "wyglad": { "skora": "#efc4a0", "gora": "#8a2a5a", "dol": "#1a1a1a", "buty": "#e0e0e0", "wlosy": "#c89a5a", "czapka": null, "wzrost": 0.92 } },
+    "GRACZ": { "imie": "Ty", "wyglad": { "skora": "#e0b08a", "gora": "#3a3a3a", "wlosy": "#3a2616", "czapka": "kaptur", "czapkaKolor": "#2a2a30" } }
+  }
+}

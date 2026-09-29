@@ -3,6 +3,24 @@
 Wersje do v0.4c mają lokalne tagi w git (serwer odrzuca wypychanie tagów); od v0.5 wersję znajdziesz po commicie „v0.5a – …”.
 Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
 
+## v0.7b – fabuła, cz. 1: silnik fabuły
+- `src/fabula/silnik.js` (bez DOM, testy w Node):
+  - czyta `docs/fabula/dane-mvp.json` i przechodzi sceny węzeł po węźle;
+  - opisy i haki nie trafiają do gry;
+  - obsługuje warunki „jeśli FLAGA”, flagi z wyborów, bram i zakładów;
+  - wykonuje wszystkie polecenia ⚙ z plan-mvp §8a;
+  - wypełnia placeholdery [KASA] i [BRAK], a nazwy podmienia słownikiem (`slownik.json`: Orlen → Kometa…);
+  - na początku każdej sceny zapisuje stan nocy do wczytania.
+- `src/fabula/inscenizacja.json`: gdzie dzieje się scena, tryb (postój / jazda) i bramy (dojazd, jazda N m, strefa kombi →
+  PODJECHAL_DO_KOMBI, czas, tankowanie) – warstwa gry, scenariusz bez zmian.
+- `src/fabula/postacie.json`: imiona i wygląd postaci z §7.
+- Testy (`test/fabula.test.mjs`):
+  - wszystkie 7488 ścieżek nocy dają te same zakończenia i kasę min–max co symulacja scenarzysty;
+  - macierz z plan §5: kasa przed świtem 849 / 829 / 799 / 779 zł, minimalne stawki 20 / 50 / 50 / 50;
+  - kursy ze wzoru §4 zgadzają się z danymi;
+  - każde polecenie zmienia stan;
+  - rozmowa przez telefon i SMS, słownik nazw, zapis nocy.
+
 ## v0.7a – fabuła MVP „W nocy robota”: analiza wdrożenia
 - Pliki od scenarzysty w `docs/fabula/` (scenariusz, dane, plan, projekt, biblia stylu, audyt) – jedyne źródło prawdy o fabule.
 - `docs/wdrozenie-fabuly.md`: sceny → miejsca → polecenia ⚙ → mechaniki (istnieje / zmiana / nowa, koszt), układ mapy MVP

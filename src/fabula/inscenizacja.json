@@ -1,0 +1,44 @@
+{
+  "_help": "Inscenizacja fabuły (warstwa gry, NIE scenariusz): gdzie dzieje się scena, jej tryb i bramy – na co gra czeka przed danym węzłem. tryb: postoj (auto stoi, okno z portretem), jazda (pasek u dołu, auto jedzie). Bramy: przed = 'start' (początek sceny) albo {ekran: fragment tekstu} / {polecenie, argument} / {kwestia: KTO} / {warunek: FLAGA} – pierwszy pasujący węzeł. typ: dojazd (stań przy punkcie z mapy, r = promień), jazda (odjedź N metrów), obok (przejedź w promieniu r od punktu), strefa (podjedź do punktu albo minie limit s – flaga), czas (N s), tankowanie (panel na stacji). cel = napis przy znaczniku. docs/wdrozenie-fabuly.md.",
+  "sceny": {
+    "0": {
+      "miejsce": "park",
+      "tryb": "postoj",
+      "bramy": [
+        { "przed": { "warunek": "PODJECHAL_DO_KOMBI" }, "typ": "strefa", "punkt": "kombi", "r": 7, "limit": 180, "flaga": ["PODJECHAL_DO_KOMBI", "tak"], "inaczej": ["PODJECHAL_DO_KOMBI", "nie"], "cel": "Kombi z termosem (nie musisz)" },
+        { "przed": { "polecenie": "telefon" }, "typ": "czas", "sekundy": 12 }
+      ]
+    },
+    "1": { "miejsce": "miasto", "tryb": "postoj", "bramy": [{ "przed": "start", "typ": "dojazd", "punkt": "mirek", "r": 6, "cel": "Podwórko Mirka" }] },
+    "2": { "miejsce": "miasto", "tryb": "postoj" },
+    "3": {
+      "miejsce": "miasto",
+      "tryb": "jazda",
+      "bramy": [
+        { "przed": "start", "typ": "jazda", "metry": 60 },
+        { "przed": { "ekran": "Orlen" }, "typ": "dojazd", "punkt": "stacja", "r": 4, "cel": "Stacja Kometa, dystrybutor" },
+        { "przed": { "ekran": "Pb95" }, "typ": "tankowanie", "litry": 7.15, "zl": 50 }
+      ]
+    },
+    "4": { "miejsce": "wylotowka", "tryb": "postoj", "bramy": [{ "przed": "start", "typ": "dojazd", "punkt": "przystanek", "r": 9, "cel": "Przystanek w polu" }] },
+    "5": { "miejsce": "wylotowka", "tryb": "jazda" },
+    "6": { "miejsce": "wies", "tryb": "postoj", "bramy": [{ "przed": "start", "typ": "dojazd", "punkt": "wies", "r": 9, "cel": "Wieś, podwórko z lampą" }] },
+    "7": { "miejsce": "wies", "tryb": "postoj" },
+    "8": { "miejsce": "wylotowka", "tryb": "jazda", "bramy": [{ "przed": "start", "typ": "jazda", "metry": 120, "cel": "Z powrotem do miasta" }] },
+    "9": { "miejsce": "wylotowka", "tryb": "jazda", "bramy": [{ "przed": "start", "typ": "obok", "punkt": "przystanek", "r": 45, "cel": "Z powrotem do miasta" }] },
+    "10": { "miejsce": "miasto", "tryb": "postoj", "bramy": [{ "przed": "start", "typ": "dojazd", "punkt": "blokKamila", "r": 6, "cel": "Pod blokiem Kamila" }] },
+    "11": {
+      "miejsce": "park",
+      "tryb": "postoj",
+      "bramy": [
+        { "przed": "start", "typ": "dojazd", "punkt": "parkStart", "r": 12, "cel": "Park" },
+        { "przed": { "kwestia": "HENIO" }, "typ": "dojazd", "punkt": "henio", "r": 7, "cel": "Pod halą" }
+      ]
+    }
+  },
+  "zakonczenia": { "tryb": "postoj" },
+  "scenki": {
+    "FELGA_BICIE": { "tekst": "Czwarta felga toczy się krzywo.", "czas": 7, "_uwaga": "tekst techniczny dopisany w inscenizacji (docs/wdrozenie-fabuly.md §5.9) – do akceptacji scenarzysty" }
+  },
+  "sc0": { "_uwaga": "czasy sceny 0: swobodna jazda do telefonu, gdy gracz nie podjedzie do kombi (limit bramy) i pauza po beemce (czas) – w lil-gui" }
+}

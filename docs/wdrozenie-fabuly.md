@@ -146,10 +146,10 @@ Zostawiam bez zmian:
 
 ## 5. Niejasności i jak je rozstrzygam
 
-1. **Scena 0: kwestia „Nie stawiasz. Też dobrze.” bez podjechania do kombi.**
-   - Symulacja scenarzysty daje wtedy NOC_BMW = bez_zakladu, więc kwestia by padła, a gracza przy kombi nie ma.
-   - Rozstrzygnięcie: kwestie postaci stojącej w świecie pomijam, gdy gracz jest dalej niż 30 m (nie dotyczy telefonu ani pasażera).
-   - Flaga i tak jest ustawiana (bez_zakladu).
+1. **Scena 0 bez podjechania do kombi:**
+   - blok przy kombi (rozmowa, zakład, przejazd beemki) jest pomijany, a NOC_BMW zostaje nieustawiona;
+   - dlatego kwestie „jeśli NOC_BMW = …” też się nie wyświetlają, łącznie z „Nie stawiasz. Też dobrze.”;
+   - tak samo liczy symulacja scenarzysty (flaga nieustawiona ≠ żadna wartość).
 2. **Kiedy w sc. 0 dzwoni Mirek?** „Po chwili” oznacza:
    - 12 s po rozliczeniu beemki;
    - albo po 3 min swobodnej jazdy, gdy gracz nie podjechał do kombi.
