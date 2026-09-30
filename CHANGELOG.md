@@ -9,6 +9,13 @@ Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
   zasięgu sieci tej sesji, patrz docs).
 - Scalona gałąź `referencje-v08`: 118 zdjęć referencyjnych (`docs/referencje/`), modele aut (`assets-src/modele-aut/`).
 
+## v0.8g – fabuła cz. 6: mapa
+- Pełnoekranowa mapa (M / przycisk dotykowy / L3 pada): canvas 2D zamiast drugiej kamery 3D (bezpieczniejszy
+  wariant bez ryzyka dla RenderPixelatedPass, patrz RAPORT) – trasa wylotówki, nazwy stref, cel bieżącej sceny,
+  znacznik zamkniętej drogi, strzałka gracza. Przeciąganie i kółko/pinch do zoomu; gałka/strzałki panoramują.
+- `test/mapa.test.mjs` (projekcja świat→ekran); sprawdzone zrzutem ekranu w headless Chromium.
+- `docs/wdrozenie-fabuly.md` §12.
+
 ## v0.8f – fabuła cz. 5: Park według zdjęć
 - Zbiorniki: cylindryczne silosy → prostokątne baseny (betonowa obrzeża + zatopiona woda), zgodnie z rzutem z góry
   i zdjęciami w docs/referencje/park/.

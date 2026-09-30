@@ -612,6 +612,7 @@ const actions = {
   talk: () => !choice.open && (fabula ? fabula.naprzod() : startTalk()),
   radio: () => fabula?.radioNext(),
   kartka: () => fabula && !fabula.ui.aktywne && fabula.kartka(),
+  mapa: () => fabula?.mapa.toggle(),
 };
 const input = createInput(actions, () => settings.keys);
 const touchControls = TOUCH ? createTouchControls({ actions }) : null;
@@ -777,6 +778,12 @@ const timer = new THREE.Timer();
 let lastUnstuck = 0;
 let lastSpins = 0;
 let fabulaOut = { lock: false, cam: null, steer: 0, zoom: 0 };
+// v0.8 part 6 (the map): heading in the same convention as slupki.js createCourse (0 = +x, ccw positive)
+function carYawOf(state) {
+  const q = state.quaternion;
+  const fx = 1 - 2 * (q.y * q.y + q.z * q.z), fz = 2 * (q.x * q.z - q.w * q.y);
+  return Math.atan2(-fz, fx);
+}
 
 function tick(time) {
   timer.update(time);
@@ -813,6 +820,14 @@ function tick(time) {
     return;
   }
   const controls = input.read(dt);
+  if (fabula?.mapa.open) {
+    // the map (part 6): steer/throttle-brake pan it (arrow keys, stick), no need for a separate binding
+    fabula.mapa.pan(controls.steer, controls.brake - controls.throttle, dt);
+    fabula.mapa.zoom(controls.handbrake > 0.5 ? -1 : 0, dt); // handbrake = zoom in while held (a spare button)
+    fabula.mapa.render({ carPos: car.state.position, carYaw: carYawOf(car.state), target: fabula.target, path: fabula.mapaPath });
+    requestAnimationFrame(tick);
+    return;
+  }
   if (fabulaOut.lock) Object.assign(controls, { throttle: 0, steer: 0, handbrake: 0, brake: car.state.forwardSpeed > 0.3 ? 1 : 0 }); // (the story: the car stands)
   controls.steer = Math.max(-1, Math.min(1, controls.steer + fabulaOut.steer)); // (the rims sliding in the back)
   if (choice.open) Object.assign(controls, { throttle: 0, steer: 0, handbrake: 0, brake: car.state.forwardSpeed > 0.5 ? 1 : 0 }); // (a choice on screen: the car stops)

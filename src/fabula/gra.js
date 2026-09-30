@@ -7,6 +7,7 @@ import { Easing } from '@tweenjs/tween.js';
 import { createStory, minutyNaCzas, wyplata } from './silnik.js';
 import { createFabulaUI, uiSettings } from './ui.js';
 import { createRadio } from './radio.js';
+import { createMapaUI } from './mapaUI.js';
 import { createRun, slupkiSettings, WERDYKT } from './slupki.js';
 
 // The night of "W nocy robota" in the game: the story engine (silnik.js) hands one action at a time, this glue shows
@@ -47,6 +48,8 @@ export function createFabula(ctx) {
   let story = null;
   const ui = createFabulaUI({ postacie, kartka: dane.ekonomia.kartka_zbycha, cel: dane.ekonomia.cel, keyLabel: ctx.keyLabel, keys: ctx.keys });
   const radio = createRadio();
+  const mapaUI = createMapaUI(fab);
+  const mapaPath = fab.wylotowka.os.map(([x, z]) => ({ x, z }));
   const course = swiat.course;
   const punkty = fab.punkty;
   swiat.wsadz(ctx.carView.root);
@@ -462,6 +465,18 @@ export function createFabula(ctx) {
     hasSave,
     get target() {
       return ctx.target;
+    },
+    mapaPath,
+    get mapa() {
+      return {
+        get open() {
+          return mapaUI.open;
+        },
+        toggle: () => mapaUI.toggle(undefined, car.state.position),
+        pan: mapaUI.pan,
+        zoom: mapaUI.zoom,
+        render: mapaUI.render,
+      };
     },
     // the "talk" action (E, pad B, the touch button): on with the current line
     naprzod() {

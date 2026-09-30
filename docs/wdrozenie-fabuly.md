@@ -346,3 +346,28 @@ Nic z tego nie blokuje całości. Pytania do autora i scenarzysty są w raporcie
   dały wystarczających przesłanek do zmiany ich wygladu w dostępnym czasie); pomiar FPS z 21 dodatkowymi dynamicznymi
   ciałami – nie zmierzony w tej sesji (headless software rendering i tak trzyma niskie FPS niezależnie od tej zmiany,
   patrz część 2).
+
+## 12. Mapa (v0.8 cz. 6)
+
+- **Odstępstwo od audytu:** `docs/gotowce.md` wybrał wzorzec three.js `webgl_multiple_views` (druga prawdziwa kamera
+  ortho) – tu jednak mapa jest rysowana na zwykłym `<canvas>` 2D (płaska projekcja świata `(x,z) → (ekran)`), nie
+  drugą kamerą 3D. Powód: bez podglądu wizualnego w tej sesji nie było jak bezpiecznie sprawdzić kamery ortho +
+  `RenderPixelatedPass` (to samo ryzyko co przy zbliżeniu kamery w części 3); płaski canvas jest dużo prostszy do
+  sprawdzenia (czysta matematyka, przetestowana w `test/mapa.test.mjs`) i daje dokładnie to, o co prosi checklista
+  (drogi, strzałka, znaczniki, nazwy, przesuwanie/zoom) bez ryzyka zepsucia pipeline'u pixel-artu.
+- **Otwieranie/zamykanie:** M, przycisk dotykowy (🗺), L3 na padzie; zamyka też przycisk ✕ w rogu. Gra „zamraża się”
+  na czas otwartej mapy (main.js po prostu nie wywołuje fizyki ani `fabula.update()`, gdy mapa jest otwarta – prościej
+  niż osobna blokada).
+- **Przesuwanie/zoom:** przeciąganie (mysz/dotyk), kółko myszy/pinch (przez `wheel`), strzałki/gałka pada (kanały
+  gazu/skrętu, i tak wyzerowane podczas otwartej mapy, są przekierowane na panoramowanie zamiast jazdy – bez nowego
+  bindowania).
+- **Treść mapy:** trasa wylotówki (linia z `wylotowka.os`), nazwy stref (PARK/MIASTO/WYLOTÓWKA/WIEŚ – przybliżone
+  środki, nie granice), znacznik celu bieżącej sceny (żółte kółko, ten sam `ctx.target` co pasek celu na HUD),
+  czerwony X na zamkniętej drodze (`fab.zamknieta`), strzałka gracza (kierunek z kwaternionu auta).
+- **Nie zrobione:** obrysy budynków (miasto rysowane tylko jako etykieta, nie faktyczna siatka ulic/bloków – dane
+  o tym są w oddzielnym pliku `osiedle.json`, nie w `fab`, którym operuje moduł fabuły; podłączenie tego wymagałoby
+  przekazania także mapy miasta do `mapaUI`, pominięte z braku czasu), opcjonalna minimapa w rogu (ustawienie).
+- **Sprawdzone:** `test/mapa.test.mjs` (projekcja świat→ekran: środek, krawędzie, panorama, zoom), smoke test w
+  headless Chromium – M otwiera/zamyka mapę, zrzut ekranu pokazuje poprawnie ułożoną strzałkę gracza, drogę, etykiety
+  PARK/MIASTO i znacznik zamkniętej drogi (patrz RAPORT – to jedyna część 6, którą dało się ocenić wzrokowo w tej
+  sesji, bo canvas 2D renderuje się nawet przy 1–3 FPS w tym środowisku).
