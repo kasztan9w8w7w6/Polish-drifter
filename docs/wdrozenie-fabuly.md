@@ -236,7 +236,35 @@ Nic z tego nie blokuje całości. Pytania do autora i scenarzysty są w raporcie
 - Model auta: `car.js` `fitPolonez()` (teraz ogólniejsza `fitCar`, ta sama funkcja dla Poloneza, E34 i T3) szuka kości
   kółek po nazwie (`F_wheel.L`, jak w Polonezie) LUB, gdy model nie ma szkieletu (T3: `WFL/WFR/WBL/WBR` to zwykłe
   węzły), po dokładnej nazwie węzła – tak działa obrót/skręt kółek E34 (ma szkielet, nazwy zgodne z konwencją
-  Poloneza), ale kółka busa T3 stoją w miejscu (brak szkieletu → nie ma czego kręcić przez kość; T3 nie ma materiału `Headlight` (jeden materiał na cały model), więc `fitCar()` zakłada przód na +Z (domyślne
-  zachowanie, jak dotąd) – bez podglądu w przeglądarce w tej sesji nie da się potwierdzić, czy to właściwa strona; da
-  się to poprawić bez zmian w kodzie przez `look.frontYawDeg` w `vw-t3.json` (dodane do `fitCar()` właśnie w tym celu),
-  patrz RAPORT).
+  Poloneza), ale kółka busa T3 stoją w miejscu (brak szkieletu, więc nie ma czego kręcić przez kość, kółka są
+  częścią jednej siatki). T3 nie ma też materiału `Headlight` (jeden materiał na cały model), więc `fitCar()` zakłada
+  przód na +Z (domyślne zachowanie, jak dotąd) – bez podglądu w przeglądarce w tej sesji nie da się potwierdzić, czy
+  to właściwa strona; da się to poprawić bez zmian w kodzie przez `look.frontYawDeg` w `vw-t3.json` (dodane do
+  `fitCar()` właśnie w tym celu), patrz RAPORT.
+
+## 8. Ludzie: chodzenie i yuka (v0.8 cz. 2)
+
+- **Diagnoza lewitowania:** `src/npc.js` `animate()` kołysało tylko ciałem i rękami; nogi (jedna sztywna kość na nogę)
+  nigdy się nie ruszały, więc przy każdym ruchu (rolkarze, Zbychu idący do mety) figura ślizgała się po ziemi zamiast
+  chodzić.
+- **Gotowiec:** szukałem rigowanego modelu CC0 ze stanami idle/walk (kenney.nl, quaternius.com – 403, jak zdjęcia
+  referencyjne; modele z `three.js/examples/models/gltf` są technicznie dostępne, ale to zasoby Mixamo bez jasnej
+  licencji CC0/CC-BY dla użycia w publicznym repo – ryzyko na `CREDITS.md`). Nie znalazłem bezpiecznie
+  licencjonowanego riga w zasięgu tej sesji (docs/gotowce.md), więc **naprawiam figurę z kodu**, zgodnie z poleceniem
+  („jeśli nie znajdziesz modelu z animacjami, napraw figurę z kodu”).
+- **Naprawa:** noga to teraz dwa segmenty (`thigh` na biodrze, `shin` na kolanie, każdy własna grupa/obrót) zamiast
+  jednej sztywnej kości; `animate()` liczy prędkość NPC z różnicy pozycji między klatkami (`n.speed`, bez zmiany API
+  wywołań `people.place()`) i przy ruchu miesza biodro (wahadło) z kolanem (zgięcie w fazie unoszenia nogi); amplituda
+  spada do 0 w bezruchu, więc nie kłóci się z wcześniejszym kołysaniem stojąc. Kamil siedzący w aucie: `thigh`/`shin`
+  ustawione ręcznie na pozę siedzącą (dawne `leg.rotation.x` rozdzielone na oba stawy).
+- **Ruch przez yuka** (`EntityManager`, `Vehicle`, `FollowPathBehavior`, `Path`): rolkarze na torze zamiast ręcznej
+  matematyki okręgu – ta sama geometria (promień i prędkość z `krazy` w `mapa.json`), ale krok liczy `FollowPathBehavior`
+  po zamkniętej ścieżce z 16 punktów; kierunek figury liczony z wektora prędkości pojazdu yuki, nie z parametru kąta.
+  Inni (Zbychu idący do mety, stojący) zostają na `people.place()` bez zmian – to jednorazowe skoki pozycji, nie pętla
+  ruchu, więc yuka nie dodaje tu nic ponad to, co jest.
+- **Nie sprawdzone wizualnie w tej sesji** (brak przeglądarki z ekranem): tempo chodu, czy amplituda biodra/kolana
+  wygląda naturalnie, czy figura Kamila w aucie nie przenika przez siedzenie. Sprawdzone tylko przez odpytanie stanu
+  (`agro.swiat.people.list`) w headless Chromium: rolkarz trzyma się swojej ścieżki, prędkość policzona z ruchu jest
+  dodatnia, kąt nogi się zmienia razem z prędkością, bez błędów w konsoli. Prędkość ruchu (i całego zegara fabuły) w
+  tym headless Chromium bywa bardzo nierówna (`dt` na klatkę ograniczone do 0,1 s w `main.js`, a klatek na s bywa 1–3
+  przy takim obciążeniu) – to własność silnika z wcześniejszych wersji, nie regresja z tej części.

@@ -737,7 +737,7 @@ if (fabula) {
   sl.add(slupkiSettings, 'limitCzasu', 10, 120, 1).name('limit czasu (s)');
   if (new URLSearchParams(location.search).has('szybko')) fabulaSettings.tempoTestu = 8;
 }
-if (new URLSearchParams(location.search).has('debug')) window.agro = { fabula, fabulaSettings, rig, economy, points, fiveg, scorer, choice, get mission() { return mission; }, people, dialogue, get race() { return race; }, startMission, narrator, car, menu, settings, perf: () => perf, paused: () => paused, resume: () => setPaused(false), tt: () => turntable, carYaw: () => { const f = new THREE.Vector3(1, 0, 0).applyQuaternion(carView.root.quaternion); return Math.atan2(-f.z, f.x); } }; // for testing from the console
+if (new URLSearchParams(location.search).has('debug')) window.agro = { fabula, fabulaSettings, rig, economy, points, fiveg, scorer, choice, get mission() { return mission; }, people, dialogue, get race() { return race; }, startMission, narrator, car, menu, settings, perf: () => perf, paused: () => paused, resume: () => setPaused(false), tt: () => turntable, swiat, npcVehicles, carYaw: () => { const f = new THREE.Vector3(1, 0, 0).applyQuaternion(carView.root.quaternion); return Math.atan2(-f.z, f.x); } }; // for testing from the console
 // ?plan – the whole map from straight above, lit like daytime (docs/mapa.md screenshot, checking the layout)
 const PLAN = new URLSearchParams(location.search).has('plan');
 if (PLAN) {

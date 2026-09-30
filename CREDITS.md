@@ -12,6 +12,7 @@ Wszystkie zewnętrzne elementy gry: biblioteki, assety, dźwięki, fonty. Każdy
 | [@dimforge/rapier3d-compat](https://rapier.rs) | fizyka, kolizje, raycast, debug render | Apache-2.0 |
 | [lil-gui](https://lil-gui.georgealways.com) | panel tuningu | MIT |
 | [nipplejs](https://github.com/yoannmoinet/nipplejs) | joystick dotykowy (sterowanie mobilne) | MIT |
+| [yuka](https://github.com/Mugen87/yuka) | ruch postaci pieszych (rolkarze na torze, `FollowPathBehavior`) | MIT |
 | [Vite](https://vite.dev) | dev server i build | MIT |
 | [glTF-Transform](https://gltf-transform.dev) (`@gltf-transform/core`, `functions`) | konwersja modeli (`scripts/convert-assets.mjs`, dev) | MIT |
 | [TypeScript](https://www.typescriptlang.org), [@types/three](https://www.npmjs.com/package/@types/three) | sprawdzanie typów (dev) | Apache-2.0 / MIT |

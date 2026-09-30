@@ -8,6 +8,7 @@ import { createCarView } from '../car.js';
 import { applyCar, carDrivetrain } from '../cars.js';
 import { presets } from '../tuning.ts';
 import { createAutopilot } from '../npcAutopilot.js';
+import { EntityManager, Vehicle, FollowPathBehavior, Path, Vector3 as YVector3 } from 'yuka';
 import bmwE34 from '../cars/bmw-e34.json';
 import vwT3 from '../cars/vw-t3.json';
 
@@ -460,7 +461,7 @@ export async function createSwiat({ scene, physics, map, fab, postacie, npcVehic
   const kamilFig = figure(postacie.KAMIL?.wyglad ?? {});
   const kamil = new THREE.Group();
   kamil.add(kamilFig.group);
-  for (const leg of kamilFig.legs) leg.rotation.x = -Math.PI / 2;
+  for (const leg of kamilFig.legs) (leg.thigh.rotation.x = -Math.PI / 2), (leg.shin.rotation.x = Math.PI / 2.3);
   kamilFig.group.position.set(0, -0.45, 0);
   kamil.scale.setScalar(0.92);
   kamil.position.set(-0.15, -0.35, 0.38);
@@ -471,6 +472,27 @@ export async function createSwiat({ scene, physics, map, fab, postacie, npcVehic
   const people = createPeople(scene, physics, fab.postacie.map((p) => ({ id: p.id, x: p.x, z: p.z, yaw: p.yaw })), postacie);
   await people.ready;
   const kiedy = Object.fromEntries(fab.postacie.map((p) => [p.id, p]));
+
+  // Roller skaters go round the rink on a yuka path (v0.8, docs/gotowce.md) instead of hand-rolled circle maths –
+  // same shape (a lap of the same radius at the same speed), but steered by a real seek/follow behaviour.
+  const yukaManager = new EntityManager();
+  const yukaVehicles = {};
+  for (const p of fab.postacie) {
+    if (!p.krazy) continue;
+    const k = p.krazy;
+    const path = new Path();
+    path.loop = true;
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2 + (k.faza ?? 0);
+      path.add(new YVector3(k.x + Math.cos(a) * k.r, 0, k.z + Math.sin(a) * k.r));
+    }
+    const v = new Vehicle();
+    v.maxSpeed = k.r * k.v; // same tangential speed as the old krazy formula
+    v.position.set(p.x, 0, p.z);
+    v.steering.add(new FollowPathBehavior(path, k.r * 0.15));
+    yukaManager.add(v);
+    yukaVehicles[p.id] = v;
+  }
 
   // ---------- NPC run (the BMW at night, Zdzichu's bus in the morning): v0.8, a real vehicle.ts car driven by
   // npcAutopilot.js, not a scripted path. The story engine has already rolled which posts are clean (silnik.js
@@ -519,6 +541,7 @@ export async function createSwiat({ scene, physics, map, fab, postacie, npcVehic
         const n = people.get(id);
         if (n && n.visible !== on) people.show(id, on);
       };
+      yukaManager.update(dt);
       for (const [id, p] of Object.entries(kiedy)) {
         let on = true;
         if (p.kiedy === 'noc') on = noc;
@@ -527,9 +550,10 @@ export async function createSwiat({ scene, physics, map, fab, postacie, npcVehic
         if (p.kiedy === 'odbiorca') on = (scena === 6 && zegar >= 28 * 60 + 5) || scena === 7;
         if (id === 'KAMIL' && scena === 7) on = true; // at the gate, asking about the dog
         show(id, on);
-        if (on && p.krazy) {
-          const k = p.krazy, a = time * k.v + (k.faza ?? 0);
-          people.place(id, k.x + Math.cos(a) * k.r, k.z + Math.sin(a) * k.r, (-a * 180) / Math.PI);
+        const yv = yukaVehicles[id];
+        if (on && yv) {
+          const yaw = yv.velocity.squaredLength() > 0.001 ? (Math.atan2(-yv.velocity.z, yv.velocity.x) * 180) / Math.PI : 0;
+          people.place(id, yv.position.x, yv.position.z, yaw);
         }
       }
       if (scena === 7) people.place('KAMIL', fab.wies.plot[0][0] - 6, fab.wies.z - 10, 0);

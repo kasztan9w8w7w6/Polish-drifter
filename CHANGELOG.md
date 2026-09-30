@@ -9,6 +9,21 @@ Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
   zasięgu sieci tej sesji, patrz docs).
 - Scalona gałąź `referencje-v08`: 118 zdjęć referencyjnych (`docs/referencje/`), modele aut (`assets-src/modele-aut/`).
 
+## v0.8c – fabuła cz. 2: ludzie (chodzenie, yuka)
+- Diagnoza: nogi (jedna sztywna kość) nigdy się nie ruszały – stąd lewitowanie przy każdym ruchu.
+- Brak bezpiecznie licencjonowanego riga CC0 w zasięgu sieci tej sesji (docs/gotowce.md) → naprawa figury z kodu:
+  noga na dwa segmenty (biodro + kolano), cykl chodu z prędkości NPC (amplituda 0 w bezruchu).
+- Ruch rolkarzy przez yuka (`EntityManager`, `Vehicle`, `FollowPathBehavior`) zamiast ręcznej matematyki okręgu.
+- `docs/wdrozenie-fabuly.md` §8.
+
+## v0.8b – fabuła cz. 1: beemka i bus na fizyce Poloneza
+- BMW E34 i VW T3 jako prawdziwe auta (`createVehicle()`) na profilach `src/cars/bmw-e34.json`, `vw-t3.json`, sterowane
+  przez `src/npcAutopilot.js` (ten sam moduł co `test/autopilot.mjs`) – zamiast animacji po krzywej z v0.7.
+- Kasa nadal liczona z tablicy silnika fabuły (`a.slupki`), nie z wyniku fizycznego przejazdu – bez zmian w matematyce
+  zakładów; `npm test` (90/90), `e2e-noc` (NA_STYK, ZAKLADY): kasa zgodna z macierzą, bez błędów.
+- `car.js`: `fitPolonez` → `fitCar` (ogólniejsza, węzły bez szkieletu, `look.frontYawDeg`).
+- `docs/wdrozenie-fabuly.md` §7.
+
 ## v0.7e – fabuła, cz. 4: testy
 - **Automat całej nocy na prawdziwej grze** (`scripts/e2e-noc.cjs`):
   - obsługa jednym urządzeniem: klawiaturą, samym dotykiem (CDP) albo samym padem;
