@@ -56,3 +56,27 @@ test('diorama: kamera ~35° w dół, wyprzedza auto w kierunku jazdy, oddala si�
   assert.equal(rig.nextMode(), 'Za autem');
   assert.equal(rig.nextMode(), 'Diorama');
 });
+
+test('v0.8 cz. 3: closeZoom zbliża kamerę na rozmowie i płynnie wraca do zwykłej Dioramy po jej zamknięciu', (t) => {
+  const dio = new OrthographicCamera();
+  const rig = createCameraRig(new PerspectiveCamera(), dio, null, tuning);
+  const heightAt = (view2) => {
+    const cam = rig.update(1 / 60, car(0, 0), view2);
+    return cam.top - cam.bottom;
+  };
+  for (let i = 0; i < 200; i++) heightAt(view); // settle to the standing-still frame
+  const normalne = heightAt(view);
+  let close;
+  for (let i = 0; i < 200; i++) close = heightAt({ ...view, closeZoom: 1 }); // a postój conversation opens
+  t.diagnostic(`kadr stojąc: ${normalne.toFixed(1)} m; na rozmowie (closeZoom=1): ${close.toFixed(1)} m`);
+  assert.ok(close < normalne * 0.6, 'zbliżenie wyraźnie zwęża kadr');
+  // the conversation ends (closeZoom back to 0): the frame returns to the normal standing-still height, not a jump cut
+  const samples = [];
+  for (let i = 0; i < 90; i++) samples.push(heightAt(view));
+  for (let i = 0; i < 300; i++) heightAt(view); // give the exponential approach time to actually settle
+  const jump = Math.abs(samples[1] - samples[0]);
+  const settled = heightAt(view);
+  t.diagnostic(`powrót: pierwsza klatka ${samples[0].toFixed(2)} m, druga ${samples[1].toFixed(2)} m (skok ${jump.toFixed(3)} m), po ustabilizowaniu ${settled.toFixed(2)} m`);
+  assert.ok(jump < (normalne - close) * 0.15, 'żadnego cięcia – pierwsza klatka po zamknięciu ledwie rusza z miejsca zbliżenia');
+  assert.ok(Math.abs(settled - normalne) < 0.5, 'w końcu wraca dokładnie do kadru sprzed rozmowy');
+});

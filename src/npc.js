@@ -207,7 +207,7 @@ export function figure(look) {
 }
 
 // ---------- Idle animation ----------
-function animate(n, t, dt, carPos, talking) {
+export function animate(n, t, dt, carPos, talking) {
   const f = n.fig;
   const style = n.who.idle ?? 'stoi';
   // breathing and a slow sway (weight from foot to foot)

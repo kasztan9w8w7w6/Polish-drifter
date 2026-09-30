@@ -35,10 +35,10 @@
     "redlineRpm": 6500
   },
   "arcade": {
-    "_note": "Tylko odniesienie prowadzenia (jak w polonez.json) – kierowca AI jeździ w niskim zakresie prędkości (slalom), więc dokładna wartość ma mały wpływ.",
+    "_note": "Zmierzone w teście (test/e34.test.mjs): topSpeedKmh niższe od realnego vmax faktycznie ogranicza prędkość na sferze (t.power/t.angularDamping w vehicle.ts), nie jest tylko odniesieniem uchwytu jak sugerował komentarz w polonez.json – tu musi być bliskie realnej vmax.",
     "massKg": 1540,
     "reverseFraction": 0.5,
-    "topSpeedKmh": 150
+    "topSpeedKmh": 225
   },
   "look": {
     "model": "models/bmw-e34/bmw-e34.gltf",
