@@ -37,9 +37,12 @@ const S = STRATEGIE[nazwa];
   const ev = (f, a) => p.evaluate(f, a);
   const wait = (ms) => p.waitForTimeout(ms);
   const frame = () => ev(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-  async function tap(sel) {
+  async function tap(sel, optional = false) {
     const r = await ev((s) => { const el = document.querySelector(s); if (!el) return null; const q = el.getBoundingClientRect(); return q.width ? { x: q.x + q.width / 2, y: q.y + q.height / 2 } : null; }, sel);
-    if (!r) throw new Error('nie ma na ekranie: ' + sel);
+    if (!r) {
+      if (optional) return; // (the line already went on – nothing to tap)
+      throw new Error('nie ma na ekranie: ' + sel);
+    }
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: r.x, y: r.y, id: 1 }] });
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await frame();
@@ -49,20 +52,27 @@ const S = STRATEGIE[nazwa];
   // the player's "on" in the current box, and picking answer i
   async function dalej(box) {
     if (tryb === 'klawiatura') return key('Enter');
-    if (touch) return tap(`#f-${box}`);
+    if (touch) return tap(`#f-${box}`, true);
     return pad(box === 'okno' ? 0 : 1);
   }
   async function wybierz(box, i) {
     if (tryb === 'klawiatura') return key(`Digit${i + 1}`);
     if (touch) return tap(`#f-${box} li:nth-child(${i + 1})`);
-    for (let k = 0; k < i; k++) await pad(13);
+    for (let k = 0; k < 12; k++) {
+      const on = await ev((b) => [...document.querySelectorAll(`#f-${b} li`)].findIndex((x) => x.classList.contains('on')), box);
+      if (on === i || on < 0) break;
+      await pad(on < i ? 13 : 12);
+    }
     return pad(box === 'okno' ? 0 : 1);
   }
   async function przycisk(i) {
     if (tryb === 'klawiatura') return key(`Digit${i + 1}`);
     if (touch) return tap(`#panel button:nth-child(${i + 1})`);
-    const sel = await ev(() => [...document.querySelectorAll('#panel button')].findIndex((x) => x.classList.contains('on')));
-    for (let k = 0; k < i - sel; k++) await pad(15);
+    for (let k = 0; k < 14; k++) {
+      const on = await ev(() => [...document.querySelectorAll('#panel button')].findIndex((x) => x.classList.contains('on')));
+      if (on === i || on < 0) break;
+      await pad(on < i ? 15 : 14);
+    }
     return pad(0);
   }
   await p.goto(`http://localhost:${process.env.PORT ?? 4175}/?debug&szybko${touch ? '&touch=1' : ''}`);
