@@ -16,6 +16,7 @@ Wszystkie zewnętrzne elementy gry: biblioteki, assety, dźwięki, fonty. Każdy
 | [@tweenjs/tween.js](https://github.com/tweenjs/tween.js) | funkcje łagodzenia (`Easing`) do scenki FELGA_BICIE (przejazd felgi) | MIT |
 | [@fontsource/vt323](https://fonts.google.com/specimen/VT323) (font VT323, Peter Hull) | pikselowy font starego telefonu w rozmowach (`#f-telefon`) | OFL-1.1 |
 | [simplex-noise](https://github.com/jwagner/simplex-noise.js) | delikatne wzgórza w tle wylotówki (teren wizualny, podłoże fizyczne płaskie) | MIT |
+| [Tone.js](https://tonejs.github.io) | „filtr radiowy” (pasmowoprzepustowy + lekkie przesterowanie) na wyjściu placeholderów radia | MIT |
 | [Vite](https://vite.dev) | dev server i build | MIT |
 | [glTF-Transform](https://gltf-transform.dev) (`@gltf-transform/core`, `functions`) | konwersja modeli (`scripts/convert-assets.mjs`, dev) | MIT |
 | [TypeScript](https://www.typescriptlang.org), [@types/three](https://www.npmjs.com/package/@types/three) | sprawdzanie typów (dev) | Apache-2.0 / MIT |

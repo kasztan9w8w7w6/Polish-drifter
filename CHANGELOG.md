@@ -9,6 +9,13 @@ Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
   zasięgu sieci tej sesji, patrz docs).
 - Scalona gałąź `referencje-v08`: 118 zdjęć referencyjnych (`docs/referencje/`), modele aut (`assets-src/modele-aut/`).
 
+## v0.8h – fabuła cz. 7: muzyka i radio
+- „Filtr radiowy” przez Tone.js (pasmowoprzepustowy + lekkie przesterowanie) na wyjściu placeholderów radia, na tym
+  samym AudioContext co Howler (jedno odblokowanie dźwięku); przy błędzie radio gra bez koloru (try/catch).
+- Sekwencer 4 stylów zostaje bez zmian (już gotowy i przetestowany, przepisanie na Tone.Sequence nie dodałoby nic
+  słyszalnego bez możliwości odsłuchu w tej sesji); miejsce na docelowe utwory (public/muzyka/) bez zmian.
+- `docs/wdrozenie-fabuly.md` §13.
+
 ## v0.8g – fabuła cz. 6: mapa
 - Pełnoekranowa mapa (M / przycisk dotykowy / L3 pada): canvas 2D zamiast drugiej kamery 3D (bezpieczniejszy
   wariant bez ryzyka dla RenderPixelatedPass, patrz RAPORT) – trasa wylotówki, nazwy stref, cel bieżącej sceny,

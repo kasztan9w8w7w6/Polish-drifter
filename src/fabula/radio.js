@@ -1,4 +1,5 @@
 import { Howl, Howler } from 'howler';
+import * as Tone from 'tone';
 
 // Car radio (plan-mvp §9, biblia VIII): four stations, music only, no presenters. TECHNO is the hero's station (the
 // start and the end of the night), DAD_ROCK is Kamil's (sc. 6), DISCO_POLO and RAP play in town.
@@ -29,7 +30,21 @@ export function createRadio({ base = import.meta.env?.BASE_URL ?? '/' } = {}) {
     ctx = Howler.ctx;
     out = ctx.createGain();
     out.gain.value = 0;
-    out.connect(Howler.masterGain);
+    // "radio filter" (v0.8 cz. 7, docs/gotowce.md): a car speaker's narrow band + a touch of crunch, always on,
+    // shared by both the placeholder loop and real tracks (public/muzyka). Tone.js on the SAME context as Howler
+    // (no second AudioContext, no second unlock gesture); if it can't set up for any reason the radio still plays,
+    // just without the coloration.
+    try {
+      Tone.setContext(ctx);
+      const radioFilter = new Tone.Filter(2400, 'bandpass').set({ Q: 1.1 });
+      const radioCrunch = new Tone.Distortion(0.12);
+      Tone.connect(out, radioFilter);
+      radioFilter.connect(radioCrunch);
+      Tone.connect(radioCrunch, Howler.masterGain);
+    } catch (e) {
+      console.warn('radio: filtr Tone.js nie wystartował, gra bez koloru', e);
+      out.connect(Howler.masterGain);
+    }
     const buf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = buf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;

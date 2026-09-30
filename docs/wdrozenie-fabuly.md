@@ -371,3 +371,22 @@ Nic z tego nie blokuje całości. Pytania do autora i scenarzysty są w raporcie
   headless Chromium – M otwiera/zamyka mapę, zrzut ekranu pokazuje poprawnie ułożoną strzałkę gracza, drogę, etykiety
   PARK/MIASTO i znacznik zamkniętej drogi (patrz RAPORT – to jedyna część 6, którą dało się ocenić wzrokowo w tej
   sesji, bo canvas 2D renderuje się nawet przy 1–3 FPS w tym środowisku).
+
+## 13. Muzyka i radio (v0.8 cz. 7)
+
+- **Filtr radiowy przez Tone.js:** `radio.js` `init()` teraz kieruje wyjście placeholderów (`out`) przez łańcuch
+  `Tone.Filter` (pasmowoprzepustowy, 2400 Hz, Q 1,1) + `Tone.Distortion` (0,12) – ten sam charakter „głośnika w
+  aucie” na wszystkich 4 stacjach, bez ręcznego filtrowania próbka po próbce. Tone.js działa na tym samym
+  `AudioContext` co Howler (`Tone.setContext(Howler.ctx)`), więc nie ma drugiego odblokowania dźwięku na telefonie.
+  Jeśli się nie uda skonfigurować (dowolny powód), radio i tak gra – tylko bez koloru (`try/catch`, jak reszta
+  ładowania modeli w tym projekcie).
+- **Co zostaje bez zmian:** sam sekwencer 4 stylów (`schedule()`, ręczny Web Audio) – już był gotowym, przetestowanym
+  rozwiązaniem (kick/hat/bass/stab na stację), przepisanie go na `Tone.Sequence` nie dodałoby nic słyszalnego, tylko
+  ryzyko regresji bez możliwości przesłuchania w tej sesji; trzask przy zmianie stacji też zostaje (już działał).
+  Miejsce i format na docelowe pastisze (`public/muzyka/`, `docs/muzyka.md`) bez zmian w kodzie.
+- **Znana luka:** prawdziwe utwory (`Howl` z `public/muzyka/`) łączą się z `Howler.masterGain` bezpośrednio, z
+  pominięciem nowego filtra Tone.js (Howler nie daje prostego API do przepięcia pojedynczego dźwięku przez własny
+  łańcuch efektów bez ingerencji w jego wewnętrzne obiekty) – dopóki `lista.json` jest pusta, nie ma to znaczenia;
+  gdy dojdą prawdziwe pliki, warto to dograć.
+- **Nie sprawdzone:** jak to brzmi – nie da się tego ocenić bez odsłuchu, w tej sesji tylko potwierdzone, że
+  inicjalizacja i zmiana stacji (5×) nie rzucają błędów w headless Chromium.
