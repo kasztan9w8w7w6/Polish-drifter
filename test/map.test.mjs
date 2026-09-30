@@ -19,7 +19,11 @@ const blocks = (map.blocks ?? []).filter((b) => b.collide !== false);
 
 test('mapa: wszystkie modele istnieją, osiedle ma wszystkie strefy z planu (docs/mapa.md)', (t) => {
   const models = new Set(map.objects.map((o) => o.model));
-  const missing = [...models].filter((m) => !fs.existsSync(new URL(`../public/assets/kenney/${m}.gltf`, import.meta.url)));
+  // "epoka/<id>" models (v0.8 cz. 8: Golf II, Fiat 126p on the street) live in public/models/<id>/, not the Kenney kits
+  const missing = [...models].filter((m) => {
+    const id = m.startsWith('epoka/') ? m.slice(6) : null;
+    return !fs.existsSync(new URL(id ? `../public/models/${id}/${id}.gltf` : `../public/assets/kenney/${m}.gltf`, import.meta.url));
+  });
   const named = (re) => map.objects.filter((o) => re.test(o.name ?? '')).length;
   const cars = map.objects.filter((o) => o.model.startsWith('cars/')).length;
   const garages = map.objects.filter((o) => o.model === 'city/building-garage').reduce((a, o) => a + (o.repeat?.count ?? 1), 0);

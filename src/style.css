@@ -118,6 +118,10 @@ body.grabbing #menu.m-garage { cursor: grabbing; }
 .m-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; }
 .m-row input[type=range] { width: min(220px, 100%); accent-color: #ffb347; }
 .m-hint { margin: 0; font-size: 11px; opacity: .6; line-height: 1.5; }
+.m-autorzy { display: grid; gap: 10px; margin: 10px 0; }
+.m-autorzy div { display: flex; flex-direction: column; gap: 2px; }
+.m-autorzy b { color: #ffd24a; font-size: 14px; }
+.m-autorzy span { font-size: 12px; opacity: .8; }
 .m-keys { display: grid; gap: 4px 18px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .m-keys div { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12px; }
 .m-keys button { font-size: 12px !important; padding: 4px 10px !important; min-width: 110px; text-align: center !important; }

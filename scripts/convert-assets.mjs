@@ -97,3 +97,8 @@ async function convertCar({ id, src, logoPattern, plateMaterial = 'Plate' }) {
 await convertCar({ id: 'polonez', src: `${SRC}/polonez-mr93-lp.glb`, logoPattern: /FSO logo/i });
 await convertCar({ id: 'bmw-e34', src: `${SRC}/modele-aut/e34/bmw-e34-lp.glb`, logoPattern: /Emblem/i });
 await convertCar({ id: 'vw-t3', src: `${SRC}/modele-aut/vw-t3/vw-transporter-t3.glb`, logoPattern: null, plateMaterial: null }); // no logo/plate node in this model (single material)
+// Street traffic (v0.8 cz. 8, CC BY – both attributed in CREDITS.md and on the in-game credits screen, docs/gotowce.md):
+// neither model isolates its badge on its own node (only on a shared mesh's material), so – unlike the Sketchfab
+// Standard hero cars above – the badge stays; only the plate gets the fictional swap where the model has one.
+await convertCar({ id: 'golf2', src: `${SRC}/modele-aut/golf2/vw-golf-2.glb`, logoPattern: null, plateMaterial: null });
+await convertCar({ id: 'fiat126p', src: `${SRC}/modele-aut/fiat126p/fiat-126p.glb`, logoPattern: null, plateMaterial: 'Fiat_126P_License_plate' });

@@ -25,8 +25,17 @@ export function createMenu({ settings, paints, hooks }) {
         <button data-go="continue" ${hooks.hasProgress() ? '' : 'disabled'}>Kontynuuj</button>
         <button data-go="garage">Garaż</button>
         <button data-go="settings">Ustawienia</button>
+        <button data-go="autorzy">Autorzy</button>
       </nav>
       <p class="m-foot">Klawiatura, pad albo dotyk · Esc / Start = pauza</p>`,
+    autorzy: () => `
+      <div class="m-title small"><h1>Autorzy</h1><p>Modele aut na ulicach osiedla (CC BY – uznanie autorstwa)</p></div>
+      <div class="m-autorzy">
+        <div><b>Volkswagen Golf II</b><span>d4n1laa (@d4n1laaa), Sketchfab</span></div>
+        <div><b>Fiat 126p</b><span>Martin Trafas (@TinoD2), Sketchfab</span></div>
+      </div>
+      <p class="m-hint">Pełna lista źródeł i licencji: CREDITS.md w repozytorium gry.</p>
+      <nav class="row"><button data-go="back">Wróć</button></nav>`,
     pause: () => `
       <div class="m-title"><h1>Pauza</h1><p>Maszt buczy. Silnik stygnie.</p></div>
       <nav>
@@ -129,6 +138,7 @@ export function createMenu({ settings, paints, hooks }) {
     else if (go === 'toMenu') (hooks.toMenu(), open('main'));
     else if (go === 'garage') (hooks.garage(true), push('garage'));
     else if (go === 'settings') ((from = stack.at(-1)), push('settings'));
+    else if (go === 'autorzy') push('autorzy');
     else if (go === 'back') back();
     else if (go === 'defaultKeys') {
       settings.keys = structuredClone(DEFAULT_KEYS);

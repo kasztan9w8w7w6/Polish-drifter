@@ -390,3 +390,30 @@ Nic z tego nie blokuje całości. Pytania do autora i scenarzysty są w raporcie
   gdy dojdą prawdziwe pliki, warto to dograć.
 - **Nie sprawdzone:** jak to brzmi – nie da się tego ocenić bez odsłuchu, w tej sesji tylko potwierdzone, że
   inicjalizacja i zmiana stacji (5×) nie rzucają błędów w headless Chromium.
+
+## 14. Golf II i Fiat 126p na ulicach (v0.8 cz. 8)
+
+- **Konwersja** (`convert-assets.mjs` `convertCar()`, ta sama funkcja co Polonez/E34/T3): `public/models/golf2/`,
+  `public/models/fiat126p/`. Żaden z modeli nie ma plakietki/loga na osobnym węźle (tylko na współdzielonym
+  materiale) – w przeciwieństwie do aut Sketchfab Standard wyżej, plakietki zostają (CC BY wymaga uznania autorstwa,
+  nie anonimizacji marki); tablica Fiata podmieniona na fikcyjną tam, gdzie to czysty, osobny materiał.
+- **Dalsze uproszczenie zamiast InstancedMesh:** obie propozycje z polecenia części 8 („`InstancedMesh` albo po
+  dalszym uproszczeniu”) – wybrałem uproszczenie: 2 egzemplarze każdego auta jako zwykłe, nieinstancjonowane obiekty
+  (tym samym wzorcem co reszta zaparkowanych aut Kenneya w `map.js`), bo `InstancedMesh` wymagałby scalania geometrii
+  osobno per pod-siatka (nadwozie, koła, wnętrze) między egzemplarzami – realna robota bez czasu na bezpieczne
+  wykonanie w tej sesji. 4 nowe auta to niewielki dodatek do już istniejącej sceny (ok. 20 zaparkowanych aut Kenneya),
+  więc koszt wydajności jest pomijalny.
+- **Warianty dwu-/trzydrzwiowe:** niezrobione – pojedynczy plik źródłowy Golfa nie ma osobnych wariantów drzwi (nie
+  sprawdzałem strukturę siatki na tyle szczegółowo, żeby bezpiecznie ukryć/wyciąć tylne drzwi bez ryzyka zepsucia
+  UV/normalnych bez podglądu wizualnego) – oba egzemplarze to ten sam model.
+- **Podpięcie do mapy:** `map.js` `load()` rozpoznaje teraz prefiks `epoka/` (ścieżka do `public/models/<id>/`,
+  osobno od katalogu Kenneya) – 2 Golfy i 2 Fiaty 126p w wolnych miejscach istniejącego rzędu parkowania (`osiedle.json`
+  `objects`), bez zmiany istniejących pozycji.
+- **Uznanie autorstwa w grze** (wymóg CC BY): nowy ekran „Autorzy” w menu głównym (`menu.js`) z obydwoma autorami i
+  odnośnikiem do pełnej listy w `CREDITS.md`.
+- **Naprawione przy okazji:** dwa testy Node (`test/map.test.mjs`, `test/mapgeo.mjs`) miały własny, osobny loader
+  modeli `.gltf` (czytający pliki bezpośrednio przez `fs`, bez przeglądarki) z twardo wpisaną ścieżką do katalogu
+  Kenneya – nie wiedział nic o nowym prefiksie `epoka/`. Dodany ten sam rozdział ścieżek co w `map.js`.
+- **Sprawdzone:** `npm test` 93/93, headless Chromium – oba modele wczytują się bez błędu (`requestfailed` na
+  `golf2`/`fiat126p` == brak), ekran „Autorzy” pokazuje treść. Nie sprawdzone wizualnie, czy auta stoją równo w
+  liniach parkingowych (rozmiary `length` z realnych wymiarów, ale bez podglądu).

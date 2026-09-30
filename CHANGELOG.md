@@ -9,6 +9,16 @@ Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
   zasięgu sieci tej sesji, patrz docs).
 - Scalona gałąź `referencje-v08`: 118 zdjęć referencyjnych (`docs/referencje/`), modele aut (`assets-src/modele-aut/`).
 
+## v0.8i – cz. 8: Golf II i Fiat 126p na ulicach
+- Skonwertowane (`convert-assets.mjs` `convertCar()`): `public/models/golf2/`, `public/models/fiat126p/`; 2 egzemplarze
+  każdego jako zaparkowane auta w wolnych miejscach istniejącego rzędu (`osiedle.json` `objects`). Dalsze
+  uproszczenie zamiast `InstancedMesh` (osobne pod-siatki na egzemplarz utrudniają instancjonowanie bez ryzyka bez
+  czasu na weryfikację) – szczegóły i pominięte warianty drzwi: docs/wdrozenie-fabuly.md §14.
+- `map.js`: prefiks `epoka/` w ścieżce modelu ładuje z `public/models/`, nie z katalogu Kenneya.
+- Nowy ekran „Autorzy” w menu głównym (uznanie autorstwa CC BY).
+- Naprawione: dwa testy Node (`test/map.test.mjs`, `test/mapgeo.mjs`) miały własny loader `.gltf` bez pojęcia o
+  nowym prefiksie – dodany ten sam rozdział ścieżek.
+
 ## v0.8h – fabuła cz. 7: muzyka i radio
 - „Filtr radiowy” przez Tone.js (pasmowoprzepustowy + lekkie przesterowanie) na wyjściu placeholderów radia, na tym
   samym AudioContext co Howler (jedno odblokowanie dźwięku); przy błędzie radio gra bez koloru (try/catch).
