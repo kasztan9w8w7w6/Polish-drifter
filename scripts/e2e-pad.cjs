@@ -14,7 +14,7 @@ const { chromium } = require(process.env.PLAYWRIGHT ?? 'playwright');
   });
   const ev = (f, a) => p.evaluate(f, a);
   const press = async (i) => { await ev((i) => padPress(i), i); await p.waitForTimeout(3200); };
-  await p.goto('http://localhost:4175/?debug');
+  await p.goto('http://localhost:4175/?debug&stare'); // (the old prototype: ?stare)
   await p.waitForSelector('[data-go=play]', { timeout: 90000 });
   await p.waitForTimeout(1000);
   await press(0); // A on the focused "Graj"

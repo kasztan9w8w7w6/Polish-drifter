@@ -196,7 +196,7 @@ body.touch #narrator { top: 76px; }
 
 /* ---------- The story "W nocy robota" (fabula/ui.js) ---------- */
 body.fabula #wallet, body.fabula #goal, body.fabula #narrator, body.fabula #talk-hint, body.fabula #total, body.fabula #telemetry { display: none; }
-#fabula { position: fixed; inset: 0; pointer-events: none; z-index: 3; font-family: 'Silkscreen', monospace; color: #e8e8e0; }
+#fabula { position: fixed; inset: 0; pointer-events: none; z-index: 5; /* (above the touch buttons: its boxes take the taps) */ font-family: 'Silkscreen', monospace; color: #e8e8e0; }
 #fabula [hidden] { display: none !important; }
 #f-hud { position: absolute; left: 16px; top: 12px; display: grid; gap: 4px; text-shadow: 0 2px 4px #000; }
 #f-hud .f-zegar { font-size: 30px; color: #ffdf4a; font-variant-numeric: tabular-nums; }
@@ -273,6 +273,9 @@ body.fabula #wallet, body.fabula #goal, body.fabula #narrator, body.fabula #talk
 #f-tablica p { margin: 2px 0; display: flex; justify-content: space-between; gap: 8px; }
 #f-fade { position: absolute; inset: 0; background: #000; opacity: 0; }
 body.touch #f-okno { bottom: 12px; }
+/* touch: the phone and the bet board up top, clear of the pedals (right) and the steering zone (left) */
+body.touch #f-telefon, body.touch #f-tablica { top: 8px; right: 12px; width: 190px; }
+body.touch #f-telefon .f-log { min-height: 64px; }
 body.touch #f-pasek { bottom: 190px; }
 @media (max-width: 820px) {
   #f-telefon, #f-tablica { top: 70px; width: 180px; }

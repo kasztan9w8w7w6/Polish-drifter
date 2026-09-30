@@ -49,9 +49,9 @@ odpowiada na zdarzenia silnika w `src/fabula/gra.js`.
 **Czyste wejście na słupek** (przejazd gracza, sc. 11):
 - wejście liczy się w chwili minięcia linii słupka (prostopadłej do trasy) po wskazanej stronie; strony są na przemian, jak w slalomie;
 - **czyste**, jeśli naraz:
-  - auto jest w poślizgu: kąt co najmniej 20° (Normalny);
-  - karoseria nie dotknęła słupka, czyli środek słupka jest dalej niż 1 m od obrysu auta;
-  - auto przejechało w oknie ok. 7 m od słupka po właściwej stronie;
+  - auto jest w poślizgu: kąt co najmniej 19° (Normalny), liczony ±5 m od linii słupka;
+  - karoseria nie dotknęła słupka (bliżej niż 0,1 m od obrysu auta 4,3 × 1,7 m = potrącony);
+  - auto przejechało w oknie do 7,5 m od słupka po właściwej stronie (łuk kredą na ziemi);
   - wejście jest w kolejności (nie pominięto słupka).
 - Na ekranie przy każdym słupku pojawia się jedno z czterech: „CZYSTE”, „BEZ POŚLIZGU”, „POTRĄCONY”, „ZA DALEKO / ZŁA STRONA”, a u góry licznik „Czyste: 3/6”.
 - Wszystkie progi są w lil-gui (sekcja „Słupki”) i w `src/fabula/slupki.js`.
@@ -200,3 +200,16 @@ Zostawiam bez zmian:
     - o 06:12 wjeżdża poranna zmiana (Henio, Zdzichu z busem, Jurek), a znikają kombi, BMW i rolkarze.
 
 Nic z tego nie blokuje całości. Pytania do autora i scenarzysty są w raporcie po wdrożeniu.
+
+## 6. Wyniki (v0.7)
+
+- **Słupki:**
+  - odstęp 22 m, 10 m od linii startu do pierwszego słupka, trasa środkiem Parku z północy na południe; wybieg przez południowy wjazd;
+  - autopilot na prawdziwym aucie (preset Normalny, 60 prób na poziom): dobry 100%, średni 58%, słaby 3% prób z ≥ 4/6 czystych;
+  - dobry: średnio 5,9 czystych, średni 3,7, słaby 0,7.
+- **Cała noc na grze** (`scripts/e2e-noc.cjs`): wszystkie 4 zakończenia, kasa przed świtem i na koniec równa macierzy plan §5; do tego noc z zakładem na beemkę i na busa.
+- **Czas przejścia** (`node test/czas.mjs`):
+  - ok. 27–29 min sprawnej jazdy, w tym tekst czytany tempem gry, dojazdy ok. 7,5 min i swobodna jazda na Parku 3–4 min;
+  - cel planu to 45–60 min;
+  - różnicę robią skrócone trasy (w grze ok. 6,8 km zamiast 70 km) i to, że tekst czyta się szybciej, niż zakładał plan.
+  - Pokrętła bez zmiany scenariusza: dłuższa wylotówka, dłuższa swobodna jazda w sc. 0, wolniejsze tempo pasków, dłuższe czekanie w sc. 6 (plan §10.2 mówi raczej o skracaniu).

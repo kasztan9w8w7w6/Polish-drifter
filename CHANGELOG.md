@@ -3,6 +3,28 @@
 Wersje do v0.4c mają lokalne tagi w git (serwer odrzuca wypychanie tagów); od v0.5 wersję znajdziesz po commicie „v0.5a – …”.
 Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
 
+## v0.7e – fabuła, cz. 4: testy
+- **Automat całej nocy na prawdziwej grze** (`scripts/e2e-noc.cjs`):
+  - obsługa jednym urządzeniem: klawiaturą, samym dotykiem (CDP) albo samym padem;
+  - wybory i wyniki przejazdów są skryptowane, a przejazdy między miejscami to teleport;
+  - opcja `zapis`: przeładowanie strony w scenie 5 i „Kontynuuj”.
+- **Wynik: każde z 4 zakończeń, kasa zgodna z macierzą plan §5:**
+
+  | Zakończenie | Kasa przed świtem | Kasa na koniec |
+  |---|---|---|
+  | NA STYK | 849 | 899 |
+  | PRAWIE | 829 | 779 |
+  | JUTRO | 779 | 729 |
+  | CZYSTO | 779 | 889 |
+  | zakłady nocne i na busa (CZYSTO) | 833 | 891 |
+
+- **Testy w Node:**
+  - `test/fabula.test.mjs` (silnik);
+  - `test/slupki.test.mjs`: czyste wejścia, animacja NPC zgodna z wynikiem, trudność z autopilotem na prawdziwym aucie (`test/autopilot.mjs`, preset Normalny, 60 prób na poziom): dobry 100%, średni 58%, słaby 3% prób z ≥ 4/6.
+- `test/czas.mjs`: szacowany czas sprawnej nocy to ok. 27–29 min (cel planu 45–60, patrz raport).
+- Stare `e2e-dotyk` / `e2e-pad` sprawdzają teraz prototyp (`?stare`).
+- **Poprawka dotyku:** okienko telefonu wchodziło na pedały i stuknięcie w odpowiedź trafiało w przycisk. Teraz telefon i tablica zakładów są u góry, a okna fabuły leżą nad przyciskami dotykowymi.
+
 ## v0.7d – fabuła, cz. 3: mapa i postacie (greybox)
 - `src/fabula/swiat.js`, `src/fabula/mapa.json` – układ z docs/wdrozenie-fabuly.md §2:
   - **Park** (dawny plac):
