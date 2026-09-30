@@ -33,6 +33,10 @@ z osadzonymi danymi (serwer artefaktów nie serwuje `.glb`) w `public/`. Geometr
 | Plik(i) | Źródło | Autor | Licencja |
 |---|---|---|---|
 | `public/models/polonez/polonez.gltf` (źródło `assets-src/polonez-mr93-lp.glb`) | [„1993 FSO Polonez MR93 (LP)”, Sketchfab](https://sketchfab.com/3d-models/1993-fso-polonez-mr93-lp-f191456e08a041ad81264ce67f4ed1d1). Zmiany: usunięte logo FSO, tablica rejestracyjna zamieniona na fikcyjną | [KrStolorz (Krzysztof Stolorz)](https://sketchfab.com/KrStolorz) | **Sketchfab Standard** (tak zapisano w metadanych pliku; to nie CC0, patrz niżej) |
+| `assets-src/modele-aut/e34/bmw-e34-lp.glb` (jeszcze niepodpięty w grze) | [BMW E34 (LP), Sketchfab](https://sketchfab.com/KrStolorz) | [KrStolorz (Krzysztof Stolorz)](https://sketchfab.com/KrStolorz) | **Sketchfab Standard** („Free standard”; jak Polonez, patrz uwaga niżej) |
+| `assets-src/modele-aut/vw-t3/vw-transporter-t3.glb` (jw.) | [VW Transporter T3, Sketchfab](https://sketchfab.com/randombug) | [randombug](https://sketchfab.com/randombug) | **Sketchfab Standard** („Free Standard”; jak wyżej) |
+| `assets-src/modele-aut/golf2/vw-golf-2.glb` (jw.; zmniejszona kopia, zmiana: uproszczona siatka i tekstury) | „Volkswagen Golf 2”, Sketchfab | [d4n1laa (@d4n1laaa)](https://sketchfab.com/d4n1laaa) | **CC BY** (wymagane uznanie autorstwa w grze / opisie) |
+| `assets-src/modele-aut/fiat126p/fiat-126p.glb` (jw.; zmniejszona kopia, zmiana: uproszczona siatka) | „Polski Fiat (Fiat 126p)”, Sketchfab | [Martin Trafas (@TinoD2)](https://sketchfab.com/TinoD2) | **CC BY** (wymagane uznanie autorstwa w grze / opisie) |
 | `assets-src/plate-agro.png` (tablica „AGR 5G01”) | wygenerowana na potrzeby gry | Polish Drifter | CC0 |
 | `public/assets/kenney/roads/*` (latarnie, śmietniki, słupy; kafle dróg nieużywane od v0.5c) | [City Kit (Roads)](https://kenney.nl/assets/city-kit-roads), `assets-src/kenney_city-kit-roads.zip` | Kenney | CC0 |
 | `public/assets/kenney/commercial/*` (pawilony, sklep, market, markiza) | [City Kit (Commercial)](https://kenney.nl/assets/city-kit-commercial) 2.1, `assets-src/kenney_city-kit-commercial_2.1.zip` | Kenney | CC0 |
@@ -44,7 +48,7 @@ z osadzonymi danymi (serwer artefaktów nie serwuje `.glb`) w `public/`. Geometr
 
 Licencje Kenneya leżą obok modeli (`License.txt` w każdym folderze, `LICENSE-starter-kits.txt`).
 
-**Uwaga o Polonezie:** licencja Sketchfab Standard pozwala użyć modelu w grze, także komercyjnej. Nie pozwala natomiast
+**Uwaga o modelach Sketchfab Standard (Polonez, E34, VW T3):** licencja Sketchfab Standard pozwala użyć modelu w grze, także komercyjnej. Nie pozwala natomiast
 udostępniać samego pliku modelu tak, żeby dało się go wyciągnąć i używać osobno. Publiczne repozytorium z plikiem `.glb`/`.gltf`
 może być z tym sprzeczne. Przed upublicznieniem sprawdź warunki na stronie modelu albo zapytaj autora.
 
