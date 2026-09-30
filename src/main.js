@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import GUI from 'lil-gui';
 import '@fontsource/silkscreen/400.css';
 import '@fontsource/silkscreen/700.css';
+import '@fontsource/vt323/400.css';
 
 import { initPhysics, createPhysics } from './physics.js';
 import { createVehicle } from './vehicle.ts';
@@ -775,7 +776,7 @@ if (fuelArg !== null) economy.restore({ fuel: Number(fuelArg) });
 const timer = new THREE.Timer();
 let lastUnstuck = 0;
 let lastSpins = 0;
-let fabulaOut = { lock: false, cam: null, steer: 0 };
+let fabulaOut = { lock: false, cam: null, steer: 0, zoom: 0 };
 
 function tick(time) {
   timer.update(time);
@@ -1022,7 +1023,7 @@ function tick(time) {
   smoke.update(dt);
 
   const px = Math.max(1, Math.round(pixelArt.pixelSize));
-  const cam = rig.update(dt, fabulaOut.cam ?? state, { pixelsWide: Math.floor(innerWidth / px), pixelsHigh: Math.floor(innerHeight / px) });
+  const cam = rig.update(dt, fabulaOut.cam ?? state, { pixelsWide: Math.floor(innerWidth / px), pixelsHigh: Math.floor(innerHeight / px), closeZoom: fabulaOut.zoom ?? 0 });
   setCamera(cam);
   fill.position.copy(state.position).y += 5;
   occlusion.update(cam, state.position, state.quaternion);

@@ -3,6 +3,7 @@ import dane from '../../docs/fabula/dane-mvp.json';
 import inscenizacja from './inscenizacja.json';
 import slownik from './slownik.json';
 import postacieFab from './postacie.json';
+import { Easing } from '@tweenjs/tween.js';
 import { createStory, minutyNaCzas, wyplata } from './silnik.js';
 import { createFabulaUI, uiSettings } from './ui.js';
 import { createRadio } from './radio.js';
@@ -58,6 +59,7 @@ export function createFabula(ctx) {
   let telClose = 0;
   let koniec = false;
   let cargoOn = false;
+  let rozmowca = null; // v0.8: who the close-up camera is on during a postój conversation
   let sway = 0, swayV = 0, lastLat = 0;
   const holes = new Map();
   let lastCheckpoint = null;
@@ -404,7 +406,8 @@ export function createFabula(ctx) {
   function scenka() {
     const s = act.scenka.scenka;
     const f = swiat.felgiPrzyKurniku[3];
-    const k = Math.min(1, act.t / ((s.czas ?? 6) * 0.7));
+    // eased (tween.js Easing, v0.8) instead of a plain linear ramp – the rim starts and stops rolling gently
+    const k = Easing.Quadratic.InOut(Math.min(1, act.t / ((s.czas ?? 6) * 0.7)));
     const [kx, kz] = fab.wies.kurnik;
     const from = { x: fab.wies.x + 4, z: fab.wies.z - 3 }, to = { x: kx + 1.05, z: kz + 2.2 };
     f.visible = true;
@@ -473,7 +476,7 @@ export function createFabula(ctx) {
     },
     // → { lock: the car must stand, cam: a state for the camera instead of the car, steer: pull from the load }
     update(dt, state, time) {
-      const out = { lock: false, cam: null, steer: 0 };
+      const out = { lock: false, cam: null, steer: 0, zoom: 0 };
       radio.update(dt);
       fade += Math.sign(fadeTarget - fade) * Math.min(Math.abs(fadeTarget - fade), dt * 2.2 * fabulaSettings.tempoTestu);
       ui.fade(fade);
@@ -565,6 +568,18 @@ export function createFabula(ctx) {
       const b = swiat.bieg;
       if (act?.npc && b?.pos) out.cam = camState(b.pos.x, b.pos.z, b.pos.yaw, b.pos.speed);
       else if (act?.scenka && act.cam) out.cam = camState(act.cam.x, act.cam.z, 0, 0);
+      else if (ui.postoj) {
+        // a postój conversation: close in on the midpoint between the car and whoever is talking (part 3, docs
+        // wdrozenie-fabuly.md §9) – the zoom itself is already smoothed frame to frame (camera.ts zoomSmooth), so
+        // this doesn't need its own tween. The speaker (`x.kto`) only exists on a kwestia line, not while the
+        // player picks a reply (wybor) – remember it so the shot doesn't pop back and forth between the two.
+        if (x?.kto && x.kto !== 'GRACZ') rozmowca = x.kto;
+        const npc = rozmowca && swiat.people.get(rozmowca);
+        if (npc) {
+          out.cam = camState((npc.root.position.x + state.position.x) / 2, (npc.root.position.z + state.position.z) / 2, 0, 0);
+          out.zoom = 1;
+        }
+      } else rozmowca = null;
       return out;
     },
   };

@@ -13,6 +13,8 @@ Wszystkie zewnętrzne elementy gry: biblioteki, assety, dźwięki, fonty. Każdy
 | [lil-gui](https://lil-gui.georgealways.com) | panel tuningu | MIT |
 | [nipplejs](https://github.com/yoannmoinet/nipplejs) | joystick dotykowy (sterowanie mobilne) | MIT |
 | [yuka](https://github.com/Mugen87/yuka) | ruch postaci pieszych (rolkarze na torze, `FollowPathBehavior`) | MIT |
+| [@tweenjs/tween.js](https://github.com/tweenjs/tween.js) | funkcje łagodzenia (`Easing`) do scenki FELGA_BICIE (przejazd felgi) | MIT |
+| [@fontsource/vt323](https://fonts.google.com/specimen/VT323) (font VT323, Peter Hull) | pikselowy font starego telefonu w rozmowach (`#f-telefon`) | OFL-1.1 |
 | [Vite](https://vite.dev) | dev server i build | MIT |
 | [glTF-Transform](https://gltf-transform.dev) (`@gltf-transform/core`, `functions`) | konwersja modeli (`scripts/convert-assets.mjs`, dev) | MIT |
 | [TypeScript](https://www.typescriptlang.org), [@types/three](https://www.npmjs.com/package/@types/three) | sprawdzanie typów (dev) | Apache-2.0 / MIT |

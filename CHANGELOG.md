@@ -9,6 +9,16 @@ Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
   zasięgu sieci tej sesji, patrz docs).
 - Scalona gałąź `referencje-v08`: 118 zdjęć referencyjnych (`docs/referencje/`), modele aut (`assets-src/modele-aut/`).
 
+## v0.8d – fabuła cz. 3: rozmowy filmowe i font pikselowy
+- Cały interfejs fabuły na foncie Silkscreen (naprawione nadpisania system-ui/Courier New u źródła); telefon
+  dostał odrębny pikselowy font starej komórki (`VT323`, OFL).
+- Zbliżenie kamery na rozmowie na postoju: `camera.ts` `closeZoom` (ta sama Dioram, mocniejszy zoom, celuje między
+  auto i rozmówcę) – bezpieczniejszy wariant niż osobna kamera perspektywiczna (ryzyko dla `RenderPixelatedPass` bez
+  możliwości podglądu wizualnego w tej sesji, patrz RAPORT).
+- Pasy (letterbox) i przyciemnienie tła na `body.f-rozmowa` (CSS, bez JS).
+- Cutscenka FELGA_BICIE: ruch felgi na `@tweenjs/tween.js` `Easing.Quadratic.InOut` zamiast liniowego.
+- `docs/wdrozenie-fabuly.md` §9.
+
 ## v0.8c – fabuła cz. 2: ludzie (chodzenie, yuka)
 - Diagnoza: nogi (jedna sztywna kość) nigdy się nie ruszały – stąd lewitowanie przy każdym ruchu.
 - Brak bezpiecznie licencjonowanego riga CC0 w zasięgu sieci tej sesji (docs/gotowce.md) → naprawa figury z kodu:

@@ -12,7 +12,11 @@ import { tuning as globalTuning, type Tuning } from './tuning.ts';
 // Both shake ("trauma") at speed and on hits, and both put the radial fog centre on their look point.
 
 type CarState = { position: Vector3; quaternion: Quaternion; velocity: Vector3; speed: number; forwardSpeed: number };
-export type View = { pixelsWide: number; pixelsHigh: number };
+// closeZoom (0..1, v0.8 – fabula conversations, docs/wdrozenie-fabuly.md §9): blends the Diorama zoom towards a
+// tighter shot on `s` (the story's fake "car" state points at the speaker while a postój dialogue is open) instead
+// of the usual standing-still zoom. Already smoothed by the existing zoomSmooth `approach()` below, so callers can
+// set it directly (0 or 1) without their own tween.
+export type View = { pixelsWide: number; pixelsHigh: number; closeZoom?: number };
 
 const MODES = ['Diorama', 'Za autem'] as const;
 const TOP_SPEED = 30; // m/s used to normalise speed effects
@@ -78,7 +82,8 @@ export function createCameraRig(chase: PerspectiveCamera, dio: OrthographicCamer
       // Zoom in discrete steps (1/16 of the range): every zoom change rescales the pixel grid, so it changes
       // rarely instead of drifting a little every frame
       const zStep = Math.max(0.25, (t.dioZoomFast - t.dioZoom) / 16);
-      const zTarget = MathUtils.lerp(t.dioZoom, t.dioZoomFast, sf);
+      const closeZoom = MathUtils.clamp(view.closeZoom ?? 0, 0, 1);
+      const zTarget = MathUtils.lerp(MathUtils.lerp(t.dioZoom, t.dioZoomFast, sf), t.dioZoom * 0.3, closeZoom);
       zoomSmooth = approach(zoomSmooth, zTarget, 1.5, dt);
       if (Math.abs(zoomSmooth - zoom) > zStep * 0.75) zoom = Math.round(zoomSmooth / zStep) * zStep;
       look.copy(pivot);

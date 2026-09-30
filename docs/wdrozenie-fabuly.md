@@ -268,3 +268,33 @@ Nic z tego nie blokuje całości. Pytania do autora i scenarzysty są w raporcie
   dodatnia, kąt nogi się zmienia razem z prędkością, bez błędów w konsoli. Prędkość ruchu (i całego zegara fabuły) w
   tym headless Chromium bywa bardzo nierówna (`dt` na klatkę ograniczone do 0,1 s w `main.js`, a klatek na s bywa 1–3
   przy takim obciążeniu) – to własność silnika z wcześniejszych wersji, nie regresja z tej części.
+
+## 9. Rozmowy filmowe i font pikselowy (v0.8 cz. 3)
+
+- **Font:** cały interfejs fabuły (rozmowy, ekran techniczny, tablica zakładów, wybory, kartka) jest teraz w
+  `Silkscreen` – usunięte nadpisania `system-ui`/`ui-monospace`/`Courier New` w `#f-okno .f-tekst`, `#f-pasek .f-tekst`,
+  `.f-wybory li`, `#f-ekran p`, `#f-kartka` (dawny krój systemowy: te reguły nadpisywały ustawiony na `#fabula`
+  `Silkscreen` – naprawione u źródła, nie tylko dopisane). Telefon dostał odrębny pikselowy font w stylu starej
+  komórki, `VT323` (Google Fonts / `@fontsource/vt323`, OFL) – jak w poleceniu części 3.
+- **Kamera na rozmowie:** zamiast osobnej kamery perspektywicznej z bliska (ryzyko dla `RenderPixelatedPass` przy
+  zmianie kamery bez możliwości podglądu wizualnego w tej sesji – `pixelart.js` `setCamera()` już obsługuje zmianę
+  kamery między Dioramą i „Za autem”, ale każda z nich ma swój dobrany kadr; nowa trzecia kamera wymagałaby tego
+  samego dopasowania bez sposobu, żeby to zweryfikować) – **zbliżenie w tej samej Dioramie**: `camera.ts` dostał
+  parametr `closeZoom` (0–1), który podczas rozmowy na postoju (`ui.postoj`) ciągnie docelowy zoom w stronę znacznie
+  bliższego kadru (`dioZoom × 0,3`) i celuje kamerę w środek między autem i rozmówcą (`gra.js`), zamiast w samo auto.
+  Przejście jest płynne, bo korzysta z istniejącego wygładzania `zoomSmooth` (nie trzeba było dodawać własnego tweena).
+  To jest odstępstwo od polecenia („bardzo bliski plan, perspektywiczna, na twarz i bark”) w stronę bezpieczniejszego
+  wariantu – bliżej, ale wciąż z góry, w tej samej ortho Dioramie.
+- **Pasy (letterbox) i przyciemnienie:** `#f-letterbox` (nowy element w `ui.js`) z paskami u góry/dołu i przyciemnieniem
+  tła, sterowane klasą `body.f-rozmowa` (już istniała w `ui.js` `hideBoxes()`, nieużywana wcześniej) – wjeżdżają/
+  wyjeżdżają przez CSS `transition` (0,7 s), bez JS.
+  „`podczas wyboru odpowiedzi (`wybor`) kamera zostaje na tym samym rozmówcy” – silnik fabuły nie ma pola `kto` na
+  akcji `wybor`, więc `gra.js` pamięta ostatniego rozmówcę (`rozmowca`) przez cały czas trwania `ui.postoj`.
+- **Cutscenka FELGA_BICIE:** liniowy ruch felgi (`Math.min(1, act.t/…)`) zamieniony na `@tweenjs/tween.js` `Easing.
+  Quadratic.InOut` – ten sam czas trwania, ale zaczyna i kończy się płynnie.
+- **Przejazdy NPC:** kamera już wcześniej płynnie doganiała fałszywą pozycję (`camera.ts` `pivot` z `approach()`),
+  więc nie było tu ostrego cięcia do naprawienia; nowy `closeZoom` nie wpływa na przejazdy NPC (zostaje 0).
+- **Nie sprawdzone wizualnie** (brak przeglądarki z ekranem w tej sesji): jak blisko/naturalnie wygląda zbliżenie,
+  czy pasy nie zasłaniają czegoś ważnego na małym ekranie dotykowym. Sprawdzone przez odpytanie stanu w headless
+  Chromium: `body.f-rozmowa` się ustawia, fonty (`getComputedStyle`) to `Silkscreen`, `#f-letterbox` istnieje,
+  bez błędów w konsoli.
