@@ -33,6 +33,10 @@ działa dla zdjęć, które dojdą później (bloki, stacje, noc, woda).
   róg), jadą w górę, potem w lewo, potem skręt w prawo i zawrotka na końcu.** Punkty są liczone algorytmem za bliskość
   skrajnego przejazdu, czyli tył im bliżej opon i krańca, tym lepiej; punkty liczone za styl, palenie i bujanie, nawet na
   prostej. Zaznaczyłem na niebiesko punkt startu, na żółto punkt zawrotki na rzucie z góry.”
+  Sprawdzone na rzucie `park/miejsce-do-driftu-rzut-z-gory.jpg`: niebieski start jest w **prawym** dolnym rogu (nie lewym),
+  ulica Magazynowa wije się w górę i w lewo między zbiornikami (Kanał Jankowski od północy), żółta zawrotka jest w lewym
+  górnym rogu; przy zbiornikach po obu stronach drogi jest woda, więc to wąski, długi odcinek, nie plac. Rzut jest
+  autorytatywny, gdy notatka i obraz się różnią.
   (Punktacja za bliskość krańca to pomysł na później; zakłady na 6 słupków z fabuły zostają bez zmian. Patrz ROADMAP.)
 - **Golf II** (`assets-src/modele-aut/golf2/`): „Wdrażamy na ulicach warianty dwu- i trzydrzwiowe.”
 
