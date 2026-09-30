@@ -9,6 +9,14 @@ Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
   zasięgu sieci tej sesji, patrz docs).
 - Scalona gałąź `referencje-v08`: 118 zdjęć referencyjnych (`docs/referencje/`), modele aut (`assets-src/modele-aut/`).
 
+## v0.8e – fabuła cz. 4: wylotówka naturalna
+- Trzy nowe punkty kontrolne trasy (łagodne esy), bez zmiany punktów, od których zależą inne miejsca (przystanek,
+  wieś); teren tła z delikatnymi wzgórzami przez `simplex-noise` (środkowy pas korytarza zostaje płaski – wstęga
+  drogi się nie wybrzusza); nowe: słupy energetyczne, jeden przepust, jeden zjazd żwirowy, jedna kapliczka.
+- Czas sprawnego przejścia (`test/czas.mjs`) bez zmian (27–29 min) – kosmetyczna zmiana trasy, nie długości/tempa;
+  cel 45–60 min zostaje do kolejnej sesji (patrz RAPORT/ROADMAP).
+- `docs/wdrozenie-fabuly.md` §10.
+
 ## v0.8d – fabuła cz. 3: rozmowy filmowe i font pikselowy
 - Cały interfejs fabuły na foncie Silkscreen (naprawione nadpisania system-ui/Courier New u źródła); telefon
   dostał odrębny pikselowy font starej komórki (`VT323`, OFL).

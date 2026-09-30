@@ -9,6 +9,7 @@ import { applyCar, carDrivetrain } from '../cars.js';
 import { presets } from '../tuning.ts';
 import { createAutopilot } from '../npcAutopilot.js';
 import { EntityManager, Vehicle, FollowPathBehavior, Path, Vector3 as YVector3 } from 'yuka';
+import { createNoise2D } from 'simplex-noise';
 import bmwE34 from '../cars/bmw-e34.json';
 import vwT3 from '../cars/vw-t3.json';
 
@@ -261,7 +262,24 @@ export async function createSwiat({ scene, physics, map, fab, postacie, npcVehic
   // ---------- The road out (wylotówka): a ribbon of old asphalt, roadside posts, forest, meadows, potholes ----------
   const W = fab.wylotowka;
   const [xMin] = [W.korytarz[2]];
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(-xMin - 280, W.korytarz[1] - W.korytarz[0] + 120), mat(0x131c11));
+  const groundGeo = new THREE.PlaneGeometry(-xMin - 280, W.korytarz[1] - W.korytarz[0] + 120, 90, 24);
+  // gentle rolling hills, visual only: the physical ground stays the flat box below (physics.addStaticBox), and the
+  // corridor's middle 70 m (where the road actually winds) is left flat so nothing bulges up through the ribbon –
+  // v0.8 part 4, docs/gotowce.md (simplex-noise instead of hand-rolled noise)
+  const noise2D = createNoise2D(() => 0.42);
+  const midZ = (W.korytarz[0] + W.korytarz[1]) / 2;
+  {
+    const p = groundGeo.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const lx = p.getX(i), lz = p.getY(i); // plane-local (rotated to X/Z on the mesh)
+      const worldZ = lz + midZ;
+      const taper = Math.max(0, (Math.abs(worldZ - midZ) - 35) / 30);
+      if (taper <= 0) continue;
+      p.setZ(i, noise2D(lx * 0.006, lz * 0.006) * 1.8 * Math.min(1, taper));
+    }
+    groundGeo.computeVertexNormals();
+  }
+  const ground = new THREE.Mesh(groundGeo, mat(0x131c11));
   ground.rotation.x = -Math.PI / 2;
   ground.position.set((xMin - 290) / 2 - 5, -0.01, (W.korytarz[0] + W.korytarz[1]) / 2);
   scene.add(ground);
@@ -360,6 +378,70 @@ export async function createSwiat({ scene, physics, map, fab, postacie, npcVehic
     if (t.near) physics.addStaticCylinder({ x: t.x, y: 0, z: t.z }, 0.3, 3, { surface: 'tree' });
   });
   scene.add(trunks, crowns);
+
+  // Roadside landmarks (v0.8 part 4, docs/referencje/drogi/): power line poles the whole way, one culvert under
+  // the road and one wayside shrine near the village – greybox shapes, no new assets.
+  {
+    const poleGeo = new THREE.CylinderGeometry(0.09, 0.13, 7, 6);
+    const armGeo = new THREE.BoxGeometry(1.6, 0.1, 0.1);
+    const poleCount = Math.ceil(dlugoscDrogi / 55);
+    const poles = new THREE.InstancedMesh(poleGeo, mat(0x5a4a3a), poleCount);
+    const arms = new THREE.InstancedMesh(armGeo, mat(0x3a3028), poleCount);
+    const wireGeo = new THREE.BoxGeometry(1, 0.03, 0.03);
+    const wires = new THREE.InstancedMesh(wireGeo, glow(0x1a1a1a), poleCount);
+    let pn = 0;
+    let prevPole = null;
+    for (let s = 15; s < dlugoscDrogi; s += 55) {
+      const c = naDrodze(s);
+      const d = half + 3 + (inLas(c.x) ? 8 : 0); // just outside the ditch, or past the treeline in the forest
+      const x = c.x - c.tz * d, z = c.z + c.tx * d;
+      poles.setMatrixAt(pn, mtx.compose(ps.set(x, 3.5, z), qt, sc.set(1, 1, 1)));
+      arms.setMatrixAt(pn, mtx.compose(ps.set(x, 6.7, z), qt.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(c.tx, c.tz)), sc.set(1, 1, 1)));
+      if (prevPole) {
+        const mx = (x + prevPole.x) / 2, mz = (z + prevPole.z) / 2, len = Math.hypot(x - prevPole.x, z - prevPole.z);
+        wires.setMatrixAt(pn - 1, mtx.compose(ps.set(mx, 6.55, mz), qt.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(x - prevPole.x, z - prevPole.z)), sc.set(len, 1, 1)));
+      }
+      prevPole = { x, z };
+      pn++;
+    }
+    poles.count = arms.count = pn;
+    wires.count = Math.max(0, pn - 1);
+    scene.add(poles, arms, wires);
+  }
+  {
+    // a small concrete culvert where the road crosses a roadside ditch: a pipe under the road, axis across it
+    // (along the road's normal), with a low headwall poking out of the ditch on each side
+    const cp = naDrodze(dlugoscDrogi * 0.42);
+    const nx = -cp.tz, nz = cp.tx; // road normal (unit)
+    const span = W.szerokosc + 1.6;
+    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, span, 10, 1, true), mat(0x6a6a64, { side: THREE.DoubleSide }));
+    pipe.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(nx, 0, nz));
+    pipe.position.set(cp.x, -0.35, cp.z);
+    scene.add(pipe);
+    for (const side of [-1, 1]) box(scene, 1.4, 0.7, 0.2, cp.x + nx * (span / 2) * side, -0.1, cp.z + nz * (span / 2) * side, mat(0x8a8a82));
+  }
+  {
+    // a wayside shrine/cross near the village (a whitewashed post with a small pitched roof, a cross on top)
+    const kp = naDrodze(dlugoscDrogi * 0.88);
+    const kx = kp.x - kp.tz * (half + 4), kz = kp.z + kp.tx * (half + 4);
+    const white = mat(0xe8e0cc);
+    box(scene, 0.3, 2.2, 0.3, kx, 1.1, kz, white);
+    box(scene, 0.55, 0.5, 0.5, kx, 2.35, kz, mat(0x5a3a2a));
+    box(scene, 0.08, 0.6, 0.08, kx, 2.9, kz, white);
+    box(scene, 0.42, 0.08, 0.08, kx, 3.15, kz, white);
+  }
+
+  {
+    // a gravel turn-off into a field (a short stub, just wide enough to read as a driveway, no gate)
+    const gp = naDrodze(dlugoscDrogi * 0.63);
+    const gside = 1;
+    const gx = gp.x - gp.tz * (half + 4) * gside, gz = gp.z + gp.tx * (half + 4) * gside;
+    const gravel = new THREE.Mesh(new THREE.PlaneGeometry(8, 5.5), mat(0x8a8168));
+    gravel.rotation.x = -Math.PI / 2;
+    gravel.rotation.z = Math.atan2(gp.tx, gp.tz);
+    gravel.position.set(gx, 0.02, gz);
+    scene.add(gravel);
+  }
 
   // The bus stop in the field (sc. 4, 9)
   {

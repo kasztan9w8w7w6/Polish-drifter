@@ -298,3 +298,24 @@ Nic z tego nie blokuje całości. Pytania do autora i scenarzysty są w raporcie
   czy pasy nie zasłaniają czegoś ważnego na małym ekranie dotykowym. Sprawdzone przez odpytanie stanu w headless
   Chromium: `body.f-rozmowa` się ustawia, fonty (`getComputedStyle`) to `Silkscreen`, `#f-letterbox` istnieje,
   bez błędów w konsoli.
+
+## 10. Wylotówka naturalna (v0.8 cz. 4)
+
+- **Punkt wyjścia:** wylotówka już od v0.7 miała wygładzoną krzywą (`CatmullRomCurve3`), lasy/łąki z drzewami przez
+  `InstancedMesh`, słupki drogowe co 50 m i dziury – większość checklisty części 4 była już zrobiona.
+- **Nowe zakręty:** dopisane trzy punkty kontrolne (`mapa.json` → `wylotowka.os`) między istniejącymi – łagodne esy,
+  bez zmiany punktów początkowego/końcowego (i tych, do których odwołują się inne pola: przystanek, wieś, korytarz),
+  żeby nic zależnego od konkretnego x nie przestało się zgadzać. To kosmetyczna zmiana trasy (dłuższa o kilkadziesiąt
+  metrów), nie licznik czasu – `test/czas.mjs` daje te same 27–29 min, bo licznik liczy czas jazdy z `trasaM`
+  (skalowanej długości), nie z rzeczywistej długości krzywej.
+- **Teren:** delikatne wzgórza na dużej płycie tła (`ground`, teraz z podziałami i przesunięciem wierzchołków przez
+  `simplex-noise`), z zerowaniem w środkowym pasie 70 m korytarza, żeby nic nie wybrzuszyło się przez wstęgę drogi
+  (fizyczne podłoże zostaje płaskim boxem, bez zmian).
+- **Nowe elementy przy drodze:** słupy linii energetycznej co 55 m (z poprzeczką i „drutem” – prostym boksem między
+  słupami, nie realną fizyką liny), jeden przepust (rura betonowa pod drogą + niskie czółka) w 42% trasy, jeden zjazd
+  żwirowy (plama jaśniejszej nawierzchni) w 63%, jedna kapliczka/krzyż przydrożny w 88% (blisko wsi).
+- **Nie zrobione w tej części** (uczciwie, do ROADMAP): docelowy czas sprawnego przejścia (45–60 min) – wymaga
+  większej zmiany niż kosmetyczne zakręty (dłuższa trasa ZE zmianą punktów zależnych, wolniejsze typewriter/skoki
+  czasu, więcej swobodnej jazdy w sc. 0), ryzykowne bez retestu całej nocy w tej sesji; strumieniowanie kawałków
+  (wszystko już renderuje się naraz, `InstancedMesh` ogranicza koszt, ale nie ma LOD/culling wg odległości od auta) –
+  bez pomiaru FPS na tej trasie w tej sesji nie było jak ocenić, czy to faktycznie potrzebne.
