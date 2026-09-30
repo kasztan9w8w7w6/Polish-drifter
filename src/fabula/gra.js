@@ -223,6 +223,7 @@ export function createFabula(ctx) {
       ui.slupki({ naglowek: `${a.id === 'NOC_BMW' ? 'Beemka' : 'Bus Zdzicha'} · słupek 0/6 · czyste 0`, legenda: legenda() });
       act.npc = true;
     } else {
+      swiat.resetTireWall();
       ui.slupki({ naglowek: 'Na start: linia przy hali, jedź na południe', legenda: legenda() });
       act.gracz = true;
     }

@@ -108,6 +108,28 @@ export function createPhysics() {
       );
     },
 
+    // Dynamic cylinder (a tyre, axis vertical by default) at `pos` (pos.y = its centre); rotation = an initial
+    // quaternion {x,y,z,w}. v0.8: the Park's tyre walls – stacked, they scatter on a hit and are put back with
+    // reset().
+    addDynamicCylinder(pos, radius, length, mass, rotation) {
+      const b = makeBody(
+        RAPIER.RigidBodyDesc.dynamic().setCanSleep(true),
+        RAPIER.ColliderDesc.cylinder(length / 2, radius).setMass(mass).setFriction(0.7).setRestitution(0.15),
+        pos,
+        rotation,
+      );
+      return {
+        ...b,
+        reset() {
+          b.body.setTranslation(pos, true);
+          b.body.setRotation(rotation ?? { x: 0, y: 0, z: 0, w: 1 }, true);
+          b.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+          b.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+          b.body.wakeUp();
+        },
+      };
+    },
+
     // Line segments of all colliders for a debug overlay (Rapier's built-in debug renderer).
     debugLines() {
       return world.debugRender(); // { vertices: Float32Array (xyz), colors: Float32Array (rgba) }

@@ -9,6 +9,16 @@ Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
   zasięgu sieci tej sesji, patrz docs).
 - Scalona gałąź `referencje-v08`: 118 zdjęć referencyjnych (`docs/referencje/`), modele aut (`assets-src/modele-aut/`).
 
+## v0.8f – fabuła cz. 5: Park według zdjęć
+- Zbiorniki: cylindryczne silosy → prostokątne baseny (betonowa obrzeża + zatopiona woda), zgodnie z rzutem z góry
+  i zdjęciami w docs/referencje/park/.
+- Nowa nawierzchnia toru słupków (płyty, plamy, łaty, pęknięcia).
+- Ściany z opon jako dynamiczne bryły Rapiera (`physics.js` `addDynamicCylinder`) na zawrotce – rozlatują się po
+  uderzeniu, wracają na miejsce na starcie każdego przejazdu (gracza i NPC).
+- Trasa 6 słupków bez zmian (zwalidowana kalibracja z v0.7 zostaje); notatka autora o wąskiej uliczce Magazynowej
+  między zbiornikami – opisana jako możliwy kierunek na kolejną sesję, nie wdrożona teraz (patrz RAPORT).
+- `docs/wdrozenie-fabuly.md` §11.
+
 ## v0.8e – fabuła cz. 4: wylotówka naturalna
 - Trzy nowe punkty kontrolne trasy (łagodne esy), bez zmiany punktów, od których zależą inne miejsca (przystanek,
   wieś); teren tła z delikatnymi wzgórzami przez `simplex-noise` (środkowy pas korytarza zostaje płaski – wstęga

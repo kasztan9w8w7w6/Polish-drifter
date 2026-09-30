@@ -319,3 +319,30 @@ Nic z tego nie blokuje całości. Pytania do autora i scenarzysty są w raporcie
   czasu, więcej swobodnej jazdy w sc. 0), ryzykowne bez retestu całej nocy w tej sesji; strumieniowanie kawałków
   (wszystko już renderuje się naraz, `InstancedMesh` ogranicza koszt, ale nie ma LOD/culling wg odległości od auta) –
   bez pomiaru FPS na tej trasie w tej sesji nie było jak ocenić, czy to faktycznie potrzebne.
+
+## 11. Park według zdjęć (v0.8 cz. 5)
+
+- **Notatka autora jest rozstrzygająca (docs/referencje/README.md):** ulica Magazynowa to wąska droga wijąca się
+  między prostokątnymi zbiornikami wodnymi (nie plac), start w prawym dolnym rogu, zawrotka w lewym górnym. **Trasa
+  6 słupków zostaje bez zmian** (zwalidowana w v0.7 – kalibracja autopilota, testy), zgodnie z poleceniem części 5
+  („jeśli zdjęcia sugerują lepszy układ, zaproponuj, ale testy słupków muszą przejść” – przeniesienie całego toru na
+  wąską uliczkę między zbiornikami wymagałoby ponownej kalibracji szerokości/promieni bez czasu, żeby to bezpiecznie
+  zweryfikować w tej sesji, patrz RAPORT).
+- **Zbiorniki:** były cylindrycznymi silosami – teraz prostokątne baseny (betonowa obrzeża + zatopiona „woda”,
+  zgodnie ze zrzutem z rzutu z góry i zdjęciami przy zbiornikach).
+- **Nawierzchnia:** nowa tekstura `plytyParku()` (płyty ze spoinami, plamy oleju, łaty, pęknięcia) pod samym torem
+  słupków, zamiast współdzielonej nawierzchni miejskiej.
+- **Ściany z opon – dynamiczne bryły Rapiera** (`physics.js` `addDynamicCylinder`, nowa funkcja): 21 opon (3
+  rzędy × 7 kolumn) na końcu toru (zawrotka/wybieg), które fizycznie się rozlatują po uderzeniu i wracają na
+  miejsce (`resetTireWall()`) na starcie każdego przejazdu – gracza i NPC. Zmierzone: `npm test` bez zmian (90/90,
+  autopilot na torze bez opon w testach jednostkowych – opony są tylko w żywej grze), bez błędów w konsoli po
+  teleportacji na tor w headless Chromium.
+- **Nie sprawdzone wizualnie:** czy stos opon stoi spokojnie zaraz po `reset()`, czy się od razu rozjeżdża pod
+  własnym ciężarem (każda opona to osobne, niepołączone ciało dynamiczne – stabilność bierze się tylko z tego, że są
+  idealnie wyśrodkowane jedna na drugiej, bez żadnego złącza). Bez podglądu w przeglądarce w tej sesji nie da się
+  tego ocenić; jeśli się okaże, że się rozjeżdża same z siebie, najprostsza poprawka to niższy stos (2 rzędy) albo
+  odrobina ujemnego marginesu między oponami.
+- **Nie zrobione:** ogrodzenie/hale/tiry/oświetlenie Parku są bez zmian (już był tam płot i tiry z v0.7, zdjęcia nie
+  dały wystarczających przesłanek do zmiany ich wygladu w dostępnym czasie); pomiar FPS z 21 dodatkowymi dynamicznymi
+  ciałami – nie zmierzony w tej sesji (headless software rendering i tak trzyma niskie FPS niezależnie od tej zmiany,
+  patrz część 2).

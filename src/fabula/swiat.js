@@ -130,13 +130,13 @@ export async function createSwiat({ scene, physics, map, fab, postacie, npcVehic
     npcAuto[id] = { view, tuning, drivetrain, poziom, vehicle: null, entry: null, auto: null };
   }
 
-  // ---------- The Park: tanks behind the fence, the six posts, the start line ----------
+  // ---------- The Park: rectangular water tanks (docs/referencje/park – ulica Magazynowa runs past a row of open
+  // water basins, not tall cylindrical silos as before), the six posts, the start line ----------
+  const water = mat(0x0d2a30, { roughness: 0.15, metalness: 0.3 });
+  const concrete = mat(0x9a9a92);
   for (const [x, z, r] of fab.zbiorniki) {
-    const t = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 12, 20), mat(0xb8bcc0));
-    t.position.set(x, 6, z);
-    const top = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.2, r, 2, 20), mat(0x9ea2a6));
-    top.position.set(x, 13, z);
-    scene.add(t, top);
+    box(scene, r * 2.4, 1.1, r * 2.2, x, 0.55, z, concrete); // the basin's concrete rim, water sunk inside it
+    box(scene, r * 2.1, 0.05, r * 1.9, x, 1.08, z, water);
   }
   const course = createCourse(fab.slupki);
   const slupki = [];
@@ -161,6 +161,49 @@ export async function createSwiat({ scene, physics, map, fab, postacie, npcVehic
   line.rotation.z = (fab.slupki.heading + 90) * DEG;
   line.position.set(course.start.x, 0.04, course.start.z);
   scene.add(line);
+  // worn concrete slabs under the run itself (docs/referencje/park: patches, cracks, stains), a hair above the
+  // estate's own asphalt so it doesn't z-fight
+  {
+    const patch = new THREE.Mesh(new THREE.PlaneGeometry(course.length + 30, 16), new THREE.MeshStandardMaterial({ map: plytyParku(), roughness: 0.95 }));
+    patch.rotation.x = -Math.PI / 2;
+    patch.rotation.z = (fab.slupki.heading * Math.PI) / 180;
+    const mid = course.world(course.length / 2, 0);
+    patch.position.set(mid.x, 0.018, mid.z);
+    scene.add(patch);
+  }
+  // a wall of stacked tyres past the last post (the "zawrotka" – the run-off at the end): dynamic Rapier bodies
+  // that scatter if the car hits them and are stood back up at the start of every run (przejazdNPC/graczRun)
+  const tireWall = [];
+  let tyreInst = null;
+  {
+    const wallAt = course.world(course.length + 5, 0);
+    const wallYaw = ((fab.slupki.heading + 90) * Math.PI) / 180;
+    const rowDir = { x: Math.cos(wallYaw), z: -Math.sin(wallYaw) }; // along the wall, across the road
+    for (let col = -3; col <= 3; col++) {
+      for (let row = 0; row < 3; row++) {
+        const x = wallAt.x + rowDir.x * col * 0.7, z = wallAt.z + rowDir.z * col * 0.7;
+        tireWall.push(physics.addDynamicCylinder({ x, y: 0.28 + row * 0.5, z }, 0.35, 0.45, 9));
+      }
+    }
+    tyreInst = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.35, 0.35, 0.45, 14), mat(0x151515), tireWall.length);
+    tyreInst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    scene.add(tyreInst);
+  }
+  const tyreQ = new THREE.Quaternion(), tyreScale = new THREE.Vector3(1, 1, 1), tyrePos = new THREE.Vector3(), tyreMtx = new THREE.Matrix4();
+  function syncTyres() {
+    tireWall.forEach((b, i) => {
+      const p = b.position(), q = b.quaternion();
+      tyrePos.set(p.x, p.y, p.z);
+      tyreQ.set(q.x, q.y, q.z, q.w);
+      tyreInst.setMatrixAt(i, tyreMtx.compose(tyrePos, tyreQ, tyreScale));
+    });
+    tyreInst.instanceMatrix.needsUpdate = true;
+  }
+  syncTyres();
+  function resetTireWall() {
+    for (const b of tireWall) b.reset();
+    syncTyres();
+  }
 
   // ---------- Town: Mirek's yard (a shelter, generators, a washing machine, a dentist's chair, the four rims) ----------
   const yard = new THREE.Group();
@@ -599,8 +642,10 @@ export async function createSwiat({ scene, physics, map, fab, postacie, npcVehic
     wsadz(root) {
       root.add(wAucie, kamil);
     },
+    resetTireWall,
     // start a run: forced = a.slupki (already rolled by the story engine), seed = a run-specific RNG seed
     przejazdNPC(id, forced, seed = 1) {
+      resetTireWall();
       const npc = npcAuto[id];
       const spawnYaw = (course.heading * Math.PI) / 180;
       const p0 = course.world(-20, 2.5);
@@ -624,6 +669,7 @@ export async function createSwiat({ scene, physics, map, fab, postacie, npcVehic
         if (n && n.visible !== on) people.show(id, on);
       };
       yukaManager.update(dt);
+      syncTyres();
       for (const [id, p] of Object.entries(kiedy)) {
         let on = true;
         if (p.kiedy === 'noc') on = noc;
@@ -723,5 +769,51 @@ function asfaltWiejski() {
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.magFilter = THREE.NearestFilter;
   t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+// Worn concrete slabs at the Park's six-post run (docs/referencje/park): square plates with joint lines, patched
+// repairs, oil stains and cracks – a rundown industrial yard, not fresh asphalt.
+function plytyParku() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const x = c.getContext('2d');
+  x.fillStyle = '#6a6a62';
+  x.fillRect(0, 0, 128, 128);
+  for (let i = 0; i < 2600; i++) {
+    const v = 92 + Math.random() * 24;
+    x.fillStyle = `rgba(${v},${v},${v - 6},${0.5 + Math.random() * 0.4})`;
+    x.fillRect(Math.random() * 128, Math.random() * 128, 1, 1);
+  }
+  x.strokeStyle = '#3a3a34';
+  x.lineWidth = 2;
+  for (let i = 0; i <= 128; i += 32) {
+    x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 128); x.stroke();
+    x.beginPath(); x.moveTo(0, i); x.lineTo(128, i); x.stroke();
+  }
+  for (let i = 0; i < 6; i++) { // dark oil stains
+    x.fillStyle = `rgba(20,18,16,${0.25 + Math.random() * 0.3})`;
+    x.beginPath();
+    x.ellipse(Math.random() * 128, Math.random() * 128, 6 + Math.random() * 10, 4 + Math.random() * 7, Math.random() * Math.PI, 0, Math.PI * 2);
+    x.fill();
+  }
+  for (let i = 0; i < 4; i++) { // patched repairs (a lighter, cruder rectangle)
+    x.fillStyle = '#7a766c';
+    x.fillRect(Math.random() * 100, Math.random() * 100, 10 + Math.random() * 18, 8 + Math.random() * 14);
+  }
+  x.strokeStyle = 'rgba(30,28,26,0.6)';
+  x.lineWidth = 1;
+  for (let i = 0; i < 5; i++) { // cracks
+    x.beginPath();
+    let px = Math.random() * 128, py = Math.random() * 128;
+    x.moveTo(px, py);
+    for (let k = 0; k < 4; k++) { px += (Math.random() - 0.5) * 24; py += (Math.random() - 0.5) * 24; x.lineTo(px, py); }
+    x.stroke();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.magFilter = THREE.NearestFilter;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.repeat.set(6, 1.4);
   return t;
 }
