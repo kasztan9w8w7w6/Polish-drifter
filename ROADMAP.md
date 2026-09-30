@@ -29,8 +29,8 @@ Wersje po kolei. Szczegóły modułów: [`CLAUDE.md`](CLAUDE.md), zmiany w każd
 | v0.6f | nowa nazwa: Polish Drifter | zrobione |
 | — | sesja porządkowa: referencje (`docs/referencje/`), braki (`docs/BRAKI.md`), podział na sesje S2–S5 | zrobione |
 | v0.7 | **fabuła MVP „W nocy robota” wdrożona** (docs/fabula/, docs/wdrozenie-fabuly.md): silnik fabuły, 12 scen, zakłady na 6 słupkach, 4 zakończenia, greybox mapy (Park, miasto, wylotówka, wieś) | zrobione |
-| v0.8 | grafika i polski świat (bloki, auta z epoki, postacie z modeli, światło ze zdjęć – docs/BRAKI.md) | następne |
-| v0.9 | dopracowanie mechanik po teście (próg 4/6, czytelność kursów, długość nocy, czekanie w sc. 6, jazda z ładunkiem) | planowane |
+| v0.8 | **poprawki po pierwszym teście fabuły i wymiana na gotowce wdrożone** (docs/wdrozenie-fabuly.md §7–14, docs/gotowce.md): beemka/bus na fizyce Poloneza, chodzenie i ruch pieszych (yuka), rozmowy filmowe i font pikselowy, wylotówka z zakrętami, Park według zdjęć (ściany z opon), pełnoekranowa mapa (M), filtr radiowy (Tone.js), Golf II/Fiat 126p na ulicach | zrobione |
+| v0.9 | **domknięcie v0.8 bez podglądu wizualnego** (raport v0.8): sprawdzić na oko zbliżenie kamery na rozmowie, pasy (letterbox), tor beemki i stabilność ściany opon, ustawienie Golfa/Fiata w liniach parkingowych, dźwięk radia (filtr Tone.js); dopiąć: obrysy budynków miasta na mapie, opcjonalna minimapa w rogu, `InstancedMesh` dla aut z epoki (albo kolejne uproszczenie), warianty drzwi Golfa, dokładniejsza kalibracja E34 (obecnie rząd wielkości, nie zgodność z katalogiem – test/e34.test.mjs); dopracowanie mechanik po teście (próg 4/6, czytelność kursów, długość nocy do 45–60 min, czekanie w sc. 6, jazda z ładunkiem) | planowane |
 | v0.10 | muzyka: 12 pastiszy na 4 stacje (docs/muzyka.md), dźwięk Poloneza | planowane |
 | później | większa mapa (S4), trasa nad wodą („Pralka. Nad wodę.”), garaż i tuning, kolejne noce | planowane |
 | v0.15 | dopracowanie sterowania mobilnego (po testach na telefonach) | planowane |

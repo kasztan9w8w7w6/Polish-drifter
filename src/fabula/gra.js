@@ -3,10 +3,12 @@ import dane from '../../docs/fabula/dane-mvp.json';
 import inscenizacja from './inscenizacja.json';
 import slownik from './slownik.json';
 import postacieFab from './postacie.json';
+import { Easing } from '@tweenjs/tween.js';
 import { createStory, minutyNaCzas, wyplata } from './silnik.js';
 import { createFabulaUI, uiSettings } from './ui.js';
 import { createRadio } from './radio.js';
-import { createRun, npcPath, slupkiSettings, WERDYKT } from './slupki.js';
+import { createMapaUI } from './mapaUI.js';
+import { createRun, slupkiSettings, WERDYKT } from './slupki.js';
 
 // The night of "W nocy robota" in the game: the story engine (silnik.js) hands one action at a time, this glue shows
 // it (ui.js), moves the world (swiat.js), waits for the player where the staging says so (inscenizacja.json gates),
@@ -46,6 +48,8 @@ export function createFabula(ctx) {
   let story = null;
   const ui = createFabulaUI({ postacie, kartka: dane.ekonomia.kartka_zbycha, cel: dane.ekonomia.cel, keyLabel: ctx.keyLabel, keys: ctx.keys });
   const radio = createRadio();
+  const mapaUI = createMapaUI(fab);
+  const mapaPath = fab.wylotowka.os.map(([x, z]) => ({ x, z }));
   const course = swiat.course;
   const punkty = fab.punkty;
   swiat.wsadz(ctx.carView.root);
@@ -58,6 +62,7 @@ export function createFabula(ctx) {
   let telClose = 0;
   let koniec = false;
   let cargoOn = false;
+  let rozmowca = null; // v0.8: who the close-up camera is on during a postój conversation
   let sway = 0, swayV = 0, lastLat = 0;
   const holes = new Map();
   let lastCheckpoint = null;
@@ -216,13 +221,12 @@ export function createFabula(ctx) {
     act.run = createRun(course, slupkiSettings);
     act.werdykty = [];
     if (a.npc) {
-      const auto = a.id === 'NOC_BMW' ? swiat.auta.bmw : swiat.auta.bus;
-      act.path = npcPath(course, a.slupki);
-      swiat.przejazdNPC(auto, act.path);
+      swiat.przejazdNPC(a.id, a.slupki, Math.round(zegar) + 1);
       if (a.id === 'RANO_BUS') swiat.people.show('ZDZICHU', false);
       ui.slupki({ naglowek: `${a.id === 'NOC_BMW' ? 'Beemka' : 'Bus Zdzicha'} · słupek 0/6 · czyste 0`, legenda: legenda() });
       act.npc = true;
     } else {
+      swiat.resetTireWall();
       ui.slupki({ naglowek: 'Na start: linia przy hali, jedź na południe', legenda: legenda() });
       act.gracz = true;
     }
@@ -336,8 +340,8 @@ export function createFabula(ctx) {
 
   function npcRun(dt) {
     const bieg = swiat.bieg;
-    if (bieg?.pos && bieg.t >= 0) {
-      for (const e of act.run.update(dt, { x: bieg.pos.x, z: bieg.pos.z, yaw: bieg.pos.yaw, sideSlip: bieg.path.at(bieg.t).slip })) pokazWerdykt(e, act.a.id === 'NOC_BMW' ? 'Beemka' : 'Bus Zdzicha');
+    if (bieg?.pos) {
+      for (const e of act.run.update(dt, { x: bieg.pos.x, z: bieg.pos.z, yaw: bieg.pos.yaw, sideSlip: bieg.pos.sideSlip })) pokazWerdykt(e, act.a.id === 'NOC_BMW' ? 'Beemka' : 'Bus Zdzicha');
     }
     if (!bieg) {
       if (!act.koniecT) {
@@ -406,7 +410,8 @@ export function createFabula(ctx) {
   function scenka() {
     const s = act.scenka.scenka;
     const f = swiat.felgiPrzyKurniku[3];
-    const k = Math.min(1, act.t / ((s.czas ?? 6) * 0.7));
+    // eased (tween.js Easing, v0.8) instead of a plain linear ramp – the rim starts and stops rolling gently
+    const k = Easing.Quadratic.InOut(Math.min(1, act.t / ((s.czas ?? 6) * 0.7)));
     const [kx, kz] = fab.wies.kurnik;
     const from = { x: fab.wies.x + 4, z: fab.wies.z - 3 }, to = { x: kx + 1.05, z: kz + 2.2 };
     f.visible = true;
@@ -461,6 +466,18 @@ export function createFabula(ctx) {
     get target() {
       return ctx.target;
     },
+    mapaPath,
+    get mapa() {
+      return {
+        get open() {
+          return mapaUI.open;
+        },
+        toggle: () => mapaUI.toggle(undefined, car.state.position),
+        pan: mapaUI.pan,
+        zoom: mapaUI.zoom,
+        render: mapaUI.render,
+      };
+    },
     // the "talk" action (E, pad B, the touch button): on with the current line
     naprzod() {
       return ui.naprzod();
@@ -475,7 +492,7 @@ export function createFabula(ctx) {
     },
     // → { lock: the car must stand, cam: a state for the camera instead of the car, steer: pull from the load }
     update(dt, state, time) {
-      const out = { lock: false, cam: null, steer: 0 };
+      const out = { lock: false, cam: null, steer: 0, zoom: 0 };
       radio.update(dt);
       fade += Math.sign(fadeTarget - fade) * Math.min(Math.abs(fadeTarget - fade), dt * 2.2 * fabulaSettings.tempoTestu);
       ui.fade(fade);
@@ -567,6 +584,18 @@ export function createFabula(ctx) {
       const b = swiat.bieg;
       if (act?.npc && b?.pos) out.cam = camState(b.pos.x, b.pos.z, b.pos.yaw, b.pos.speed);
       else if (act?.scenka && act.cam) out.cam = camState(act.cam.x, act.cam.z, 0, 0);
+      else if (ui.postoj) {
+        // a postój conversation: close in on the midpoint between the car and whoever is talking (part 3, docs
+        // wdrozenie-fabuly.md §9) – the zoom itself is already smoothed frame to frame (camera.ts zoomSmooth), so
+        // this doesn't need its own tween. The speaker (`x.kto`) only exists on a kwestia line, not while the
+        // player picks a reply (wybor) – remember it so the shot doesn't pop back and forth between the two.
+        if (x?.kto && x.kto !== 'GRACZ') rozmowca = x.kto;
+        const npc = rozmowca && swiat.people.get(rozmowca);
+        if (npc) {
+          out.cam = camState((npc.root.position.x + state.position.x) / 2, (npc.root.position.z + state.position.z) / 2, 0, 0);
+          out.zoom = 1;
+        }
+      } else rozmowca = null;
       return out;
     },
   };

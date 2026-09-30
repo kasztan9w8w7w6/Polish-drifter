@@ -213,3 +213,242 @@ Nic z tego nie blokuje całości. Pytania do autora i scenarzysty są w raporcie
   - cel planu to 45–60 min;
   - różnicę robią skrócone trasy (w grze ok. 6,8 km zamiast 70 km) i to, że tekst czyta się szybciej, niż zakładał plan.
   - Pokrętła bez zmiany scenariusza: dłuższa wylotówka, dłuższa swobodna jazda w sc. 0, wolniejsze tempo pasków, dłuższe czekanie w sc. 6 (plan §10.2 mówi raczej o skracaniu).
+
+## 7. Beemka i bus: fizyka NPC (v0.8 cz. 1)
+
+- Do v0.7 przejazd BMW/busa był animacją po zapisanej krzywej (`slupki.js` `npcPath`). Od v0.8 to prawdziwe auto:
+  `createVehicle()` (ten sam kod co gracz) na profilu `src/cars/bmw-e34.json` / `vw-t3.json`, kierowca to
+  `src/npcAutopilot.js` (ten sam moduł, który steruje testowym autopilotem – `test/autopilot.mjs` go tylko wywołuje,
+  nie duplikuje logiki).
+- **Kasa nie zależy od tego, jak fizycznie pójdzie ten konkretny przejazd.** Silnik fabuły (`silnik.js` `losujSlupki`)
+  losuje, które słupki są czyste, PRZED przejazdem (jak w v0.7); `gra.js` `rozlicz()` liczy wypłatę z tej tablicy
+  (`a.slupki`), nie z tego, co pokaże `act.run` na żywo. `forced` w `npcAutopilot.js` tylko naprowadza fizyczny
+  przejazd, żeby plansza z werdyktami na ekranie nie sprzeciwiała się wypłacie – to kosmetyka, nie coś od czego
+  zależy wynik finansowy (stąd testy 7488 ścieżek i macierzy §5 – bez zmian, wciąż przechodzą).
+  - "brudny" słupek (`forced[k] === false`) jest w 100% pewny: kierowca po prostu nie ciągnie ręcznego (brak poślizgu
+    = niecozyste, zmierzone: 60/60 w teście).
+  - "czysty" słupek (`forced[k] === true`) pożycza technikę `dobry`/niższy szum (`GWARANT` w `npcAutopilot.js`), ale
+    NIE jest gwarantowany – sam manewr (poślizg tuż przy słupku, tolerancja dotyku 0,1 m) jest z natury wrażliwy na
+    warunki wejścia, więc dokładność zależy od wzorca: pierwsze 3–4 słupki z rzędu wymuszone na "czyste" trafiają w
+    ok. 80–100% (zmierzone), wymuszanie "czyste" tuż po wymuszonym "brudnym" słupku bywa dużo mniej trafne (kierowca
+    wchodzi w kolejny wymuszony poślizg z gorszej pozycji). Ponieważ nie wpływa to na kasę, jest to zaakceptowana
+    niedoróbka kosmetyczna, nie błąd do naprawy w tym samym kroku – patrz RAPORT v0.8.
+- Model auta: `car.js` `fitPolonez()` (teraz ogólniejsza `fitCar`, ta sama funkcja dla Poloneza, E34 i T3) szuka kości
+  kółek po nazwie (`F_wheel.L`, jak w Polonezie) LUB, gdy model nie ma szkieletu (T3: `WFL/WFR/WBL/WBR` to zwykłe
+  węzły), po dokładnej nazwie węzła – tak działa obrót/skręt kółek E34 (ma szkielet, nazwy zgodne z konwencją
+  Poloneza), ale kółka busa T3 stoją w miejscu (brak szkieletu, więc nie ma czego kręcić przez kość, kółka są
+  częścią jednej siatki). T3 nie ma też materiału `Headlight` (jeden materiał na cały model), więc `fitCar()` zakłada
+  przód na +Z (domyślne zachowanie, jak dotąd) – bez podglądu w przeglądarce w tej sesji nie da się potwierdzić, czy
+  to właściwa strona; da się to poprawić bez zmian w kodzie przez `look.frontYawDeg` w `vw-t3.json` (dodane do
+  `fitCar()` właśnie w tym celu), patrz RAPORT.
+
+## 8. Ludzie: chodzenie i yuka (v0.8 cz. 2)
+
+- **Diagnoza lewitowania:** `src/npc.js` `animate()` kołysało tylko ciałem i rękami; nogi (jedna sztywna kość na nogę)
+  nigdy się nie ruszały, więc przy każdym ruchu (rolkarze, Zbychu idący do mety) figura ślizgała się po ziemi zamiast
+  chodzić.
+- **Gotowiec:** szukałem rigowanego modelu CC0 ze stanami idle/walk (kenney.nl, quaternius.com – 403, jak zdjęcia
+  referencyjne; modele z `three.js/examples/models/gltf` są technicznie dostępne, ale to zasoby Mixamo bez jasnej
+  licencji CC0/CC-BY dla użycia w publicznym repo – ryzyko na `CREDITS.md`). Nie znalazłem bezpiecznie
+  licencjonowanego riga w zasięgu tej sesji (docs/gotowce.md), więc **naprawiam figurę z kodu**, zgodnie z poleceniem
+  („jeśli nie znajdziesz modelu z animacjami, napraw figurę z kodu”).
+- **Naprawa:** noga to teraz dwa segmenty (`thigh` na biodrze, `shin` na kolanie, każdy własna grupa/obrót) zamiast
+  jednej sztywnej kości; `animate()` liczy prędkość NPC z różnicy pozycji między klatkami (`n.speed`, bez zmiany API
+  wywołań `people.place()`) i przy ruchu miesza biodro (wahadło) z kolanem (zgięcie w fazie unoszenia nogi); amplituda
+  spada do 0 w bezruchu, więc nie kłóci się z wcześniejszym kołysaniem stojąc. Kamil siedzący w aucie: `thigh`/`shin`
+  ustawione ręcznie na pozę siedzącą (dawne `leg.rotation.x` rozdzielone na oba stawy).
+- **Ruch przez yuka** (`EntityManager`, `Vehicle`, `FollowPathBehavior`, `Path`): rolkarze na torze zamiast ręcznej
+  matematyki okręgu – ta sama geometria (promień i prędkość z `krazy` w `mapa.json`), ale krok liczy `FollowPathBehavior`
+  po zamkniętej ścieżce z 16 punktów; kierunek figury liczony z wektora prędkości pojazdu yuki, nie z parametru kąta.
+  Inni (Zbychu idący do mety, stojący) zostają na `people.place()` bez zmian – to jednorazowe skoki pozycji, nie pętla
+  ruchu, więc yuka nie dodaje tu nic ponad to, co jest.
+- **Nie sprawdzone wizualnie w tej sesji** (brak przeglądarki z ekranem): tempo chodu, czy amplituda biodra/kolana
+  wygląda naturalnie, czy figura Kamila w aucie nie przenika przez siedzenie. Sprawdzone tylko przez odpytanie stanu
+  (`agro.swiat.people.list`) w headless Chromium: rolkarz trzyma się swojej ścieżki, prędkość policzona z ruchu jest
+  dodatnia, kąt nogi się zmienia razem z prędkością, bez błędów w konsoli. Prędkość ruchu (i całego zegara fabuły) w
+  tym headless Chromium bywa bardzo nierówna (`dt` na klatkę ograniczone do 0,1 s w `main.js`, a klatek na s bywa 1–3
+  przy takim obciążeniu) – to własność silnika z wcześniejszych wersji, nie regresja z tej części.
+
+## 9. Rozmowy filmowe i font pikselowy (v0.8 cz. 3)
+
+- **Font:** cały interfejs fabuły (rozmowy, ekran techniczny, tablica zakładów, wybory, kartka) jest teraz w
+  `Silkscreen` – usunięte nadpisania `system-ui`/`ui-monospace`/`Courier New` w `#f-okno .f-tekst`, `#f-pasek .f-tekst`,
+  `.f-wybory li`, `#f-ekran p`, `#f-kartka` (dawny krój systemowy: te reguły nadpisywały ustawiony na `#fabula`
+  `Silkscreen` – naprawione u źródła, nie tylko dopisane). Telefon dostał odrębny pikselowy font w stylu starej
+  komórki, `VT323` (Google Fonts / `@fontsource/vt323`, OFL) – jak w poleceniu części 3.
+- **Kamera na rozmowie:** zamiast osobnej kamery perspektywicznej z bliska (ryzyko dla `RenderPixelatedPass` przy
+  zmianie kamery bez możliwości podglądu wizualnego w tej sesji – `pixelart.js` `setCamera()` już obsługuje zmianę
+  kamery między Dioramą i „Za autem”, ale każda z nich ma swój dobrany kadr; nowa trzecia kamera wymagałaby tego
+  samego dopasowania bez sposobu, żeby to zweryfikować) – **zbliżenie w tej samej Dioramie**: `camera.ts` dostał
+  parametr `closeZoom` (0–1), który podczas rozmowy na postoju (`ui.postoj`) ciągnie docelowy zoom w stronę znacznie
+  bliższego kadru (`dioZoom × 0,3`) i celuje kamerę w środek między autem i rozmówcą (`gra.js`), zamiast w samo auto.
+  Przejście jest płynne, bo korzysta z istniejącego wygładzania `zoomSmooth` (nie trzeba było dodawać własnego tweena).
+  To jest odstępstwo od polecenia („bardzo bliski plan, perspektywiczna, na twarz i bark”) w stronę bezpieczniejszego
+  wariantu – bliżej, ale wciąż z góry, w tej samej ortho Dioramie.
+- **Pasy (letterbox) i przyciemnienie:** `#f-letterbox` (nowy element w `ui.js`) z paskami u góry/dołu i przyciemnieniem
+  tła, sterowane klasą `body.f-rozmowa` (już istniała w `ui.js` `hideBoxes()`, nieużywana wcześniej) – wjeżdżają/
+  wyjeżdżają przez CSS `transition` (0,7 s), bez JS.
+  „`podczas wyboru odpowiedzi (`wybor`) kamera zostaje na tym samym rozmówcy” – silnik fabuły nie ma pola `kto` na
+  akcji `wybor`, więc `gra.js` pamięta ostatniego rozmówcę (`rozmowca`) przez cały czas trwania `ui.postoj`.
+- **Cutscenka FELGA_BICIE:** liniowy ruch felgi (`Math.min(1, act.t/…)`) zamieniony na `@tweenjs/tween.js` `Easing.
+  Quadratic.InOut` – ten sam czas trwania, ale zaczyna i kończy się płynnie.
+- **Przejazdy NPC:** kamera już wcześniej płynnie doganiała fałszywą pozycję (`camera.ts` `pivot` z `approach()`),
+  więc nie było tu ostrego cięcia do naprawienia; nowy `closeZoom` nie wpływa na przejazdy NPC (zostaje 0).
+- **Nie sprawdzone wizualnie** (brak przeglądarki z ekranem w tej sesji): jak blisko/naturalnie wygląda zbliżenie,
+  czy pasy nie zasłaniają czegoś ważnego na małym ekranie dotykowym. Sprawdzone przez odpytanie stanu w headless
+  Chromium: `body.f-rozmowa` się ustawia, fonty (`getComputedStyle`) to `Silkscreen`, `#f-letterbox` istnieje,
+  bez błędów w konsoli.
+
+## 10. Wylotówka naturalna (v0.8 cz. 4)
+
+- **Punkt wyjścia:** wylotówka już od v0.7 miała wygładzoną krzywą (`CatmullRomCurve3`), lasy/łąki z drzewami przez
+  `InstancedMesh`, słupki drogowe co 50 m i dziury – większość checklisty części 4 była już zrobiona.
+- **Nowe zakręty:** dopisane trzy punkty kontrolne (`mapa.json` → `wylotowka.os`) między istniejącymi – łagodne esy,
+  bez zmiany punktów początkowego/końcowego (i tych, do których odwołują się inne pola: przystanek, wieś, korytarz),
+  żeby nic zależnego od konkretnego x nie przestało się zgadzać. To kosmetyczna zmiana trasy (dłuższa o kilkadziesiąt
+  metrów), nie licznik czasu – `test/czas.mjs` daje te same 27–29 min, bo licznik liczy czas jazdy z `trasaM`
+  (skalowanej długości), nie z rzeczywistej długości krzywej.
+- **Teren:** delikatne wzgórza na dużej płycie tła (`ground`, teraz z podziałami i przesunięciem wierzchołków przez
+  `simplex-noise`), z zerowaniem w środkowym pasie 70 m korytarza, żeby nic nie wybrzuszyło się przez wstęgę drogi
+  (fizyczne podłoże zostaje płaskim boxem, bez zmian).
+- **Nowe elementy przy drodze:** słupy linii energetycznej co 55 m (z poprzeczką i „drutem” – prostym boksem między
+  słupami, nie realną fizyką liny), jeden przepust (rura betonowa pod drogą + niskie czółka) w 42% trasy, jeden zjazd
+  żwirowy (plama jaśniejszej nawierzchni) w 63%, jedna kapliczka/krzyż przydrożny w 88% (blisko wsi).
+- **Nie zrobione w tej części** (uczciwie, do ROADMAP): docelowy czas sprawnego przejścia (45–60 min) – wymaga
+  większej zmiany niż kosmetyczne zakręty (dłuższa trasa ZE zmianą punktów zależnych, wolniejsze typewriter/skoki
+  czasu, więcej swobodnej jazdy w sc. 0), ryzykowne bez retestu całej nocy w tej sesji; strumieniowanie kawałków
+  (wszystko już renderuje się naraz, `InstancedMesh` ogranicza koszt, ale nie ma LOD/culling wg odległości od auta) –
+  bez pomiaru FPS na tej trasie w tej sesji nie było jak ocenić, czy to faktycznie potrzebne.
+
+## 11. Park według zdjęć (v0.8 cz. 5)
+
+- **Notatka autora jest rozstrzygająca (docs/referencje/README.md):** ulica Magazynowa to wąska droga wijąca się
+  między prostokątnymi zbiornikami wodnymi (nie plac), start w prawym dolnym rogu, zawrotka w lewym górnym. **Trasa
+  6 słupków zostaje bez zmian** (zwalidowana w v0.7 – kalibracja autopilota, testy), zgodnie z poleceniem części 5
+  („jeśli zdjęcia sugerują lepszy układ, zaproponuj, ale testy słupków muszą przejść” – przeniesienie całego toru na
+  wąską uliczkę między zbiornikami wymagałoby ponownej kalibracji szerokości/promieni bez czasu, żeby to bezpiecznie
+  zweryfikować w tej sesji, patrz RAPORT).
+- **Zbiorniki:** były cylindrycznymi silosami – teraz prostokątne baseny (betonowa obrzeża + zatopiona „woda”,
+  zgodnie ze zrzutem z rzutu z góry i zdjęciami przy zbiornikach).
+- **Nawierzchnia:** nowa tekstura `plytyParku()` (płyty ze spoinami, plamy oleju, łaty, pęknięcia) pod samym torem
+  słupków, zamiast współdzielonej nawierzchni miejskiej.
+- **Ściany z opon – dynamiczne bryły Rapiera** (`physics.js` `addDynamicCylinder`, nowa funkcja): 21 opon (3
+  rzędy × 7 kolumn) na końcu toru (zawrotka/wybieg), które fizycznie się rozlatują po uderzeniu i wracają na
+  miejsce (`resetTireWall()`) na starcie każdego przejazdu – gracza i NPC. Zmierzone: `npm test` bez zmian (90/90,
+  autopilot na torze bez opon w testach jednostkowych – opony są tylko w żywej grze), bez błędów w konsoli po
+  teleportacji na tor w headless Chromium.
+- **Nie sprawdzone wizualnie:** czy stos opon stoi spokojnie zaraz po `reset()`, czy się od razu rozjeżdża pod
+  własnym ciężarem (każda opona to osobne, niepołączone ciało dynamiczne – stabilność bierze się tylko z tego, że są
+  idealnie wyśrodkowane jedna na drugiej, bez żadnego złącza). Bez podglądu w przeglądarce w tej sesji nie da się
+  tego ocenić; jeśli się okaże, że się rozjeżdża same z siebie, najprostsza poprawka to niższy stos (2 rzędy) albo
+  odrobina ujemnego marginesu między oponami.
+- **Nie zrobione:** ogrodzenie/hale/tiry/oświetlenie Parku są bez zmian (już był tam płot i tiry z v0.7, zdjęcia nie
+  dały wystarczających przesłanek do zmiany ich wygladu w dostępnym czasie); pomiar FPS z 21 dodatkowymi dynamicznymi
+  ciałami – nie zmierzony w tej sesji (headless software rendering i tak trzyma niskie FPS niezależnie od tej zmiany,
+  patrz część 2).
+
+## 12. Mapa (v0.8 cz. 6)
+
+- **Odstępstwo od audytu:** `docs/gotowce.md` wybrał wzorzec three.js `webgl_multiple_views` (druga prawdziwa kamera
+  ortho) – tu jednak mapa jest rysowana na zwykłym `<canvas>` 2D (płaska projekcja świata `(x,z) → (ekran)`), nie
+  drugą kamerą 3D. Powód: bez podglądu wizualnego w tej sesji nie było jak bezpiecznie sprawdzić kamery ortho +
+  `RenderPixelatedPass` (to samo ryzyko co przy zbliżeniu kamery w części 3); płaski canvas jest dużo prostszy do
+  sprawdzenia (czysta matematyka, przetestowana w `test/mapa.test.mjs`) i daje dokładnie to, o co prosi checklista
+  (drogi, strzałka, znaczniki, nazwy, przesuwanie/zoom) bez ryzyka zepsucia pipeline'u pixel-artu.
+- **Otwieranie/zamykanie:** M, przycisk dotykowy (🗺), L3 na padzie; zamyka też przycisk ✕ w rogu. Gra „zamraża się”
+  na czas otwartej mapy (main.js po prostu nie wywołuje fizyki ani `fabula.update()`, gdy mapa jest otwarta – prościej
+  niż osobna blokada).
+- **Przesuwanie/zoom:** przeciąganie (mysz/dotyk), kółko myszy/pinch (przez `wheel`), strzałki/gałka pada (kanały
+  gazu/skrętu, i tak wyzerowane podczas otwartej mapy, są przekierowane na panoramowanie zamiast jazdy – bez nowego
+  bindowania).
+- **Treść mapy:** trasa wylotówki (linia z `wylotowka.os`), nazwy stref (PARK/MIASTO/WYLOTÓWKA/WIEŚ – przybliżone
+  środki, nie granice), znacznik celu bieżącej sceny (żółte kółko, ten sam `ctx.target` co pasek celu na HUD),
+  czerwony X na zamkniętej drodze (`fab.zamknieta`), strzałka gracza (kierunek z kwaternionu auta).
+- **Nie zrobione:** obrysy budynków (miasto rysowane tylko jako etykieta, nie faktyczna siatka ulic/bloków – dane
+  o tym są w oddzielnym pliku `osiedle.json`, nie w `fab`, którym operuje moduł fabuły; podłączenie tego wymagałoby
+  przekazania także mapy miasta do `mapaUI`, pominięte z braku czasu), opcjonalna minimapa w rogu (ustawienie).
+- **Sprawdzone:** `test/mapa.test.mjs` (projekcja świat→ekran: środek, krawędzie, panorama, zoom), smoke test w
+  headless Chromium – M otwiera/zamyka mapę, zrzut ekranu pokazuje poprawnie ułożoną strzałkę gracza, drogę, etykiety
+  PARK/MIASTO i znacznik zamkniętej drogi (patrz RAPORT – to jedyna część 6, którą dało się ocenić wzrokowo w tej
+  sesji, bo canvas 2D renderuje się nawet przy 1–3 FPS w tym środowisku).
+
+## 13. Muzyka i radio (v0.8 cz. 7)
+
+- **Filtr radiowy przez Tone.js:** `radio.js` `init()` teraz kieruje wyjście placeholderów (`out`) przez łańcuch
+  `Tone.Filter` (pasmowoprzepustowy, 2400 Hz, Q 1,1) + `Tone.Distortion` (0,12) – ten sam charakter „głośnika w
+  aucie” na wszystkich 4 stacjach, bez ręcznego filtrowania próbka po próbce. Tone.js działa na tym samym
+  `AudioContext` co Howler (`Tone.setContext(Howler.ctx)`), więc nie ma drugiego odblokowania dźwięku na telefonie.
+  Jeśli się nie uda skonfigurować (dowolny powód), radio i tak gra – tylko bez koloru (`try/catch`, jak reszta
+  ładowania modeli w tym projekcie).
+- **Co zostaje bez zmian:** sam sekwencer 4 stylów (`schedule()`, ręczny Web Audio) – już był gotowym, przetestowanym
+  rozwiązaniem (kick/hat/bass/stab na stację), przepisanie go na `Tone.Sequence` nie dodałoby nic słyszalnego, tylko
+  ryzyko regresji bez możliwości przesłuchania w tej sesji; trzask przy zmianie stacji też zostaje (już działał).
+  Miejsce i format na docelowe pastisze (`public/muzyka/`, `docs/muzyka.md`) bez zmian w kodzie.
+- **Znana luka:** prawdziwe utwory (`Howl` z `public/muzyka/`) łączą się z `Howler.masterGain` bezpośrednio, z
+  pominięciem nowego filtra Tone.js (Howler nie daje prostego API do przepięcia pojedynczego dźwięku przez własny
+  łańcuch efektów bez ingerencji w jego wewnętrzne obiekty) – dopóki `lista.json` jest pusta, nie ma to znaczenia;
+  gdy dojdą prawdziwe pliki, warto to dograć.
+- **Nie sprawdzone:** jak to brzmi – nie da się tego ocenić bez odsłuchu, w tej sesji tylko potwierdzone, że
+  inicjalizacja i zmiana stacji (5×) nie rzucają błędów w headless Chromium.
+
+## 14. Golf II i Fiat 126p na ulicach (v0.8 cz. 8)
+
+- **Konwersja** (`convert-assets.mjs` `convertCar()`, ta sama funkcja co Polonez/E34/T3): `public/models/golf2/`,
+  `public/models/fiat126p/`. Żaden z modeli nie ma plakietki/loga na osobnym węźle (tylko na współdzielonym
+  materiale) – w przeciwieństwie do aut Sketchfab Standard wyżej, plakietki zostają (CC BY wymaga uznania autorstwa,
+  nie anonimizacji marki); tablica Fiata podmieniona na fikcyjną tam, gdzie to czysty, osobny materiał.
+- **Dalsze uproszczenie zamiast InstancedMesh:** obie propozycje z polecenia części 8 („`InstancedMesh` albo po
+  dalszym uproszczeniu”) – wybrałem uproszczenie: 2 egzemplarze każdego auta jako zwykłe, nieinstancjonowane obiekty
+  (tym samym wzorcem co reszta zaparkowanych aut Kenneya w `map.js`), bo `InstancedMesh` wymagałby scalania geometrii
+  osobno per pod-siatka (nadwozie, koła, wnętrze) między egzemplarzami – realna robota bez czasu na bezpieczne
+  wykonanie w tej sesji. 4 nowe auta to niewielki dodatek do już istniejącej sceny (ok. 20 zaparkowanych aut Kenneya),
+  więc koszt wydajności jest pomijalny.
+- **Warianty dwu-/trzydrzwiowe:** niezrobione – pojedynczy plik źródłowy Golfa nie ma osobnych wariantów drzwi (nie
+  sprawdzałem strukturę siatki na tyle szczegółowo, żeby bezpiecznie ukryć/wyciąć tylne drzwi bez ryzyka zepsucia
+  UV/normalnych bez podglądu wizualnego) – oba egzemplarze to ten sam model.
+- **Podpięcie do mapy:** `map.js` `load()` rozpoznaje teraz prefiks `epoka/` (ścieżka do `public/models/<id>/`,
+  osobno od katalogu Kenneya) – 2 Golfy i 2 Fiaty 126p w wolnych miejscach istniejącego rzędu parkowania (`osiedle.json`
+  `objects`), bez zmiany istniejących pozycji.
+- **Uznanie autorstwa w grze** (wymóg CC BY): nowy ekran „Autorzy” w menu głównym (`menu.js`) z obydwoma autorami i
+  odnośnikiem do pełnej listy w `CREDITS.md`.
+- **Naprawione przy okazji:** dwa testy Node (`test/map.test.mjs`, `test/mapgeo.mjs`) miały własny, osobny loader
+  modeli `.gltf` (czytający pliki bezpośrednio przez `fs`, bez przeglądarki) z twardo wpisaną ścieżką do katalogu
+  Kenneya – nie wiedział nic o nowym prefiksie `epoka/`. Dodany ten sam rozdział ścieżek co w `map.js`.
+- **Sprawdzone:** `npm test` 93/93, headless Chromium – oba modele wczytują się bez błędu (`requestfailed` na
+  `golf2`/`fiat126p` == brak), ekran „Autorzy” pokazuje treść. Nie sprawdzone wizualnie, czy auta stoją równo w
+  liniach parkingowych (rozmiary `length` z realnych wymiarów, ale bez podglądu).
+
+## 15. Testy końcowe (v0.8 cz. 9)
+
+- **`scripts/e2e-noc.cjs` – cała noc na żywej grze:**
+
+  | Zakończenie | Urządzenie | Kasa przed świtem | Kasa na koniec | Zgodność z planem |
+  |---|---|---|---|---|
+  | NA STYK | klawiatura | 849 zł | 899 zł | ✓ |
+  | PRAWIE | klawiatura | 829 zł | 779 zł | ✓ |
+  | JUTRO | **pad** | 779 zł | 729 zł | ✓ |
+  | CZYSTO | klawiatura | 779 zł | 889 zł | ✓ |
+  | CZYSTO, z zakładem na beemkę i busa | klawiatura | 833 zł | 891 zł | ✓ |
+  | CZYSTO | **dotyk** | 779 zł | 889 zł | ✓ |
+
+  6 pełnych przejazdów nocy (4 zakończenia klawiaturą, jeden dotykiem, jeden padem), wszystkie bez błędów w konsoli,
+  kasa zawsze dokładnie zgodna z macierzą plan §5 – potwierdza, że fizyczna beemka/bus (część 1), nowa Park (część 5)
+  i reszta zmian nie naruszyły macierzy zwalidowanej w v0.7.
+- **Nowe testy jednostkowe:** `test/e34.test.mjs` (powertrain E34, patrz część 7/9 – rozbieżność z katalogiem
+  udokumentowana, nie ukryta szerszą tolerancją), `test/chodzenie.test.mjs` (cykl chodu), rozszerzony
+  `test/camera.test.mjs` (closeZoom, powrót do Dioramy), `test/mapa.test.mjs` (część 6). Mapa dotykiem/padem: bez
+  osobnego testu Node (canvas 2D wymaga prawdziwej przeglądarki – `getContext('2d')`, zdarzenia `pointerdown`), ale
+  sprawdzona wprost w headless Chromium (część 6: otwiera/zamyka się klawiszem M, ten sam kod obsługuje `pointerdown`/
+  `wheel` niezależnie od urządzenia i przycisk dotykowy/pad wywołują tę samą akcję `mapa.toggle()`).
+- **`npm test`:** 99/99 (93 z części 1–8 + 6 nowych w tej części: 2 E34, 3 chodzenie, 1 kamera), typecheck i build czyste przez cały czas.
+- **Zrzuty ekranu:** wylotówka w 6 miejscach (różne zakręty, lasy/łąki, nowe elementy przy drodze), Park (nawierzchnia
+  `plytyParku()` widoczna w świetle reflektorów), rozmowa z pasami i zbliżeniem kamery (część 3, wyraźnie widoczne
+  pasy u góry/dołu i bliższy kadr), mapa (część 6). **Nie udało się** w tej sesji zebrać czystego zrzutu z fizycznym
+  przejazdem beemki po słupkach (próby zestawiania krótkiego, samodzielnego skryptu przez cały początek sceny 0
+  gubiły się w rozgałęzieniach dialogu) – ten fragment zweryfikowany tylko przez logi `scripts/e2e-noc.cjs`
+  (kasa zgodna, `bieg` aktywne, bez błędów), nie zrzutem ekranu.
+- **Czas sprawnego przejścia:** bez zmian względem v0.7, ok. 27–29 min (`test/czas.mjs`) – cel 45–60 min zostaje do
+  kolejnej sesji (część 4, ROADMAP v0.9).
+- **FPS:** nie zmierzony liczbowo w tej sesji poza obserwacją, że headless Chromium trzyma 1–4 FPS niezależnie od
+  wersji (już opisane w raporcie v0.7) – nowe elementy (opony dynamiczne, dodatkowe auta, drugi/trzeci pojazd NPC)
+  nie zmieniły tego zauważalnie w testach e2e (czasy przejazdów tego samego rzędu co w v0.7).

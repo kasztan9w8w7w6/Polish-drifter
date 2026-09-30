@@ -13,6 +13,9 @@ import { buildBlock, blockLayout, buildMast } from './blocks.js';
 // footprint of its geometry between BAND_LO and BAND_HI above the ground (the car's body height), so a tree
 // collides with its trunk, not its crown, and an awning or a lamp arm above the car doesn't count.
 const KENNEY = `${import.meta.env.BASE_URL}assets/kenney/`;
+// v0.8 cz. 8: Golf II / Fiat 126p as street traffic (CC BY, docs/gotowce.md) – a model path starting "epoka/" comes
+// from public/models/<id>/<id>.gltf (scripts/convert-assets.mjs) instead of the Kenney kits below
+const EPOKA = `${import.meta.env.BASE_URL}models/`;
 const BAND_LO = 0.1;
 const BAND_HI = 2.2;
 const DEG = Math.PI / 180;
@@ -23,7 +26,11 @@ export const lights = { lamp: 22, lampRange: 30, sign: 1.4 };
 export async function createMap(scene, physics, map) {
   const cache = new Map();
   const load = (path) => {
-    if (!cache.has(path)) cache.set(path, loadGltf(`${KENNEY}${path}.gltf`).then((g) => g.scene).catch((e) => (console.warn('missing model', path, e), null)));
+    if (!cache.has(path)) {
+      const id = path.startsWith('epoka/') ? path.slice(6) : null;
+      const url = id ? `${EPOKA}${id}/${id}.gltf` : `${KENNEY}${path}.gltf`;
+      cache.set(path, loadGltf(url).then((g) => g.scene).catch((e) => (console.warn('missing model', path, e), null)));
+    }
     return cache.get(path);
   };
   const occluders = []; // objects that go see-through when they hide the car

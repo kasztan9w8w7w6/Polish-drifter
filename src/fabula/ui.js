@@ -19,6 +19,7 @@ export function createFabulaUI({ postacie = {}, kartka = [], cel = 889, keyLabel
   const root = document.createElement('div');
   root.id = 'fabula';
   root.innerHTML = `
+    <div id="f-letterbox"><i class="f-dim"></i></div>
     <div id="f-hud"><b class="f-zegar">23:35</b><span class="f-kasa"></span><span class="f-radio"></span><span class="f-pasazer" hidden><canvas width="24" height="24"></canvas><i></i></span></div>
     <div id="f-lusterko"><i class="f-droga"></i><i class="f-felga"></i></div>
     <div id="f-ekran"></div>

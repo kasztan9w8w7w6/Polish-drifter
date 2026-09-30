@@ -24,7 +24,7 @@ export async function createCarView(scene, profile) {
   let fallbackWheels = null;
   try {
     const gltf = await loadGltf(`${import.meta.env.BASE_URL}${look.model}`);
-    wheels = fitPolonez(gltf.scene, body, look.length);
+    wheels = fitCar(gltf.scene, body, look.length, look.frontYawDeg);
     if (new URLSearchParams(location.search).has('debugcar')) {
       root.updateMatrixWorld(true);
       console.log('wheels', JSON.stringify(wheels.map((w) => [w.bone.name, w.bone.getWorldPosition(new THREE.Vector3()).toArray().map((v) => +v.toFixed(3))])));
@@ -96,20 +96,21 @@ export async function createCarView(scene, profile) {
 
 // Scale the model to `length`, turn it so the headlights point along +X, stand it on the ground and
 // find the wheel bones.
-function fitPolonez(model, parent, length) {
+function fitCar(model, parent, length, frontYawDeg) {
   parent.add(model);
   model.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(model, true);
   const size = box.getSize(new THREE.Vector3());
   const centre = box.getCenter(new THREE.Vector3());
-  // Front = where the headlight glass is
+  // Front = where the headlight glass is, or a manual override (look.frontYawDeg in the car profile – e.g. a model
+  // like the T3 bus with no "Headlight" material and nothing else to tell front from back) or +Z by default
   let headlight = null;
   model.traverse((o) => {
     if (o.isMesh && /headlight/i.test([].concat(o.material)[0]?.name ?? '')) headlight = o;
   });
   const front = headlight ? new THREE.Box3().setFromObject(headlight, true).getCenter(new THREE.Vector3()).sub(centre) : new THREE.Vector3(0, 0, 1);
   front.y = 0;
-  const yaw = Math.atan2(-front.z, front.x); // rotate this much the other way to face +X
+  const yaw = frontYawDeg != null ? -(frontYawDeg * Math.PI) / 180 : Math.atan2(-front.z, front.x); // rotate this much the other way to face +X
   const holder = new THREE.Group();
   parent.add(holder);
   holder.add(model);
@@ -133,19 +134,20 @@ function fitPolonez(model, parent, length) {
     }
   });
 
-  // Wheel bones (F_wheel.L, B_wheel.R, …): rotation axes expressed in each bone's own space
+  // Wheel bones (F_wheel.L, B_wheel.R, …) or, for a model with no armature (v0.8: the T3 bus, WFL/WFR/WBL/WBR are
+  // plain transform nodes), the equivalent named nodes – rotation axes expressed in each one's own space either way
   const wheels = [];
   const parentInv = new THREE.Quaternion();
   const bodyQ = parent.getWorldQuaternion(new THREE.Quaternion());
   model.traverse((o) => {
-    if (!o.isBone || !/wheel/i.test(o.name)) return;
+    if (!/wheel/i.test(o.name) && !/^W[FB][LR]$/i.test(o.name)) return;
     o.parent.getWorldQuaternion(parentInv);
     const boneWorld = parentInv.clone().multiply(o.quaternion);
     const toLocal = boneWorld.clone().invert().multiply(bodyQ);
     wheels.push({
       bone: o,
       rest: o.quaternion.clone(),
-      front: /^F_/i.test(o.name),
+      front: /^F_/i.test(o.name) || /^WF/i.test(o.name),
       up: new THREE.Vector3(0, 1, 0).applyQuaternion(toLocal).normalize(),
       axle: new THREE.Vector3(0, 0, 1).applyQuaternion(toLocal).normalize(),
     });

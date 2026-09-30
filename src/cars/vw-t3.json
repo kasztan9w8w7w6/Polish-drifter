@@ -1,0 +1,51 @@
+{
+  "id": "vw-t3",
+  "name": "VW Transporter T3 (bus Zdzicha)",
+  "years": "1979–1992",
+  "real": {
+    "_source": [
+      "Ogólnie znane wymiary VW T3: rozstaw osi 2460 mm, długość ok. 4570 mm, szerokość 1845 mm, wysokość ok. 1940 mm, napęd na tył (silnik z tyłu), masa własna ok. 1450 kg (wersja osobowa/kombi), bak 70 l, opony 185 R14.",
+      "Przełożenia 4-biegowej skrzyni T3 (typowe I 3,78 · II 2,06 · III 1,26 · IV 0,89 · wsteczny 3,32) i przełożenie główne 4,57 – wartości orientacyjne dla tej platformy, do sprawdzenia (jak przy E34, brak dostępu do kart katalogowych w tej sesji).",
+      "Cd ok. 0,45 (nadwozie typu van, gorsza aerodynamika niż sedan), powierzchnia czołowa z wymiarów nadwozia."
+    ],
+    "engine": "vw-wbx19",
+    "engines": ["vw-wbx19"],
+    "powerHp": 78,
+    "powerRpm": 4800,
+    "torqueNm": 137,
+    "torqueRpm": 2800,
+    "massKg": 1450,
+    "drive": "RWD",
+    "gearRatios": [3.78, 2.06, 1.26, 0.89],
+    "reverseRatio": 3.32,
+    "finalDrive": 4.57,
+    "tyres": "185 R14",
+    "cd": 0.45,
+    "frontalArea": 3.1,
+    "crr": 0.016,
+    "efficiency": 0.87,
+    "tankL": 70,
+    "lengthMm": 4570,
+    "widthMm": 1845,
+    "heightMm": 1940,
+    "wheelbaseMm": 2460,
+    "topSpeedKmh": 130,
+    "zeroTo100s": 20,
+    "idleRpm": 850,
+    "redlineRpm": 5200
+  },
+  "arcade": {
+    "_note": "Bus jeździ tylko po prostej i wolno (poranna zmiana), odniesienie prowadzenia bez znaczenia.",
+    "massKg": 1450,
+    "reverseFraction": 0.4,
+    "topSpeedKmh": 100
+  },
+  "look": {
+    "model": "models/vw-t3/vw-t3.gltf",
+    "length": 4.57,
+    "paintMaterial": "01_-_Default",
+    "_paints": "Model ma jeden materiał (bez podziału lakier/reszta) – zmiana koloru nie działa jak w innych profilach, zostaje domyślny.",
+    "defaultPaint": "Fabryczny",
+    "paints": { "Fabryczny": "#c9b48a" }
+  }
+}

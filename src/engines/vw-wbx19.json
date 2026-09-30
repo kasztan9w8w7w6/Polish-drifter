@@ -1,0 +1,17 @@
+{
+  "id": "vw-wbx19",
+  "name": "VW WBX 1.9 (78 KM)",
+  "_source": "Silnik 'wodny bokser' (Wasserboxer) 1,9 l montowany w VW Transporterze T3 od 1983: ok. 57 kW (78 KM) przy 4800 obr/min, ok. 137 Nm przy 2800 obr/min, 1915 cm³ – ogólnie znane dane katalogowe tej jednostki. Obroty jałowe/czerwone pole i bsfc: szacunek typowy dla wolnossącego silnika benzynowego tej epoki, do sprawdzenia (ta sesja miała dostęp tylko do npm/GitHub, nie do kart katalogowych – docs/gotowce.md).",
+  "fuel": "benzyna",
+  "displacementCc": 1915,
+  "powerKw": 57,
+  "powerHp": 78,
+  "powerRpm": 4800,
+  "torqueNm": 137,
+  "torqueRpm": 2800,
+  "idleRpm": 850,
+  "launchRpm": 2200,
+  "redlineRpm": 5200,
+  "bsfc": 330,
+  "idleLph": 1.0
+}

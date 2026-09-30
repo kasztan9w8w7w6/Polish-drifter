@@ -5,6 +5,7 @@ import { Box3, Matrix4, Quaternion, Vector3 } from 'three';
 import { blockLayout } from '../src/blocks.js';
 
 const ROOT = new URL('../public/assets/kenney/', import.meta.url);
+const EPOKA = new URL('../public/models/', import.meta.url); // v0.8 cz. 8: epoka/<id> -> models/<id>/<id>.gltf
 const BAND_LO = 0.1, BAND_HI = 2.2;
 const DEG = Math.PI / 180;
 const cache = new Map();
@@ -12,7 +13,8 @@ const cache = new Map();
 // All triangles of a .gltf model in its own frame (flat array of Vector3 triples)
 export function triangles(path) {
   if (cache.has(path)) return cache.get(path);
-  const g = JSON.parse(fs.readFileSync(new URL(`${path}.gltf`, ROOT)));
+  const id = path.startsWith('epoka/') ? path.slice(6) : null;
+  const g = JSON.parse(fs.readFileSync(id ? new URL(`${id}/${id}.gltf`, EPOKA) : new URL(`${path}.gltf`, ROOT)));
   const buffers = g.buffers.map((b) => Buffer.from(b.uri.split(',')[1], 'base64'));
   const read = (ai) => {
     const a = g.accessors[ai], v = g.bufferViews[a.bufferView];

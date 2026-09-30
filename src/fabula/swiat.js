@@ -3,6 +3,18 @@ import { loadGltf } from '../gltf.js';
 import { prop } from '../map.js';
 import { createPeople, figure } from '../npc.js';
 import { createCourse } from './slupki.js';
+import { createVehicle } from '../vehicle.ts';
+import { createCarView } from '../car.js';
+import { applyCar, carDrivetrain } from '../cars.js';
+import { presets } from '../tuning.ts';
+import { createAutopilot } from '../npcAutopilot.js';
+import { EntityManager, Vehicle, FollowPathBehavior, Path, Vector3 as YVector3 } from 'yuka';
+import { createNoise2D } from 'simplex-noise';
+import bmwE34 from '../cars/bmw-e34.json';
+import vwT3 from '../cars/vw-t3.json';
+
+const ENGINES = Object.fromEntries(Object.values(import.meta.glob('../engines/*.json', { eager: true, import: 'default' })).map((e) => [e.id, e]));
+const NPC_PROFIL = { NOC_BMW: { profile: bmwE34, poziom: 'dobry' }, RANO_BUS: { profile: vwT3, poziom: 'slaby' } }; // plan-mvp: bus Zdzicha = słaby kierowca
 
 // The world of "W nocy robota" (greybox, docs/wdrozenie-fabuly.md §2), built on top of the estate from
 // src/fabula/mapa.json: the Park on the old lot (tanks, lorries, the kombi, the BMW, roller skaters, six posts), Mirek's
@@ -30,7 +42,7 @@ export function przygotujMape(osiedle, fab) {
   return m;
 }
 
-export async function createSwiat({ scene, physics, map, fab, postacie }) {
+export async function createSwiat({ scene, physics, map, fab, postacie, npcVehicles = [] }) {
   const cache = new Map();
   const model = (path) => {
     if (!cache.has(path)) cache.set(path, loadGltf(`${BASE}assets/kenney/${path}.gltf`).then((g) => g.scene).catch(() => null));
@@ -107,13 +119,24 @@ export async function createSwiat({ scene, physics, map, fab, postacie }) {
   const auta = {};
   await Promise.all(Object.entries(fab.auta).map(async ([id, s]) => (auta[id] = await auto(s))));
 
-  // ---------- The Park: tanks behind the fence, the six posts, the start line ----------
+  // ---------- NPC runs: real vehicle.ts + engine.js (v0.8), same physics and drift as the player (docs/gotowce.md).
+  // One view + one createVehicle() per NPC car, built once and reused for every run; only visible while driving.
+  const npcAuto = {};
+  for (const [id, { profile, poziom }] of Object.entries(NPC_PROFIL)) {
+    const view = await createCarView(scene, profile);
+    view.root.visible = false;
+    const tuning = applyCar({ ...presets.Normalny }, profile);
+    const drivetrain = carDrivetrain(profile, ENGINES);
+    npcAuto[id] = { view, tuning, drivetrain, poziom, vehicle: null, entry: null, auto: null };
+  }
+
+  // ---------- The Park: rectangular water tanks (docs/referencje/park – ulica Magazynowa runs past a row of open
+  // water basins, not tall cylindrical silos as before), the six posts, the start line ----------
+  const water = mat(0x0d2a30, { roughness: 0.15, metalness: 0.3 });
+  const concrete = mat(0x9a9a92);
   for (const [x, z, r] of fab.zbiorniki) {
-    const t = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 12, 20), mat(0xb8bcc0));
-    t.position.set(x, 6, z);
-    const top = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.2, r, 2, 20), mat(0x9ea2a6));
-    top.position.set(x, 13, z);
-    scene.add(t, top);
+    box(scene, r * 2.4, 1.1, r * 2.2, x, 0.55, z, concrete); // the basin's concrete rim, water sunk inside it
+    box(scene, r * 2.1, 0.05, r * 1.9, x, 1.08, z, water);
   }
   const course = createCourse(fab.slupki);
   const slupki = [];
@@ -138,6 +161,49 @@ export async function createSwiat({ scene, physics, map, fab, postacie }) {
   line.rotation.z = (fab.slupki.heading + 90) * DEG;
   line.position.set(course.start.x, 0.04, course.start.z);
   scene.add(line);
+  // worn concrete slabs under the run itself (docs/referencje/park: patches, cracks, stains), a hair above the
+  // estate's own asphalt so it doesn't z-fight
+  {
+    const patch = new THREE.Mesh(new THREE.PlaneGeometry(course.length + 30, 16), new THREE.MeshStandardMaterial({ map: plytyParku(), roughness: 0.95 }));
+    patch.rotation.x = -Math.PI / 2;
+    patch.rotation.z = (fab.slupki.heading * Math.PI) / 180;
+    const mid = course.world(course.length / 2, 0);
+    patch.position.set(mid.x, 0.018, mid.z);
+    scene.add(patch);
+  }
+  // a wall of stacked tyres past the last post (the "zawrotka" – the run-off at the end): dynamic Rapier bodies
+  // that scatter if the car hits them and are stood back up at the start of every run (przejazdNPC/graczRun)
+  const tireWall = [];
+  let tyreInst = null;
+  {
+    const wallAt = course.world(course.length + 5, 0);
+    const wallYaw = ((fab.slupki.heading + 90) * Math.PI) / 180;
+    const rowDir = { x: Math.cos(wallYaw), z: -Math.sin(wallYaw) }; // along the wall, across the road
+    for (let col = -3; col <= 3; col++) {
+      for (let row = 0; row < 3; row++) {
+        const x = wallAt.x + rowDir.x * col * 0.7, z = wallAt.z + rowDir.z * col * 0.7;
+        tireWall.push(physics.addDynamicCylinder({ x, y: 0.28 + row * 0.5, z }, 0.35, 0.45, 9));
+      }
+    }
+    tyreInst = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.35, 0.35, 0.45, 14), mat(0x151515), tireWall.length);
+    tyreInst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    scene.add(tyreInst);
+  }
+  const tyreQ = new THREE.Quaternion(), tyreScale = new THREE.Vector3(1, 1, 1), tyrePos = new THREE.Vector3(), tyreMtx = new THREE.Matrix4();
+  function syncTyres() {
+    tireWall.forEach((b, i) => {
+      const p = b.position(), q = b.quaternion();
+      tyrePos.set(p.x, p.y, p.z);
+      tyreQ.set(q.x, q.y, q.z, q.w);
+      tyreInst.setMatrixAt(i, tyreMtx.compose(tyrePos, tyreQ, tyreScale));
+    });
+    tyreInst.instanceMatrix.needsUpdate = true;
+  }
+  syncTyres();
+  function resetTireWall() {
+    for (const b of tireWall) b.reset();
+    syncTyres();
+  }
 
   // ---------- Town: Mirek's yard (a shelter, generators, a washing machine, a dentist's chair, the four rims) ----------
   const yard = new THREE.Group();
@@ -239,7 +305,24 @@ export async function createSwiat({ scene, physics, map, fab, postacie }) {
   // ---------- The road out (wylotówka): a ribbon of old asphalt, roadside posts, forest, meadows, potholes ----------
   const W = fab.wylotowka;
   const [xMin] = [W.korytarz[2]];
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(-xMin - 280, W.korytarz[1] - W.korytarz[0] + 120), mat(0x131c11));
+  const groundGeo = new THREE.PlaneGeometry(-xMin - 280, W.korytarz[1] - W.korytarz[0] + 120, 90, 24);
+  // gentle rolling hills, visual only: the physical ground stays the flat box below (physics.addStaticBox), and the
+  // corridor's middle 70 m (where the road actually winds) is left flat so nothing bulges up through the ribbon –
+  // v0.8 part 4, docs/gotowce.md (simplex-noise instead of hand-rolled noise)
+  const noise2D = createNoise2D(() => 0.42);
+  const midZ = (W.korytarz[0] + W.korytarz[1]) / 2;
+  {
+    const p = groundGeo.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const lx = p.getX(i), lz = p.getY(i); // plane-local (rotated to X/Z on the mesh)
+      const worldZ = lz + midZ;
+      const taper = Math.max(0, (Math.abs(worldZ - midZ) - 35) / 30);
+      if (taper <= 0) continue;
+      p.setZ(i, noise2D(lx * 0.006, lz * 0.006) * 1.8 * Math.min(1, taper));
+    }
+    groundGeo.computeVertexNormals();
+  }
+  const ground = new THREE.Mesh(groundGeo, mat(0x131c11));
   ground.rotation.x = -Math.PI / 2;
   ground.position.set((xMin - 290) / 2 - 5, -0.01, (W.korytarz[0] + W.korytarz[1]) / 2);
   scene.add(ground);
@@ -338,6 +421,70 @@ export async function createSwiat({ scene, physics, map, fab, postacie }) {
     if (t.near) physics.addStaticCylinder({ x: t.x, y: 0, z: t.z }, 0.3, 3, { surface: 'tree' });
   });
   scene.add(trunks, crowns);
+
+  // Roadside landmarks (v0.8 part 4, docs/referencje/drogi/): power line poles the whole way, one culvert under
+  // the road and one wayside shrine near the village – greybox shapes, no new assets.
+  {
+    const poleGeo = new THREE.CylinderGeometry(0.09, 0.13, 7, 6);
+    const armGeo = new THREE.BoxGeometry(1.6, 0.1, 0.1);
+    const poleCount = Math.ceil(dlugoscDrogi / 55);
+    const poles = new THREE.InstancedMesh(poleGeo, mat(0x5a4a3a), poleCount);
+    const arms = new THREE.InstancedMesh(armGeo, mat(0x3a3028), poleCount);
+    const wireGeo = new THREE.BoxGeometry(1, 0.03, 0.03);
+    const wires = new THREE.InstancedMesh(wireGeo, glow(0x1a1a1a), poleCount);
+    let pn = 0;
+    let prevPole = null;
+    for (let s = 15; s < dlugoscDrogi; s += 55) {
+      const c = naDrodze(s);
+      const d = half + 3 + (inLas(c.x) ? 8 : 0); // just outside the ditch, or past the treeline in the forest
+      const x = c.x - c.tz * d, z = c.z + c.tx * d;
+      poles.setMatrixAt(pn, mtx.compose(ps.set(x, 3.5, z), qt, sc.set(1, 1, 1)));
+      arms.setMatrixAt(pn, mtx.compose(ps.set(x, 6.7, z), qt.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(c.tx, c.tz)), sc.set(1, 1, 1)));
+      if (prevPole) {
+        const mx = (x + prevPole.x) / 2, mz = (z + prevPole.z) / 2, len = Math.hypot(x - prevPole.x, z - prevPole.z);
+        wires.setMatrixAt(pn - 1, mtx.compose(ps.set(mx, 6.55, mz), qt.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(x - prevPole.x, z - prevPole.z)), sc.set(len, 1, 1)));
+      }
+      prevPole = { x, z };
+      pn++;
+    }
+    poles.count = arms.count = pn;
+    wires.count = Math.max(0, pn - 1);
+    scene.add(poles, arms, wires);
+  }
+  {
+    // a small concrete culvert where the road crosses a roadside ditch: a pipe under the road, axis across it
+    // (along the road's normal), with a low headwall poking out of the ditch on each side
+    const cp = naDrodze(dlugoscDrogi * 0.42);
+    const nx = -cp.tz, nz = cp.tx; // road normal (unit)
+    const span = W.szerokosc + 1.6;
+    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, span, 10, 1, true), mat(0x6a6a64, { side: THREE.DoubleSide }));
+    pipe.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(nx, 0, nz));
+    pipe.position.set(cp.x, -0.35, cp.z);
+    scene.add(pipe);
+    for (const side of [-1, 1]) box(scene, 1.4, 0.7, 0.2, cp.x + nx * (span / 2) * side, -0.1, cp.z + nz * (span / 2) * side, mat(0x8a8a82));
+  }
+  {
+    // a wayside shrine/cross near the village (a whitewashed post with a small pitched roof, a cross on top)
+    const kp = naDrodze(dlugoscDrogi * 0.88);
+    const kx = kp.x - kp.tz * (half + 4), kz = kp.z + kp.tx * (half + 4);
+    const white = mat(0xe8e0cc);
+    box(scene, 0.3, 2.2, 0.3, kx, 1.1, kz, white);
+    box(scene, 0.55, 0.5, 0.5, kx, 2.35, kz, mat(0x5a3a2a));
+    box(scene, 0.08, 0.6, 0.08, kx, 2.9, kz, white);
+    box(scene, 0.42, 0.08, 0.08, kx, 3.15, kz, white);
+  }
+
+  {
+    // a gravel turn-off into a field (a short stub, just wide enough to read as a driveway, no gate)
+    const gp = naDrodze(dlugoscDrogi * 0.63);
+    const gside = 1;
+    const gx = gp.x - gp.tz * (half + 4) * gside, gz = gp.z + gp.tx * (half + 4) * gside;
+    const gravel = new THREE.Mesh(new THREE.PlaneGeometry(8, 5.5), mat(0x8a8168));
+    gravel.rotation.x = -Math.PI / 2;
+    gravel.rotation.z = Math.atan2(gp.tx, gp.tz);
+    gravel.position.set(gx, 0.02, gz);
+    scene.add(gravel);
+  }
 
   // The bus stop in the field (sc. 4, 9)
   {
@@ -439,7 +586,7 @@ export async function createSwiat({ scene, physics, map, fab, postacie }) {
   const kamilFig = figure(postacie.KAMIL?.wyglad ?? {});
   const kamil = new THREE.Group();
   kamil.add(kamilFig.group);
-  for (const leg of kamilFig.legs) leg.rotation.x = -Math.PI / 2;
+  for (const leg of kamilFig.legs) (leg.thigh.rotation.x = -Math.PI / 2), (leg.shin.rotation.x = Math.PI / 2.3);
   kamilFig.group.position.set(0, -0.45, 0);
   kamil.scale.setScalar(0.92);
   kamil.position.set(-0.15, -0.35, 0.38);
@@ -451,8 +598,33 @@ export async function createSwiat({ scene, physics, map, fab, postacie }) {
   await people.ready;
   const kiedy = Object.fromEntries(fab.postacie.map((p) => [p.id, p]));
 
-  // ---------- NPC run animation (the BMW at night, Zdzichu's bus in the morning) ----------
-  let bieg = null; // { auto, path, t, lead: { x, z, h }, leadT }
+  // Roller skaters go round the rink on a yuka path (v0.8, docs/gotowce.md) instead of hand-rolled circle maths –
+  // same shape (a lap of the same radius at the same speed), but steered by a real seek/follow behaviour.
+  const yukaManager = new EntityManager();
+  const yukaVehicles = {};
+  for (const p of fab.postacie) {
+    if (!p.krazy) continue;
+    const k = p.krazy;
+    const path = new Path();
+    path.loop = true;
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2 + (k.faza ?? 0);
+      path.add(new YVector3(k.x + Math.cos(a) * k.r, 0, k.z + Math.sin(a) * k.r));
+    }
+    const v = new Vehicle();
+    v.maxSpeed = k.r * k.v; // same tangential speed as the old krazy formula
+    v.position.set(p.x, 0, p.z);
+    v.steering.add(new FollowPathBehavior(path, k.r * 0.15));
+    yukaManager.add(v);
+    yukaVehicles[p.id] = v;
+  }
+
+  // ---------- NPC run (the BMW at night, Zdzichu's bus in the morning): v0.8, a real vehicle.ts car driven by
+  // npcAutopilot.js, not a scripted path. The story engine has already rolled which posts are clean (silnik.js
+  // losujSlupki) and money is settled from that roll (gra.js rozlicz(): `a.slupki`), so `forced` here is only a
+  // best-effort steer towards matching it on screen – see src/npcAutopilot.js and docs/wdrozenie-fabuly.md.
+  let bieg = null; // { id, npc: npcAuto[id] }
+  const ID_TO_AUTA = { NOC_BMW: 'bmw', RANO_BUS: 'bus' };
 
   return {
     course,
@@ -470,9 +642,19 @@ export async function createSwiat({ scene, physics, map, fab, postacie }) {
     wsadz(root) {
       root.add(wAucie, kamil);
     },
-    // start a run: the car drives from where it stands to the start and then along the path (slupki.js npcPath)
-    przejazdNPC(a, path) {
-      bieg = { auto: a, path, t: -1.8, from: { x: a.root.position.x, z: a.root.position.z } };
+    resetTireWall,
+    // start a run: forced = a.slupki (already rolled by the story engine), seed = a run-specific RNG seed
+    przejazdNPC(id, forced, seed = 1) {
+      resetTireWall();
+      const npc = npcAuto[id];
+      const spawnYaw = (course.heading * Math.PI) / 180;
+      const p0 = course.world(-20, 2.5);
+      npc.vehicle = createVehicle(physics, { tuning: npc.tuning, drivetrain: npc.drivetrain, spawn: { x: p0.x, y: 1, z: p0.z }, spawnYaw });
+      npc.entry = { vehicle: npc.vehicle, ctrl: { throttle: 0, steer: 0, handbrake: 0, brake: 0 } };
+      npcVehicles.push(npc.entry);
+      npc.autopilot = createAutopilot(course, npc.poziom, seed, { forced });
+      npc.view.root.visible = true;
+      bieg = { id, npc };
     },
     get bieg() {
       return bieg;
@@ -486,6 +668,8 @@ export async function createSwiat({ scene, physics, map, fab, postacie }) {
         const n = people.get(id);
         if (n && n.visible !== on) people.show(id, on);
       };
+      yukaManager.update(dt);
+      syncTyres();
       for (const [id, p] of Object.entries(kiedy)) {
         let on = true;
         if (p.kiedy === 'noc') on = noc;
@@ -494,16 +678,17 @@ export async function createSwiat({ scene, physics, map, fab, postacie }) {
         if (p.kiedy === 'odbiorca') on = (scena === 6 && zegar >= 28 * 60 + 5) || scena === 7;
         if (id === 'KAMIL' && scena === 7) on = true; // at the gate, asking about the dog
         show(id, on);
-        if (on && p.krazy) {
-          const k = p.krazy, a = time * k.v + (k.faza ?? 0);
-          people.place(id, k.x + Math.cos(a) * k.r, k.z + Math.sin(a) * k.r, (-a * 180) / Math.PI);
+        const yv = yukaVehicles[id];
+        if (on && yv) {
+          const yaw = yv.velocity.squaredLength() > 0.001 ? (Math.atan2(-yv.velocity.z, yv.velocity.x) * 180) / Math.PI : 0;
+          people.place(id, yv.position.x, yv.position.z, yaw);
         }
       }
       if (scena === 7) people.place('KAMIL', fab.wies.plot[0][0] - 6, fab.wies.z - 10, 0);
       // cars: the night crowd leaves before dawn, the bus comes with the morning shift
       auta.kombi.show(noc);
-      if (!bieg || bieg.auto !== auta.bmw) auta.bmw.show(noc);
-      auta.bus.show(rano);
+      auta.bmw.show(noc && bieg?.id !== 'NOC_BMW');
+      auta.bus.show(rano && bieg?.id !== 'RANO_BUS');
       // Kamil's car on hazards from the moment it stopped (00:18); weaker by morning
       const h = auta.kamila.hazard;
       const blink = scena >= 3 && time % 1.1 < 0.55;
@@ -532,30 +717,23 @@ export async function createSwiat({ scene, physics, map, fab, postacie }) {
         p.wobble = Math.max(0, p.wobble - dt);
         p.g.rotation.z = Math.sin(p.wobble * 20) * p.wobble * 0.5;
       }
-      // the NPC run
+      // the NPC run: drive the real vehicle.ts car with npcAutopilot.js (physics.step() in main.js calls
+      // npc.entry.vehicle.update(npc.entry.ctrl, h) every sub-step through npcVehicles; here we only read the
+      // result and decide the next ctrl for the sub-step after this one)
       let camState = null;
       if (bieg) {
-        bieg.t += dt;
-        const p0 = bieg.path.at(0);
-        let x, z, yaw, speed = 11;
-        if (bieg.t < 0) {
-          // lead-in: from where it stood to the start of the path
-          const k = 1 + bieg.t / 1.8;
-          x = bieg.from.x + (p0.x - bieg.from.x) * k;
-          z = bieg.from.z + (p0.z - bieg.from.z) * k;
-          yaw = Math.atan2(-(p0.z - bieg.from.z), p0.x - bieg.from.x);
-          speed = Math.hypot(p0.x - bieg.from.x, p0.z - bieg.from.z) / 1.8;
-        } else {
-          const p = bieg.path.at(bieg.t);
-          ({ x, z, yaw } = p);
-        }
-        bieg.auto.show(true);
-        bieg.auto.set(x, z, yaw);
-        bieg.pos = { x, z, yaw, speed };
-        if (bieg.t >= bieg.path.duration) {
-          // back to its place (not left in the Park's gate)
-          const sp = bieg.auto.spec;
-          bieg.auto.set(sp.x, sp.z, (sp.heading ?? 0) * DEG);
+        const { npc } = bieg;
+        const s = npc.vehicle.read();
+        Object.assign(npc.entry.ctrl, npc.autopilot.step({ x: s.position.x, z: s.position.z, velocity: s.velocity, speed: s.speed, sideSlip: s.sideSlip }, dt));
+        npc.view.sync(s);
+        const q = s.quaternion;
+        const fx = 1 - 2 * (q.y * q.y + q.z * q.z), fz = 2 * (q.x * q.z - q.w * q.y);
+        bieg.pos = { x: s.position.x, z: s.position.z, yaw: Math.atan2(-fz, fx), sideSlip: s.sideSlip };
+        const { s: along } = course.local(s.position.x, s.position.z);
+        if (along > course.length + 15) {
+          npcVehicles.splice(npcVehicles.indexOf(npc.entry), 1);
+          npc.view.root.visible = false;
+          npc.vehicle = npc.entry = npc.autopilot = null;
           bieg = null;
         }
       }
@@ -591,5 +769,51 @@ function asfaltWiejski() {
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.magFilter = THREE.NearestFilter;
   t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+// Worn concrete slabs at the Park's six-post run (docs/referencje/park): square plates with joint lines, patched
+// repairs, oil stains and cracks – a rundown industrial yard, not fresh asphalt.
+function plytyParku() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const x = c.getContext('2d');
+  x.fillStyle = '#6a6a62';
+  x.fillRect(0, 0, 128, 128);
+  for (let i = 0; i < 2600; i++) {
+    const v = 92 + Math.random() * 24;
+    x.fillStyle = `rgba(${v},${v},${v - 6},${0.5 + Math.random() * 0.4})`;
+    x.fillRect(Math.random() * 128, Math.random() * 128, 1, 1);
+  }
+  x.strokeStyle = '#3a3a34';
+  x.lineWidth = 2;
+  for (let i = 0; i <= 128; i += 32) {
+    x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 128); x.stroke();
+    x.beginPath(); x.moveTo(0, i); x.lineTo(128, i); x.stroke();
+  }
+  for (let i = 0; i < 6; i++) { // dark oil stains
+    x.fillStyle = `rgba(20,18,16,${0.25 + Math.random() * 0.3})`;
+    x.beginPath();
+    x.ellipse(Math.random() * 128, Math.random() * 128, 6 + Math.random() * 10, 4 + Math.random() * 7, Math.random() * Math.PI, 0, Math.PI * 2);
+    x.fill();
+  }
+  for (let i = 0; i < 4; i++) { // patched repairs (a lighter, cruder rectangle)
+    x.fillStyle = '#7a766c';
+    x.fillRect(Math.random() * 100, Math.random() * 100, 10 + Math.random() * 18, 8 + Math.random() * 14);
+  }
+  x.strokeStyle = 'rgba(30,28,26,0.6)';
+  x.lineWidth = 1;
+  for (let i = 0; i < 5; i++) { // cracks
+    x.beginPath();
+    let px = Math.random() * 128, py = Math.random() * 128;
+    x.moveTo(px, py);
+    for (let k = 0; k < 4; k++) { px += (Math.random() - 0.5) * 24; py += (Math.random() - 0.5) * 24; x.lineTo(px, py); }
+    x.stroke();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.magFilter = THREE.NearestFilter;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.repeat.set(6, 1.4);
   return t;
 }

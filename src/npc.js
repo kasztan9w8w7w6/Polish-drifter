@@ -35,7 +35,7 @@ export function createPeople(scene, physics, placements, people, { base = import
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
     layer.appendChild(bubble);
-    const npc = { id: p.id, who, root, fig, collider, bubble, bubbleTime: 0, cheer: 0, phase: i * 1.7, baseYaw: root.rotation.y, mixer: null, visible: true };
+    const npc = { id: p.id, who, root, fig, collider, bubble, bubbleTime: 0, cheer: 0, phase: i * 1.7, baseYaw: root.rotation.y, mixer: null, visible: true, lastX: p.x, lastZ: p.z, speed: 0 };
     if (who.model) {
       jobs.push(
         loadGltf(`${base}${who.model}`)
@@ -106,6 +106,9 @@ export function createPeople(scene, physics, placements, people, { base = import
           n.bubble.classList.remove('on');
           continue;
         }
+        n.speed = dt > 0 ? Math.hypot(n.root.position.x - n.lastX, n.root.position.z - n.lastZ) / dt : 0;
+        n.lastX = n.root.position.x;
+        n.lastZ = n.root.position.z;
         animate(n, time + n.phase, dt, carPos, talking === n.id);
         // Bubble over the head, on screen
         n.bubbleTime -= dt;
@@ -140,16 +143,23 @@ export function figure(look) {
   const body = new THREE.Group(); // everything above the hips (breathes, sways)
   group.scale.setScalar(L.wzrost);
 
-  // Legs and shoes (+ side stripes of the tracksuit)
+  // Legs and shoes (+ side stripes of the tracksuit): thigh (hip pivot) + shin (knee pivot), so a walk cycle can
+  // swing the hip and bend the knee instead of a single rigid leg sliding along the ground (v0.8, docs/gotowce.md –
+  // no CC0 rigged figure was safely reachable this session, so this is the own-code fix, not a swapped-in model).
   const legs = [];
   for (const side of [-1, 1]) {
-    const leg = new THREE.Group();
-    leg.position.set(side * 0.11, 0.86, 0);
-    leg.add(box(0.17, 0.8, 0.19, bottom, 0, -0.4, 0));
-    leg.add(box(0.19, 0.1, 0.3, shoe, 0, -0.81, 0.05));
-    if (stripe) leg.add(box(0.02, 0.78, 0.05, stripe, side * 0.095, -0.4, 0));
-    group.add(leg);
-    legs.push(leg);
+    const thigh = new THREE.Group();
+    thigh.position.set(side * 0.11, 0.86, 0);
+    thigh.add(box(0.16, 0.42, 0.18, bottom, 0, -0.21, 0));
+    if (stripe) thigh.add(box(0.02, 0.4, 0.05, stripe, side * 0.09, -0.21, 0));
+    const shin = new THREE.Group();
+    shin.position.set(0, -0.42, 0);
+    shin.add(box(0.14, 0.4, 0.16, bottom, 0, -0.2, 0));
+    shin.add(box(0.19, 0.1, 0.3, shoe, 0, -0.41, 0.05));
+    if (stripe) shin.add(box(0.02, 0.38, 0.05, stripe, side * 0.08, -0.2, 0));
+    thigh.add(shin);
+    group.add(thigh);
+    legs.push({ thigh, shin });
   }
   // Torso (with a belly), arms on shoulder pivots, head
   body.position.y = 0.86;
@@ -197,7 +207,7 @@ export function figure(look) {
 }
 
 // ---------- Idle animation ----------
-function animate(n, t, dt, carPos, talking) {
+export function animate(n, t, dt, carPos, talking) {
   const f = n.fig;
   const style = n.who.idle ?? 'stoi';
   // breathing and a slow sway (weight from foot to foot)
@@ -242,6 +252,19 @@ function animate(n, t, dt, carPos, talking) {
     look = Math.max(-1.1, Math.min(1.1, look));
   }
   f.head.rotation.y += (look - f.head.rotation.y) * Math.min(1, dt * 4);
+  // walk cycle: hip swings, knee bends while that leg is lifting (opposite phase left/right); amplitude fades to 0
+  // standing still, so it doesn't fight the idle sway above. cadence speeds up a little with speed (longer strides).
+  const walk = Math.min(1, n.speed / 1.3);
+  if (walk > 0.001) {
+    const cadence = 7 + n.speed * 1.5;
+    f.legs.forEach(({ thigh, shin }, i) => {
+      const swing = Math.sin(t * cadence + (i ? Math.PI : 0));
+      thigh.rotation.x = walk * 0.5 * swing;
+      shin.rotation.x = walk * 0.9 * Math.max(0, -swing);
+    });
+  } else {
+    for (const { thigh, shin } of f.legs) (thigh.rotation.x = 0), (shin.rotation.x = 0);
+  }
   f.head.rotation.x = style === 'kiwa' || talking ? 0.12 * Math.max(0, Math.sin(t * (talking ? 6 : 2.4))) : 0;
 }
 

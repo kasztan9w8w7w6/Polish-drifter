@@ -1,0 +1,17 @@
+{
+  "id": "bmw-m50b25",
+  "name": "BMW M50B25 (192 KM, 525i)",
+  "_source": "Katalogowe dane rzędowej szóstki M50B25 (1990–1992, 24V od 1990): 192 KM (141 kW) przy 5900 obr/min, 245 Nm przy 4700 obr/min, 2494 cm³ – powszechnie znane dane fabryczne BMW E34 525i. Obroty biegu jałowego i czerwone pole z typowych wartości dla tej jednostki (bieg jałowy ok. 800, czerwone pole 6500 z ogranicznikiem ok. 6900). bsfc i zużycie na biegu jałowym: szacunek jak dla FSO (ten sam rząd wielkości silnika benzynowego OHC z epoki), do sprawdzenia. Ta sesja nie miała dostępu do stron źródłowych (tylko npm/GitHub), więc liczby nie są zweryfikowane na oryginalnych kartach katalogowych.",
+  "fuel": "benzyna",
+  "displacementCc": 2494,
+  "powerKw": 141,
+  "powerHp": 192,
+  "powerRpm": 5900,
+  "torqueNm": 245,
+  "torqueRpm": 4700,
+  "idleRpm": 800,
+  "launchRpm": 3200,
+  "redlineRpm": 6500,
+  "bsfc": 290,
+  "idleLph": 1.1
+}

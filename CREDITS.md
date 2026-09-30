@@ -12,6 +12,11 @@ Wszystkie zewnętrzne elementy gry: biblioteki, assety, dźwięki, fonty. Każdy
 | [@dimforge/rapier3d-compat](https://rapier.rs) | fizyka, kolizje, raycast, debug render | Apache-2.0 |
 | [lil-gui](https://lil-gui.georgealways.com) | panel tuningu | MIT |
 | [nipplejs](https://github.com/yoannmoinet/nipplejs) | joystick dotykowy (sterowanie mobilne) | MIT |
+| [yuka](https://github.com/Mugen87/yuka) | ruch postaci pieszych (rolkarze na torze, `FollowPathBehavior`) | MIT |
+| [@tweenjs/tween.js](https://github.com/tweenjs/tween.js) | funkcje łagodzenia (`Easing`) do scenki FELGA_BICIE (przejazd felgi) | MIT |
+| [@fontsource/vt323](https://fonts.google.com/specimen/VT323) (font VT323, Peter Hull) | pikselowy font starego telefonu w rozmowach (`#f-telefon`) | OFL-1.1 |
+| [simplex-noise](https://github.com/jwagner/simplex-noise.js) | delikatne wzgórza w tle wylotówki (teren wizualny, podłoże fizyczne płaskie) | MIT |
+| [Tone.js](https://tonejs.github.io) | „filtr radiowy” (pasmowoprzepustowy + lekkie przesterowanie) na wyjściu placeholderów radia | MIT |
 | [Vite](https://vite.dev) | dev server i build | MIT |
 | [glTF-Transform](https://gltf-transform.dev) (`@gltf-transform/core`, `functions`) | konwersja modeli (`scripts/convert-assets.mjs`, dev) | MIT |
 | [TypeScript](https://www.typescriptlang.org), [@types/three](https://www.npmjs.com/package/@types/three) | sprawdzanie typów (dev) | Apache-2.0 / MIT |
@@ -33,6 +38,10 @@ z osadzonymi danymi (serwer artefaktów nie serwuje `.glb`) w `public/`. Geometr
 | Plik(i) | Źródło | Autor | Licencja |
 |---|---|---|---|
 | `public/models/polonez/polonez.gltf` (źródło `assets-src/polonez-mr93-lp.glb`) | [„1993 FSO Polonez MR93 (LP)”, Sketchfab](https://sketchfab.com/3d-models/1993-fso-polonez-mr93-lp-f191456e08a041ad81264ce67f4ed1d1). Zmiany: usunięte logo FSO, tablica rejestracyjna zamieniona na fikcyjną | [KrStolorz (Krzysztof Stolorz)](https://sketchfab.com/KrStolorz) | **Sketchfab Standard** (tak zapisano w metadanych pliku; to nie CC0, patrz niżej) |
+| `public/models/bmw-e34/bmw-e34.gltf` (źródło `assets-src/modele-aut/e34/bmw-e34-lp.glb`; v0.8: beemka na Parku – auto NPC, jeździ na tej samej fizyce co gracz) | [BMW E34 (LP), Sketchfab](https://sketchfab.com/KrStolorz). Zmiany: usunięty węzeł „Emblem” (plakietka BMW), tablica rejestracyjna zamieniona na fikcyjną | [KrStolorz (Krzysztof Stolorz)](https://sketchfab.com/KrStolorz) | **Sketchfab Standard** („Free standard”; jak Polonez, patrz uwaga niżej) |
+| `public/models/vw-t3/vw-t3.gltf` (źródło `assets-src/modele-aut/vw-t3/vw-transporter-t3.glb`; v0.8: bus Zdzicha, poranna zmiana) | [VW Transporter T3, Sketchfab](https://sketchfab.com/randombug). Model ma jeden materiał, bez logo/tablicy do podmiany | [randombug](https://sketchfab.com/randombug) | **Sketchfab Standard** („Free Standard”; jak wyżej) |
+| `public/models/golf2/golf2.gltf` (źródło `assets-src/modele-aut/golf2/vw-golf-2.glb`, zmniejszona kopia: uproszczona siatka i tekstury; v0.8: 2 auta zaparkowane na ulicy) | „Volkswagen Golf 2”, Sketchfab | [d4n1laa (@d4n1laaa)](https://sketchfab.com/d4n1laaa) | **CC BY** (uznanie autorstwa: tu i na ekranie „Autorzy” w grze) |
+| `public/models/fiat126p/fiat126p.gltf` (źródło `assets-src/modele-aut/fiat126p/fiat-126p.glb`, zmniejszona kopia: uproszczona siatka; v0.8: 2 auta zaparkowane na ulicy) | „Polski Fiat (Fiat 126p)”, Sketchfab | [Martin Trafas (@TinoD2)](https://sketchfab.com/TinoD2) | **CC BY** (uznanie autorstwa: tu i na ekranie „Autorzy” w grze) |
 | `assets-src/plate-agro.png` (tablica „AGR 5G01”) | wygenerowana na potrzeby gry | Polish Drifter | CC0 |
 | `public/assets/kenney/roads/*` (latarnie, śmietniki, słupy; kafle dróg nieużywane od v0.5c) | [City Kit (Roads)](https://kenney.nl/assets/city-kit-roads), `assets-src/kenney_city-kit-roads.zip` | Kenney | CC0 |
 | `public/assets/kenney/commercial/*` (pawilony, sklep, market, markiza) | [City Kit (Commercial)](https://kenney.nl/assets/city-kit-commercial) 2.1, `assets-src/kenney_city-kit-commercial_2.1.zip` | Kenney | CC0 |
@@ -44,7 +53,7 @@ z osadzonymi danymi (serwer artefaktów nie serwuje `.glb`) w `public/`. Geometr
 
 Licencje Kenneya leżą obok modeli (`License.txt` w każdym folderze, `LICENSE-starter-kits.txt`).
 
-**Uwaga o Polonezie:** licencja Sketchfab Standard pozwala użyć modelu w grze, także komercyjnej. Nie pozwala natomiast
+**Uwaga o modelach Sketchfab Standard (Polonez, E34, VW T3):** licencja Sketchfab Standard pozwala użyć modelu w grze, także komercyjnej. Nie pozwala natomiast
 udostępniać samego pliku modelu tak, żeby dało się go wyciągnąć i używać osobno. Publiczne repozytorium z plikiem `.glb`/`.gltf`
 może być z tym sprzeczne. Przed upublicznieniem sprawdź warunki na stronie modelu albo zapytaj autora.
 
@@ -73,6 +82,12 @@ są zrobione na potrzeby gry – bez zewnętrznych assetów. `BufferGeometryUtil
 Dane techniczne Poloneza Caro i silników (`src/cars/polonez.json`, `src/engines/*.json`) pochodzą z publicznych katalogów
 i forów (AutoCentrum.pl, automobile-catalog.com, automotyw.com, elektroda.pl, fora FSO), a kody lakierów z forów miłośników
 FSO. Źródła są wpisane w plikach (`_source`). Kolory RGB lakierów to przybliżenia dobrane na oko, nie próbki lakieru.
+
+**v0.8:** dane BMW E34 (`src/cars/bmw-e34.json`, silnik M50B25 `src/engines/bmw-m50b25.json`) i VW T3
+(`src/cars/vw-t3.json`, silnik WBX 1.9 `src/engines/vw-wbx19.json`) to ogólnie znane dane katalogowe tych jednostek
+(moc, moment, wymiary), ale ta sesja miała dostęp tylko do npm/GitHub (docs/gotowce.md), nie do kart katalogowych czy
+forów – przełożenia skrzyni, przełożenie główne i współczynniki oporu są orientacyjne, do sprawdzenia (oznaczone w
+plikach `_source`).
 
 ## Fabuła „W nocy robota” (v0.7)
 

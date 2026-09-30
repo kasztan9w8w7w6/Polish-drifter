@@ -3,6 +3,88 @@
 Wersje do v0.4c mają lokalne tagi w git (serwer odrzuca wypychanie tagów); od v0.5 wersję znajdziesz po commicie „v0.5a – …”.
 Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
 
+## v0.8a – audyt gotowców
+- `docs/gotowce.md`: co wymieniam na gotowce (yuka, @tweenjs/tween.js, simplex-noise, Tone.js) i dlaczego, co zostaje
+  (silnik fabuły/ekonomia, format mapy, pixel-art, figura postaci z kodu – brak bezpiecznie licencjonowanego riga w
+  zasięgu sieci tej sesji, patrz docs).
+- Scalona gałąź `referencje-v08`: 118 zdjęć referencyjnych (`docs/referencje/`), modele aut (`assets-src/modele-aut/`).
+
+## v0.8j – cz. 9: testy końcowe
+- `scripts/e2e-noc.cjs` – cała noc na żywej grze: 4 zakończenia klawiaturą, jedno dotykiem, jedno padem, wszystkie
+  bez błędów, kasa zawsze zgodna z macierzą plan §5.
+- Nowe testy: `test/e34.test.mjs`, `test/chodzenie.test.mjs`, rozszerzony `test/camera.test.mjs` (closeZoom).
+  `npm test` 99/99.
+- Zrzuty ekranu: wylotówka (6 miejsc), Park (nowa nawierzchnia), rozmowa (pasy + zbliżenie kamery), mapa.
+- ROADMAP.md: v0.8 zrobione, nowy wiersz v0.9 (domknięcie bez podglądu wizualnego + dawne dopracowanie mechanik).
+- `docs/wdrozenie-fabuly.md` §15, RAPORT dla użytkownika.
+
+## v0.8i – cz. 8: Golf II i Fiat 126p na ulicach
+- Skonwertowane (`convert-assets.mjs` `convertCar()`): `public/models/golf2/`, `public/models/fiat126p/`; 2 egzemplarze
+  każdego jako zaparkowane auta w wolnych miejscach istniejącego rzędu (`osiedle.json` `objects`). Dalsze
+  uproszczenie zamiast `InstancedMesh` (osobne pod-siatki na egzemplarz utrudniają instancjonowanie bez ryzyka bez
+  czasu na weryfikację) – szczegóły i pominięte warianty drzwi: docs/wdrozenie-fabuly.md §14.
+- `map.js`: prefiks `epoka/` w ścieżce modelu ładuje z `public/models/`, nie z katalogu Kenneya.
+- Nowy ekran „Autorzy” w menu głównym (uznanie autorstwa CC BY).
+- Naprawione: dwa testy Node (`test/map.test.mjs`, `test/mapgeo.mjs`) miały własny loader `.gltf` bez pojęcia o
+  nowym prefiksie – dodany ten sam rozdział ścieżek.
+
+## v0.8h – fabuła cz. 7: muzyka i radio
+- „Filtr radiowy” przez Tone.js (pasmowoprzepustowy + lekkie przesterowanie) na wyjściu placeholderów radia, na tym
+  samym AudioContext co Howler (jedno odblokowanie dźwięku); przy błędzie radio gra bez koloru (try/catch).
+- Sekwencer 4 stylów zostaje bez zmian (już gotowy i przetestowany, przepisanie na Tone.Sequence nie dodałoby nic
+  słyszalnego bez możliwości odsłuchu w tej sesji); miejsce na docelowe utwory (public/muzyka/) bez zmian.
+- `docs/wdrozenie-fabuly.md` §13.
+
+## v0.8g – fabuła cz. 6: mapa
+- Pełnoekranowa mapa (M / przycisk dotykowy / L3 pada): canvas 2D zamiast drugiej kamery 3D (bezpieczniejszy
+  wariant bez ryzyka dla RenderPixelatedPass, patrz RAPORT) – trasa wylotówki, nazwy stref, cel bieżącej sceny,
+  znacznik zamkniętej drogi, strzałka gracza. Przeciąganie i kółko/pinch do zoomu; gałka/strzałki panoramują.
+- `test/mapa.test.mjs` (projekcja świat→ekran); sprawdzone zrzutem ekranu w headless Chromium.
+- `docs/wdrozenie-fabuly.md` §12.
+
+## v0.8f – fabuła cz. 5: Park według zdjęć
+- Zbiorniki: cylindryczne silosy → prostokątne baseny (betonowa obrzeża + zatopiona woda), zgodnie z rzutem z góry
+  i zdjęciami w docs/referencje/park/.
+- Nowa nawierzchnia toru słupków (płyty, plamy, łaty, pęknięcia).
+- Ściany z opon jako dynamiczne bryły Rapiera (`physics.js` `addDynamicCylinder`) na zawrotce – rozlatują się po
+  uderzeniu, wracają na miejsce na starcie każdego przejazdu (gracza i NPC).
+- Trasa 6 słupków bez zmian (zwalidowana kalibracja z v0.7 zostaje); notatka autora o wąskiej uliczce Magazynowej
+  między zbiornikami – opisana jako możliwy kierunek na kolejną sesję, nie wdrożona teraz (patrz RAPORT).
+- `docs/wdrozenie-fabuly.md` §11.
+
+## v0.8e – fabuła cz. 4: wylotówka naturalna
+- Trzy nowe punkty kontrolne trasy (łagodne esy), bez zmiany punktów, od których zależą inne miejsca (przystanek,
+  wieś); teren tła z delikatnymi wzgórzami przez `simplex-noise` (środkowy pas korytarza zostaje płaski – wstęga
+  drogi się nie wybrzusza); nowe: słupy energetyczne, jeden przepust, jeden zjazd żwirowy, jedna kapliczka.
+- Czas sprawnego przejścia (`test/czas.mjs`) bez zmian (27–29 min) – kosmetyczna zmiana trasy, nie długości/tempa;
+  cel 45–60 min zostaje do kolejnej sesji (patrz RAPORT/ROADMAP).
+- `docs/wdrozenie-fabuly.md` §10.
+
+## v0.8d – fabuła cz. 3: rozmowy filmowe i font pikselowy
+- Cały interfejs fabuły na foncie Silkscreen (naprawione nadpisania system-ui/Courier New u źródła); telefon
+  dostał odrębny pikselowy font starej komórki (`VT323`, OFL).
+- Zbliżenie kamery na rozmowie na postoju: `camera.ts` `closeZoom` (ta sama Dioram, mocniejszy zoom, celuje między
+  auto i rozmówcę) – bezpieczniejszy wariant niż osobna kamera perspektywiczna (ryzyko dla `RenderPixelatedPass` bez
+  możliwości podglądu wizualnego w tej sesji, patrz RAPORT).
+- Pasy (letterbox) i przyciemnienie tła na `body.f-rozmowa` (CSS, bez JS).
+- Cutscenka FELGA_BICIE: ruch felgi na `@tweenjs/tween.js` `Easing.Quadratic.InOut` zamiast liniowego.
+- `docs/wdrozenie-fabuly.md` §9.
+
+## v0.8c – fabuła cz. 2: ludzie (chodzenie, yuka)
+- Diagnoza: nogi (jedna sztywna kość) nigdy się nie ruszały – stąd lewitowanie przy każdym ruchu.
+- Brak bezpiecznie licencjonowanego riga CC0 w zasięgu sieci tej sesji (docs/gotowce.md) → naprawa figury z kodu:
+  noga na dwa segmenty (biodro + kolano), cykl chodu z prędkości NPC (amplituda 0 w bezruchu).
+- Ruch rolkarzy przez yuka (`EntityManager`, `Vehicle`, `FollowPathBehavior`) zamiast ręcznej matematyki okręgu.
+- `docs/wdrozenie-fabuly.md` §8.
+
+## v0.8b – fabuła cz. 1: beemka i bus na fizyce Poloneza
+- BMW E34 i VW T3 jako prawdziwe auta (`createVehicle()`) na profilach `src/cars/bmw-e34.json`, `vw-t3.json`, sterowane
+  przez `src/npcAutopilot.js` (ten sam moduł co `test/autopilot.mjs`) – zamiast animacji po krzywej z v0.7.
+- Kasa nadal liczona z tablicy silnika fabuły (`a.slupki`), nie z wyniku fizycznego przejazdu – bez zmian w matematyce
+  zakładów; `npm test` (90/90), `e2e-noc` (NA_STYK, ZAKLADY): kasa zgodna z macierzą, bez błędów.
+- `car.js`: `fitPolonez` → `fitCar` (ogólniejsza, węzły bez szkieletu, `look.frontYawDeg`).
+- `docs/wdrozenie-fabuly.md` §7.
+
 ## v0.7e – fabuła, cz. 4: testy
 - **Automat całej nocy na prawdziwej grze** (`scripts/e2e-noc.cjs`):
   - obsługa jednym urządzeniem: klawiaturą, samym dotykiem (CDP) albo samym padem;

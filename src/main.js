@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import GUI from 'lil-gui';
 import '@fontsource/silkscreen/400.css';
 import '@fontsource/silkscreen/700.css';
+import '@fontsource/vt323/400.css';
 
 import { initPhysics, createPhysics } from './physics.js';
 import { createVehicle } from './vehicle.ts';
@@ -137,8 +138,11 @@ const parkRival = () => {
   rival.set(p.x + rx * 1.8, p.z + rz * 1.8, Math.atan2(-p.dz, p.dx));
 };
 parkRival();
+// NPC cars driven by npcAutopilot.js (the story's beemka and bus, src/fabula/swiat.js): { vehicle, ctrl } entries
+// stepped alongside the player's own car, below.
+const npcVehicles = [];
 // The story's world: the Park, Mirek's yard, the road out, the village, its people and cars (before pixelizeScene)
-const swiat = features.fabula ? await createSwiat({ scene, physics, map, fab: fabMapa, postacie: fabPostacie.postacie }) : null;
+const swiat = features.fabula ? await createSwiat({ scene, physics, map, fab: fabMapa, postacie: fabPostacie.postacie, npcVehicles }) : null;
 pixelizeScene(scene);
 const markers = createMarkers(scene); // (after pixelizeScene: unlit, keeps its own materials)
 const occlusion = createOcclusion();
@@ -608,6 +612,7 @@ const actions = {
   talk: () => !choice.open && (fabula ? fabula.naprzod() : startTalk()),
   radio: () => fabula?.radioNext(),
   kartka: () => fabula && !fabula.ui.aktywne && fabula.kartka(),
+  mapa: () => fabula?.mapa.toggle(),
 };
 const input = createInput(actions, () => settings.keys);
 const touchControls = TOUCH ? createTouchControls({ actions }) : null;
@@ -734,7 +739,7 @@ if (fabula) {
   sl.add(slupkiSettings, 'limitCzasu', 10, 120, 1).name('limit czasu (s)');
   if (new URLSearchParams(location.search).has('szybko')) fabulaSettings.tempoTestu = 8;
 }
-if (new URLSearchParams(location.search).has('debug')) window.agro = { fabula, fabulaSettings, rig, economy, points, fiveg, scorer, choice, get mission() { return mission; }, people, dialogue, get race() { return race; }, startMission, narrator, car, menu, settings, perf: () => perf, paused: () => paused, resume: () => setPaused(false), tt: () => turntable, carYaw: () => { const f = new THREE.Vector3(1, 0, 0).applyQuaternion(carView.root.quaternion); return Math.atan2(-f.z, f.x); } }; // for testing from the console
+if (new URLSearchParams(location.search).has('debug')) window.agro = { fabula, fabulaSettings, rig, economy, points, fiveg, scorer, choice, get mission() { return mission; }, people, dialogue, get race() { return race; }, startMission, narrator, car, menu, settings, perf: () => perf, paused: () => paused, resume: () => setPaused(false), tt: () => turntable, swiat, npcVehicles, carYaw: () => { const f = new THREE.Vector3(1, 0, 0).applyQuaternion(carView.root.quaternion); return Math.atan2(-f.z, f.x); } }; // for testing from the console
 // ?plan – the whole map from straight above, lit like daytime (docs/mapa.md screenshot, checking the layout)
 const PLAN = new URLSearchParams(location.search).has('plan');
 if (PLAN) {
@@ -772,7 +777,13 @@ if (fuelArg !== null) economy.restore({ fuel: Number(fuelArg) });
 const timer = new THREE.Timer();
 let lastUnstuck = 0;
 let lastSpins = 0;
-let fabulaOut = { lock: false, cam: null, steer: 0 };
+let fabulaOut = { lock: false, cam: null, steer: 0, zoom: 0 };
+// v0.8 part 6 (the map): heading in the same convention as slupki.js createCourse (0 = +x, ccw positive)
+function carYawOf(state) {
+  const q = state.quaternion;
+  const fx = 1 - 2 * (q.y * q.y + q.z * q.z), fz = 2 * (q.x * q.z - q.w * q.y);
+  return Math.atan2(-fz, fx);
+}
 
 function tick(time) {
   timer.update(time);
@@ -809,6 +820,14 @@ function tick(time) {
     return;
   }
   const controls = input.read(dt);
+  if (fabula?.mapa.open) {
+    // the map (part 6): steer/throttle-brake pan it (arrow keys, stick), no need for a separate binding
+    fabula.mapa.pan(controls.steer, controls.brake - controls.throttle, dt);
+    fabula.mapa.zoom(controls.handbrake > 0.5 ? -1 : 0, dt); // handbrake = zoom in while held (a spare button)
+    fabula.mapa.render({ carPos: car.state.position, carYaw: carYawOf(car.state), target: fabula.target, path: fabula.mapaPath });
+    requestAnimationFrame(tick);
+    return;
+  }
   if (fabulaOut.lock) Object.assign(controls, { throttle: 0, steer: 0, handbrake: 0, brake: car.state.forwardSpeed > 0.3 ? 1 : 0 }); // (the story: the car stands)
   controls.steer = Math.max(-1, Math.min(1, controls.steer + fabulaOut.steer)); // (the rims sliding in the back)
   if (choice.open) Object.assign(controls, { throttle: 0, steer: 0, handbrake: 0, brake: car.state.forwardSpeed > 0.5 ? 1 : 0 }); // (a choice on screen: the car stops)
@@ -824,7 +843,17 @@ function tick(time) {
   // 5G: near a mast the engine misfires now and then (the throttle drops out for a moment)
   const g5 = fiveg.update(dt, car.state.position);
   controls.throttle *= g5.throttle;
-  physics.step(dt, (h) => car.update(controls, h), () => car.afterStep());
+  physics.step(
+    dt,
+    (h) => {
+      car.update(controls, h);
+      for (const nv of npcVehicles) nv.vehicle.update(nv.ctrl, h);
+    },
+    () => {
+      car.afterStep();
+      for (const nv of npcVehicles) nv.vehicle.afterStep();
+    },
+  );
   const state = car.read();
   carView.sync(state);
   track.sync();
@@ -1009,7 +1038,7 @@ function tick(time) {
   smoke.update(dt);
 
   const px = Math.max(1, Math.round(pixelArt.pixelSize));
-  const cam = rig.update(dt, fabulaOut.cam ?? state, { pixelsWide: Math.floor(innerWidth / px), pixelsHigh: Math.floor(innerHeight / px) });
+  const cam = rig.update(dt, fabulaOut.cam ?? state, { pixelsWide: Math.floor(innerWidth / px), pixelsHigh: Math.floor(innerHeight / px), closeZoom: fabulaOut.zoom ?? 0 });
   setCamera(cam);
   fill.position.copy(state.position).y += 5;
   occlusion.update(cam, state.position, state.quaternion);
