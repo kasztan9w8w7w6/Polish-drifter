@@ -3,8 +3,50 @@
 Materiały, z których bierzemy wygląd gry: zdjęcia, ujęcia z drona, eksporty OpenStreetMap, screeny map i notatki.
 Tylko do dokumentacji: nic z tego folderu nie trafia do gry (build go nie widzi) i nie jest assetem w sensie `CREDITS.md`.
 
-> **Stan (sesja porządkowa po v0.6f):** folder był pusty – zdjęcia nie dotarły do repozytorium. `KATALOG.md`,
-> `docs/STYL.md` i `docs/plan-mapy.md` powstaną, kiedy pliki będą w repo (patrz niżej).
+## Stan (30.09.2026): pierwsze zdjęcia są w repozytorium
+
+118 zdjęć od autora gry, zmniejszonych (do 2000 px, plany i mapy do 3200 px), obróconych wg EXIF i **bez metadanych (GPS)**.
+Oryginały zostają u autora na dysku. Lista wszystkich plików z oryginalnymi nazwami i wymiarami: [`INDEKS.csv`](INDEKS.csv).
+
+| Folder | Zdjęcia | Co to jest |
+|---|---|---|
+| `park/` | 8 | miejsce do driftu i park przemysłowy: **rzut z góry z zaznaczonym startem (niebieski) i zawrotką (żółty)**, zbiorniki wodne, opony na zakrętach, start, budowa parku |
+| `drogi/` | 18 | zróżnicowane drogi między wioskami: nawierzchnie, budowa dróg, otoczenie, skrzyżowania (zrzuty z Google, bez dziur) |
+| `mapy/` | 2 | `droga-na-wioski-i-zalew.jpg` (trasa wylotówki) i `miasto-i-park.jpg` (układ miasta i Parku) |
+| `miasto/` | 66 + `uklad/` 5 | studzienki, ławki, śmietniki, parkingi, kościoły, domy, dziury, małe uliczki i osiedla; `uklad/` = trzy szkice układu miasta i dwa pliki `Plik_00x` |
+| `wioska/` | 13 | podwórka, kościół, światło we wsi, zabudowa wiejska |
+| `auta/golf2/`, `auta/fiat126p/` | 4 + 2 | zdjęcia Golfa II i Fiata 126p (do modeli w `assets-src/modele-aut/`) |
+
+Nazwy folderów to podział autora (nie tabela poniżej). Tabela „Proponowane foldery” z dawnej wersji tego pliku nadal
+działa dla zdjęć, które dojdą później (bloki, stacje, noc, woda).
+
+### Notatki autora do zdjęć (przepisane z plików Word)
+
+- **Miasto:** „Jak widać, są tu różne elementy: od studzienek, przez ławki, śmietniki i parkingi, po kościoły, domy itp.
+  Zauważ, że są z różnych części miasta, często małe uliczki, część to osiedla, więc **nie mieszamy tego ze sobą, tylko
+  rozdzielamy na różne dzielnice w mieście**.”
+- **Drogi:** „Stricte zróżnicowane zdjęcia dróg między wioskami, budowy ich, otoczenia, skrzyżowań itp. Zdjęcia dróg z
+  dziurami są bardziej w folderze zdjęć miasta i wiosek.”
+- **Park / miejsce do driftu** (rzut z góry + zdjęcia przy zbiornikach): „Na zakrętach po ptosru [po bokach?] umieściłbym takie
+  **ścianki z opon**, w które auto może wlecieć, a one się rozlecą; co start są układane, więc się poprawiają, ale
+  amortyzują wjazd, tak jak na torach. **Przejazd zaczyna się na samym początku, gdzie zbiorniki się zaczynają (lewy dolny
+  róg), jadą w górę, potem w lewo, potem skręt w prawo i zawrotka na końcu.** Punkty są liczone algorytmem za bliskość
+  skrajnego przejazdu, czyli tył im bliżej opon i krańca, tym lepiej; punkty liczone za styl, palenie i bujanie, nawet na
+  prostej. Zaznaczyłem na niebiesko punkt startu, na żółto punkt zawrotki na rzucie z góry.”
+  (Punktacja za bliskość krańca to pomysł na później; zakłady na 6 słupków z fabuły zostają bez zmian. Patrz ROADMAP.)
+- **Golf II** (`assets-src/modele-aut/golf2/`): „Wdrażamy na ulicach warianty dwu- i trzydrzwiowe.”
+
+### Jak pracować z tyloma zdjęciami (dla kolejnych sesji)
+
+Nie czytaj wszystkich naraz: każde zdjęcie to koszt kontekstu, a 118 to bardzo dużo.
+1. Zacznij od tego pliku i `INDEKS.csv`. Zdjęcia oglądaj **tylko z folderów potrzebnych do bieżącej części** i po kilka
+   naraz, wnioski zapisuj od razu do docs (kolory, materiały, elementy do zbudowania), a nie trzymaj w głowie.
+2. Do v0.8 (beemka, ludzie, rozmowy, wylotówka, Park, mapa) wystarczą: `park/` (8), `drogi/` (18), `mapy/` (2) i modele
+   aut. `miasto/` (71) i `wioska/` (13) są na v0.9 (polski świat, dzielnice).
+3. Katalog: osobna krótka sesja (albo podagent z modelem Haiku, partiami po ok. 10 zdjęć) wypełnia `KATALOG.md`:
+   plik · co pokazuje · dzielnica / typ miejsca · elementy do gry (obiekty, materiały, kolory, oświetlenie) · uwagi.
+   Do takiego opisu Haiku wystarcza, trzeba mu tylko podać sztywny szablon. Sesja implementująca (Opus) czyta `KATALOG.md`
+   i ogląda dopiero wybrane zdjęcia.
 
 ## Jak wgrać
 
