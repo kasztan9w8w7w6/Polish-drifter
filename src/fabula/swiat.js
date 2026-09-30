@@ -3,6 +3,16 @@ import { loadGltf } from '../gltf.js';
 import { prop } from '../map.js';
 import { createPeople, figure } from '../npc.js';
 import { createCourse } from './slupki.js';
+import { createVehicle } from '../vehicle.ts';
+import { createCarView } from '../car.js';
+import { applyCar, carDrivetrain } from '../cars.js';
+import { presets } from '../tuning.ts';
+import { createAutopilot } from '../npcAutopilot.js';
+import bmwE34 from '../cars/bmw-e34.json';
+import vwT3 from '../cars/vw-t3.json';
+
+const ENGINES = Object.fromEntries(Object.values(import.meta.glob('../engines/*.json', { eager: true, import: 'default' })).map((e) => [e.id, e]));
+const NPC_PROFIL = { NOC_BMW: { profile: bmwE34, poziom: 'dobry' }, RANO_BUS: { profile: vwT3, poziom: 'slaby' } }; // plan-mvp: bus Zdzicha = słaby kierowca
 
 // The world of "W nocy robota" (greybox, docs/wdrozenie-fabuly.md §2), built on top of the estate from
 // src/fabula/mapa.json: the Park on the old lot (tanks, lorries, the kombi, the BMW, roller skaters, six posts), Mirek's
@@ -30,7 +40,7 @@ export function przygotujMape(osiedle, fab) {
   return m;
 }
 
-export async function createSwiat({ scene, physics, map, fab, postacie }) {
+export async function createSwiat({ scene, physics, map, fab, postacie, npcVehicles = [] }) {
   const cache = new Map();
   const model = (path) => {
     if (!cache.has(path)) cache.set(path, loadGltf(`${BASE}assets/kenney/${path}.gltf`).then((g) => g.scene).catch(() => null));
@@ -106,6 +116,17 @@ export async function createSwiat({ scene, physics, map, fab, postacie }) {
   }
   const auta = {};
   await Promise.all(Object.entries(fab.auta).map(async ([id, s]) => (auta[id] = await auto(s))));
+
+  // ---------- NPC runs: real vehicle.ts + engine.js (v0.8), same physics and drift as the player (docs/gotowce.md).
+  // One view + one createVehicle() per NPC car, built once and reused for every run; only visible while driving.
+  const npcAuto = {};
+  for (const [id, { profile, poziom }] of Object.entries(NPC_PROFIL)) {
+    const view = await createCarView(scene, profile);
+    view.root.visible = false;
+    const tuning = applyCar({ ...presets.Normalny }, profile);
+    const drivetrain = carDrivetrain(profile, ENGINES);
+    npcAuto[id] = { view, tuning, drivetrain, poziom, vehicle: null, entry: null, auto: null };
+  }
 
   // ---------- The Park: tanks behind the fence, the six posts, the start line ----------
   for (const [x, z, r] of fab.zbiorniki) {
@@ -451,8 +472,12 @@ export async function createSwiat({ scene, physics, map, fab, postacie }) {
   await people.ready;
   const kiedy = Object.fromEntries(fab.postacie.map((p) => [p.id, p]));
 
-  // ---------- NPC run animation (the BMW at night, Zdzichu's bus in the morning) ----------
-  let bieg = null; // { auto, path, t, lead: { x, z, h }, leadT }
+  // ---------- NPC run (the BMW at night, Zdzichu's bus in the morning): v0.8, a real vehicle.ts car driven by
+  // npcAutopilot.js, not a scripted path. The story engine has already rolled which posts are clean (silnik.js
+  // losujSlupki) and money is settled from that roll (gra.js rozlicz(): `a.slupki`), so `forced` here is only a
+  // best-effort steer towards matching it on screen – see src/npcAutopilot.js and docs/wdrozenie-fabuly.md.
+  let bieg = null; // { id, npc: npcAuto[id] }
+  const ID_TO_AUTA = { NOC_BMW: 'bmw', RANO_BUS: 'bus' };
 
   return {
     course,
@@ -470,9 +495,17 @@ export async function createSwiat({ scene, physics, map, fab, postacie }) {
     wsadz(root) {
       root.add(wAucie, kamil);
     },
-    // start a run: the car drives from where it stands to the start and then along the path (slupki.js npcPath)
-    przejazdNPC(a, path) {
-      bieg = { auto: a, path, t: -1.8, from: { x: a.root.position.x, z: a.root.position.z } };
+    // start a run: forced = a.slupki (already rolled by the story engine), seed = a run-specific RNG seed
+    przejazdNPC(id, forced, seed = 1) {
+      const npc = npcAuto[id];
+      const spawnYaw = (course.heading * Math.PI) / 180;
+      const p0 = course.world(-20, 2.5);
+      npc.vehicle = createVehicle(physics, { tuning: npc.tuning, drivetrain: npc.drivetrain, spawn: { x: p0.x, y: 1, z: p0.z }, spawnYaw });
+      npc.entry = { vehicle: npc.vehicle, ctrl: { throttle: 0, steer: 0, handbrake: 0, brake: 0 } };
+      npcVehicles.push(npc.entry);
+      npc.autopilot = createAutopilot(course, npc.poziom, seed, { forced });
+      npc.view.root.visible = true;
+      bieg = { id, npc };
     },
     get bieg() {
       return bieg;
@@ -502,8 +535,8 @@ export async function createSwiat({ scene, physics, map, fab, postacie }) {
       if (scena === 7) people.place('KAMIL', fab.wies.plot[0][0] - 6, fab.wies.z - 10, 0);
       // cars: the night crowd leaves before dawn, the bus comes with the morning shift
       auta.kombi.show(noc);
-      if (!bieg || bieg.auto !== auta.bmw) auta.bmw.show(noc);
-      auta.bus.show(rano);
+      auta.bmw.show(noc && bieg?.id !== 'NOC_BMW');
+      auta.bus.show(rano && bieg?.id !== 'RANO_BUS');
       // Kamil's car on hazards from the moment it stopped (00:18); weaker by morning
       const h = auta.kamila.hazard;
       const blink = scena >= 3 && time % 1.1 < 0.55;
@@ -532,30 +565,23 @@ export async function createSwiat({ scene, physics, map, fab, postacie }) {
         p.wobble = Math.max(0, p.wobble - dt);
         p.g.rotation.z = Math.sin(p.wobble * 20) * p.wobble * 0.5;
       }
-      // the NPC run
+      // the NPC run: drive the real vehicle.ts car with npcAutopilot.js (physics.step() in main.js calls
+      // npc.entry.vehicle.update(npc.entry.ctrl, h) every sub-step through npcVehicles; here we only read the
+      // result and decide the next ctrl for the sub-step after this one)
       let camState = null;
       if (bieg) {
-        bieg.t += dt;
-        const p0 = bieg.path.at(0);
-        let x, z, yaw, speed = 11;
-        if (bieg.t < 0) {
-          // lead-in: from where it stood to the start of the path
-          const k = 1 + bieg.t / 1.8;
-          x = bieg.from.x + (p0.x - bieg.from.x) * k;
-          z = bieg.from.z + (p0.z - bieg.from.z) * k;
-          yaw = Math.atan2(-(p0.z - bieg.from.z), p0.x - bieg.from.x);
-          speed = Math.hypot(p0.x - bieg.from.x, p0.z - bieg.from.z) / 1.8;
-        } else {
-          const p = bieg.path.at(bieg.t);
-          ({ x, z, yaw } = p);
-        }
-        bieg.auto.show(true);
-        bieg.auto.set(x, z, yaw);
-        bieg.pos = { x, z, yaw, speed };
-        if (bieg.t >= bieg.path.duration) {
-          // back to its place (not left in the Park's gate)
-          const sp = bieg.auto.spec;
-          bieg.auto.set(sp.x, sp.z, (sp.heading ?? 0) * DEG);
+        const { npc } = bieg;
+        const s = npc.vehicle.read();
+        Object.assign(npc.entry.ctrl, npc.autopilot.step({ x: s.position.x, z: s.position.z, velocity: s.velocity, speed: s.speed, sideSlip: s.sideSlip }, dt));
+        npc.view.sync(s);
+        const q = s.quaternion;
+        const fx = 1 - 2 * (q.y * q.y + q.z * q.z), fz = 2 * (q.x * q.z - q.w * q.y);
+        bieg.pos = { x: s.position.x, z: s.position.z, yaw: Math.atan2(-fz, fx), sideSlip: s.sideSlip };
+        const { s: along } = course.local(s.position.x, s.position.z);
+        if (along > course.length + 15) {
+          npcVehicles.splice(npcVehicles.indexOf(npc.entry), 1);
+          npc.view.root.visible = false;
+          npc.vehicle = npc.entry = npc.autopilot = null;
           bieg = null;
         }
       }

@@ -33,8 +33,8 @@ z osadzonymi danymi (serwer artefaktów nie serwuje `.glb`) w `public/`. Geometr
 | Plik(i) | Źródło | Autor | Licencja |
 |---|---|---|---|
 | `public/models/polonez/polonez.gltf` (źródło `assets-src/polonez-mr93-lp.glb`) | [„1993 FSO Polonez MR93 (LP)”, Sketchfab](https://sketchfab.com/3d-models/1993-fso-polonez-mr93-lp-f191456e08a041ad81264ce67f4ed1d1). Zmiany: usunięte logo FSO, tablica rejestracyjna zamieniona na fikcyjną | [KrStolorz (Krzysztof Stolorz)](https://sketchfab.com/KrStolorz) | **Sketchfab Standard** (tak zapisano w metadanych pliku; to nie CC0, patrz niżej) |
-| `assets-src/modele-aut/e34/bmw-e34-lp.glb` (jeszcze niepodpięty w grze) | [BMW E34 (LP), Sketchfab](https://sketchfab.com/KrStolorz) | [KrStolorz (Krzysztof Stolorz)](https://sketchfab.com/KrStolorz) | **Sketchfab Standard** („Free standard”; jak Polonez, patrz uwaga niżej) |
-| `assets-src/modele-aut/vw-t3/vw-transporter-t3.glb` (jw.) | [VW Transporter T3, Sketchfab](https://sketchfab.com/randombug) | [randombug](https://sketchfab.com/randombug) | **Sketchfab Standard** („Free Standard”; jak wyżej) |
+| `public/models/bmw-e34/bmw-e34.gltf` (źródło `assets-src/modele-aut/e34/bmw-e34-lp.glb`; v0.8: beemka na Parku – auto NPC, jeździ na tej samej fizyce co gracz) | [BMW E34 (LP), Sketchfab](https://sketchfab.com/KrStolorz). Zmiany: usunięty węzeł „Emblem” (plakietka BMW), tablica rejestracyjna zamieniona na fikcyjną | [KrStolorz (Krzysztof Stolorz)](https://sketchfab.com/KrStolorz) | **Sketchfab Standard** („Free standard”; jak Polonez, patrz uwaga niżej) |
+| `public/models/vw-t3/vw-t3.gltf` (źródło `assets-src/modele-aut/vw-t3/vw-transporter-t3.glb`; v0.8: bus Zdzicha, poranna zmiana) | [VW Transporter T3, Sketchfab](https://sketchfab.com/randombug). Model ma jeden materiał, bez logo/tablicy do podmiany | [randombug](https://sketchfab.com/randombug) | **Sketchfab Standard** („Free Standard”; jak wyżej) |
 | `assets-src/modele-aut/golf2/vw-golf-2.glb` (jw.; zmniejszona kopia, zmiana: uproszczona siatka i tekstury) | „Volkswagen Golf 2”, Sketchfab | [d4n1laa (@d4n1laaa)](https://sketchfab.com/d4n1laaa) | **CC BY** (wymagane uznanie autorstwa w grze / opisie) |
 | `assets-src/modele-aut/fiat126p/fiat-126p.glb` (jw.; zmniejszona kopia, zmiana: uproszczona siatka) | „Polski Fiat (Fiat 126p)”, Sketchfab | [Martin Trafas (@TinoD2)](https://sketchfab.com/TinoD2) | **CC BY** (wymagane uznanie autorstwa w grze / opisie) |
 | `assets-src/plate-agro.png` (tablica „AGR 5G01”) | wygenerowana na potrzeby gry | Polish Drifter | CC0 |
@@ -77,6 +77,12 @@ są zrobione na potrzeby gry – bez zewnętrznych assetów. `BufferGeometryUtil
 Dane techniczne Poloneza Caro i silników (`src/cars/polonez.json`, `src/engines/*.json`) pochodzą z publicznych katalogów
 i forów (AutoCentrum.pl, automobile-catalog.com, automotyw.com, elektroda.pl, fora FSO), a kody lakierów z forów miłośników
 FSO. Źródła są wpisane w plikach (`_source`). Kolory RGB lakierów to przybliżenia dobrane na oko, nie próbki lakieru.
+
+**v0.8:** dane BMW E34 (`src/cars/bmw-e34.json`, silnik M50B25 `src/engines/bmw-m50b25.json`) i VW T3
+(`src/cars/vw-t3.json`, silnik WBX 1.9 `src/engines/vw-wbx19.json`) to ogólnie znane dane katalogowe tych jednostek
+(moc, moment, wymiary), ale ta sesja miała dostęp tylko do npm/GitHub (docs/gotowce.md), nie do kart katalogowych czy
+forów – przełożenia skrzyni, przełożenie główne i współczynniki oporu są orientacyjne, do sprawdzenia (oznaczone w
+plikach `_source`).
 
 ## Fabuła „W nocy robota” (v0.7)
 

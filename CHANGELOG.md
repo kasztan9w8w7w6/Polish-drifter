@@ -3,6 +3,12 @@
 Wersje do v0.4c mają lokalne tagi w git (serwer odrzuca wypychanie tagów); od v0.5 wersję znajdziesz po commicie „v0.5a – …”.
 Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
 
+## v0.8a – audyt gotowców
+- `docs/gotowce.md`: co wymieniam na gotowce (yuka, @tweenjs/tween.js, simplex-noise, Tone.js) i dlaczego, co zostaje
+  (silnik fabuły/ekonomia, format mapy, pixel-art, figura postaci z kodu – brak bezpiecznie licencjonowanego riga w
+  zasięgu sieci tej sesji, patrz docs).
+- Scalona gałąź `referencje-v08`: 118 zdjęć referencyjnych (`docs/referencje/`), modele aut (`assets-src/modele-aut/`).
+
 ## v0.7e – fabuła, cz. 4: testy
 - **Automat całej nocy na prawdziwej grze** (`scripts/e2e-noc.cjs`):
   - obsługa jednym urządzeniem: klawiaturą, samym dotykiem (CDP) albo samym padem;

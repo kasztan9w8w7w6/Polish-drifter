@@ -137,8 +137,11 @@ const parkRival = () => {
   rival.set(p.x + rx * 1.8, p.z + rz * 1.8, Math.atan2(-p.dz, p.dx));
 };
 parkRival();
+// NPC cars driven by npcAutopilot.js (the story's beemka and bus, src/fabula/swiat.js): { vehicle, ctrl } entries
+// stepped alongside the player's own car, below.
+const npcVehicles = [];
 // The story's world: the Park, Mirek's yard, the road out, the village, its people and cars (before pixelizeScene)
-const swiat = features.fabula ? await createSwiat({ scene, physics, map, fab: fabMapa, postacie: fabPostacie.postacie }) : null;
+const swiat = features.fabula ? await createSwiat({ scene, physics, map, fab: fabMapa, postacie: fabPostacie.postacie, npcVehicles }) : null;
 pixelizeScene(scene);
 const markers = createMarkers(scene); // (after pixelizeScene: unlit, keeps its own materials)
 const occlusion = createOcclusion();
@@ -824,7 +827,17 @@ function tick(time) {
   // 5G: near a mast the engine misfires now and then (the throttle drops out for a moment)
   const g5 = fiveg.update(dt, car.state.position);
   controls.throttle *= g5.throttle;
-  physics.step(dt, (h) => car.update(controls, h), () => car.afterStep());
+  physics.step(
+    dt,
+    (h) => {
+      car.update(controls, h);
+      for (const nv of npcVehicles) nv.vehicle.update(nv.ctrl, h);
+    },
+    () => {
+      car.afterStep();
+      for (const nv of npcVehicles) nv.vehicle.afterStep();
+    },
+  );
   const state = car.read();
   carView.sync(state);
   track.sync();

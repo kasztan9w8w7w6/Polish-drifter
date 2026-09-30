@@ -1,0 +1,55 @@
+{
+  "id": "bmw-e34",
+  "name": "BMW 525i (E34)",
+  "years": "1988–1995",
+  "real": {
+    "_source": [
+      "Ogólnie znane dane katalogowe BMW E34 525i (M50B25, 1990–1995): rozstaw osi 2761 mm, długość 4720 mm, szerokość 1751 mm, wysokość 1400 mm, napęd na tył, rozkład masy ok. 50:50, masa ok. 1540 kg, bak 70 l, opony 205/65 R15.",
+      "Przełożenia 5-biegowej skrzyni Getrag 250 (typowe dla E34 6-cylindrowych, I 4,20 · II 2,49 · III 1,66 · IV 1,24 · V 1,00 · wsteczny 3,68) i przełożenie główne 3,73 – wartości typowe dla tej platformy, NIE zweryfikowane na oryginalnej karcie (proxy tej sesji nie dawał dostępu poza npm/GitHub, patrz docs/gotowce.md); do sprawdzenia.",
+      "Cd ok. 0,32–0,36 dla sedana E34 (szerzej znane z testów prasowych epoki); tu 0,34 i powierzchnia czołowa z wymiarów nadwozia jak przy Polonezie. vmax ok. 220 km/h, 0–100 ok. 8,0 s: wartości orientacyjne dla 525i manual, do potwierdzenia."
+    ],
+    "engine": "bmw-m50b25",
+    "engines": ["bmw-m50b25"],
+    "powerHp": 192,
+    "powerRpm": 5900,
+    "torqueNm": 245,
+    "torqueRpm": 4700,
+    "massKg": 1540,
+    "drive": "RWD",
+    "gearRatios": [4.2, 2.49, 1.66, 1.24, 1.0],
+    "reverseRatio": 3.68,
+    "finalDrive": 3.73,
+    "tyres": "205/65 R15",
+    "cd": 0.34,
+    "frontalArea": 2.05,
+    "crr": 0.013,
+    "efficiency": 0.9,
+    "tankL": 70,
+    "lengthMm": 4720,
+    "widthMm": 1751,
+    "heightMm": 1400,
+    "wheelbaseMm": 2761,
+    "topSpeedKmh": 220,
+    "zeroTo100s": 8.0,
+    "idleRpm": 800,
+    "redlineRpm": 6500
+  },
+  "arcade": {
+    "_note": "Tylko odniesienie prowadzenia (jak w polonez.json) – kierowca AI jeździ w niskim zakresie prędkości (slalom), więc dokładna wartość ma mały wpływ.",
+    "massKg": 1540,
+    "reverseFraction": 0.5,
+    "topSpeedKmh": 150
+  },
+  "look": {
+    "model": "models/bmw-e34/bmw-e34.gltf",
+    "length": 4.72,
+    "paintMaterial": "Red_paint_metallic",
+    "_paints": "Lakiery orientacyjne (nie z katalogu FSO jak Polonez) – kolory typowe dla E34 w tej epoce.",
+    "defaultPaint": "Czarny",
+    "paints": {
+      "Czarny": "#1a1a1c",
+      "Grafitowy metalik": "#3a3d42",
+      "Bordowy metalik": "#3f1420"
+    }
+  }
+}

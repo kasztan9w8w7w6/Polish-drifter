@@ -213,3 +213,30 @@ Nic z tego nie blokuje całości. Pytania do autora i scenarzysty są w raporcie
   - cel planu to 45–60 min;
   - różnicę robią skrócone trasy (w grze ok. 6,8 km zamiast 70 km) i to, że tekst czyta się szybciej, niż zakładał plan.
   - Pokrętła bez zmiany scenariusza: dłuższa wylotówka, dłuższa swobodna jazda w sc. 0, wolniejsze tempo pasków, dłuższe czekanie w sc. 6 (plan §10.2 mówi raczej o skracaniu).
+
+## 7. Beemka i bus: fizyka NPC (v0.8 cz. 1)
+
+- Do v0.7 przejazd BMW/busa był animacją po zapisanej krzywej (`slupki.js` `npcPath`). Od v0.8 to prawdziwe auto:
+  `createVehicle()` (ten sam kod co gracz) na profilu `src/cars/bmw-e34.json` / `vw-t3.json`, kierowca to
+  `src/npcAutopilot.js` (ten sam moduł, który steruje testowym autopilotem – `test/autopilot.mjs` go tylko wywołuje,
+  nie duplikuje logiki).
+- **Kasa nie zależy od tego, jak fizycznie pójdzie ten konkretny przejazd.** Silnik fabuły (`silnik.js` `losujSlupki`)
+  losuje, które słupki są czyste, PRZED przejazdem (jak w v0.7); `gra.js` `rozlicz()` liczy wypłatę z tej tablicy
+  (`a.slupki`), nie z tego, co pokaże `act.run` na żywo. `forced` w `npcAutopilot.js` tylko naprowadza fizyczny
+  przejazd, żeby plansza z werdyktami na ekranie nie sprzeciwiała się wypłacie – to kosmetyka, nie coś od czego
+  zależy wynik finansowy (stąd testy 7488 ścieżek i macierzy §5 – bez zmian, wciąż przechodzą).
+  - "brudny" słupek (`forced[k] === false`) jest w 100% pewny: kierowca po prostu nie ciągnie ręcznego (brak poślizgu
+    = niecozyste, zmierzone: 60/60 w teście).
+  - "czysty" słupek (`forced[k] === true`) pożycza technikę `dobry`/niższy szum (`GWARANT` w `npcAutopilot.js`), ale
+    NIE jest gwarantowany – sam manewr (poślizg tuż przy słupku, tolerancja dotyku 0,1 m) jest z natury wrażliwy na
+    warunki wejścia, więc dokładność zależy od wzorca: pierwsze 3–4 słupki z rzędu wymuszone na "czyste" trafiają w
+    ok. 80–100% (zmierzone), wymuszanie "czyste" tuż po wymuszonym "brudnym" słupku bywa dużo mniej trafne (kierowca
+    wchodzi w kolejny wymuszony poślizg z gorszej pozycji). Ponieważ nie wpływa to na kasę, jest to zaakceptowana
+    niedoróbka kosmetyczna, nie błąd do naprawy w tym samym kroku – patrz RAPORT v0.8.
+- Model auta: `car.js` `fitPolonez()` (teraz ogólniejsza `fitCar`, ta sama funkcja dla Poloneza, E34 i T3) szuka kości
+  kółek po nazwie (`F_wheel.L`, jak w Polonezie) LUB, gdy model nie ma szkieletu (T3: `WFL/WFR/WBL/WBR` to zwykłe
+  węzły), po dokładnej nazwie węzła – tak działa obrót/skręt kółek E34 (ma szkielet, nazwy zgodne z konwencją
+  Poloneza), ale kółka busa T3 stoją w miejscu (brak szkieletu → nie ma czego kręcić przez kość; T3 nie ma materiału `Headlight` (jeden materiał na cały model), więc `fitCar()` zakłada przód na +Z (domyślne
+  zachowanie, jak dotąd) – bez podglądu w przeglądarce w tej sesji nie da się potwierdzić, czy to właściwa strona; da
+  się to poprawić bez zmian w kodzie przez `look.frontYawDeg` w `vw-t3.json` (dodane do `fitCar()` właśnie w tym celu),
+  patrz RAPORT).

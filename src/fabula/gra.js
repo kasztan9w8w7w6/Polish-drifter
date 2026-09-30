@@ -6,7 +6,7 @@ import postacieFab from './postacie.json';
 import { createStory, minutyNaCzas, wyplata } from './silnik.js';
 import { createFabulaUI, uiSettings } from './ui.js';
 import { createRadio } from './radio.js';
-import { createRun, npcPath, slupkiSettings, WERDYKT } from './slupki.js';
+import { createRun, slupkiSettings, WERDYKT } from './slupki.js';
 
 // The night of "W nocy robota" in the game: the story engine (silnik.js) hands one action at a time, this glue shows
 // it (ui.js), moves the world (swiat.js), waits for the player where the staging says so (inscenizacja.json gates),
@@ -216,9 +216,7 @@ export function createFabula(ctx) {
     act.run = createRun(course, slupkiSettings);
     act.werdykty = [];
     if (a.npc) {
-      const auto = a.id === 'NOC_BMW' ? swiat.auta.bmw : swiat.auta.bus;
-      act.path = npcPath(course, a.slupki);
-      swiat.przejazdNPC(auto, act.path);
+      swiat.przejazdNPC(a.id, a.slupki, Math.round(zegar) + 1);
       if (a.id === 'RANO_BUS') swiat.people.show('ZDZICHU', false);
       ui.slupki({ naglowek: `${a.id === 'NOC_BMW' ? 'Beemka' : 'Bus Zdzicha'} · słupek 0/6 · czyste 0`, legenda: legenda() });
       act.npc = true;
@@ -336,8 +334,8 @@ export function createFabula(ctx) {
 
   function npcRun(dt) {
     const bieg = swiat.bieg;
-    if (bieg?.pos && bieg.t >= 0) {
-      for (const e of act.run.update(dt, { x: bieg.pos.x, z: bieg.pos.z, yaw: bieg.pos.yaw, sideSlip: bieg.path.at(bieg.t).slip })) pokazWerdykt(e, act.a.id === 'NOC_BMW' ? 'Beemka' : 'Bus Zdzicha');
+    if (bieg?.pos) {
+      for (const e of act.run.update(dt, { x: bieg.pos.x, z: bieg.pos.z, yaw: bieg.pos.yaw, sideSlip: bieg.pos.sideSlip })) pokazWerdykt(e, act.a.id === 'NOC_BMW' ? 'Beemka' : 'Bus Zdzicha');
     }
     if (!bieg) {
       if (!act.koniecT) {

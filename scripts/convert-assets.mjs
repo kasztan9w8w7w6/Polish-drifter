@@ -58,31 +58,42 @@ for (const [kit, { zip, models }] of Object.entries(KITS)) {
   console.log(`${kit}: ${models.length} modeli`);
 }
 
-// --- Polonez ---
-const io = new NodeIO();
-const doc = await io.read(`${SRC}/polonez-mr93-lp.glb`);
-const root = doc.getRoot();
-for (const node of root.listNodes()) {
-  if (/FSO logo/i.test(node.getName())) {
-    for (const child of node.listChildren()) child.dispose();
-    node.dispose();
+// --- Real-world cars: logo removed, plate fictional (same treatment for every car, docs/gotowce.md) ---
+// src: assets-src/... .glb, out: public/models/<id>/<id>.gltf, logoPattern: node name regex to delete (badges/emblems)
+async function convertCar({ id, src, logoPattern, plateMaterial = 'Plate' }) {
+  const io = new NodeIO();
+  const doc = await io.read(src);
+  const root = doc.getRoot();
+  let removed = 0;
+  if (logoPattern) {
+    for (const node of root.listNodes()) {
+      if (logoPattern.test(node.getName())) {
+        for (const child of node.listChildren()) child.dispose();
+        node.dispose();
+        removed++;
+      }
+    }
   }
+  for (const mat of root.listMaterials()) {
+    if (mat.getName() === plateMaterial) mat.getBaseColorTexture()?.setImage(readFileSync(`${SRC}/plate-agro.png`)).setMimeType('image/png');
+  }
+  await doc.transform(prune());
+  const { json, resources } = await io.writeJSON(doc, { format: 0 });
+  for (const b of json.buffers ?? []) b.uri = b64(resources[b.uri], 'application/octet-stream');
+  const dir = `${OUT}/models/${id}`;
+  mkdirSync(`${dir}/textures`, { recursive: true });
+  // Textures as separate files (the game can't fetch data: URIs inside the artifact page)
+  (json.images ?? []).forEach((img, i) => {
+    if (!img.uri) return;
+    const name = `textures/image-${i}.png`;
+    writeFileSync(`${dir}/${name}`, resources[img.uri]);
+    img.uri = name;
+  });
+  json.asset.extras = { ...json.asset.extras, modified: `logo removed (${removed} node), registration plate replaced with a fictional one (Agro Drifter)` };
+  writeFileSync(`${dir}/${id}.gltf`, JSON.stringify(json));
+  console.log(`${id}: materiały`, root.listMaterials().map((m) => m.getName()).join(', '), `– usunięto logo: ${removed} węzeł(ów)`);
 }
-for (const mat of root.listMaterials()) {
-  if (mat.getName() === 'Plate') mat.getBaseColorTexture()?.setImage(readFileSync(`${SRC}/plate-agro.png`)).setMimeType('image/png');
-}
-await doc.transform(prune());
-const { json, resources } = await io.writeJSON(doc, { format: 0 });
-for (const b of json.buffers ?? []) b.uri = b64(resources[b.uri], 'application/octet-stream');
-mkdirSync(`${OUT}/models/polonez/textures`, { recursive: true });
-// Textures as separate files (the game can't fetch data: URIs inside the artifact page)
-(json.images ?? []).forEach((img, i) => {
-  if (!img.uri) return;
-  const name = `textures/image-${i}.png`;
-  writeFileSync(`${OUT}/models/polonez/${name}`, resources[img.uri]);
-  img.uri = name;
-});
-json.asset.extras = { ...json.asset.extras, modified: 'FSO logo removed, registration plate replaced with a fictional one (Agro Drifter)' };
-mkdirSync(`${OUT}/models/polonez`, { recursive: true });
-writeFileSync(`${OUT}/models/polonez/polonez.gltf`, JSON.stringify(json));
-console.log('polonez: materiały', root.listMaterials().map((m) => m.getName()).join(', '));
+
+await convertCar({ id: 'polonez', src: `${SRC}/polonez-mr93-lp.glb`, logoPattern: /FSO logo/i });
+await convertCar({ id: 'bmw-e34', src: `${SRC}/modele-aut/e34/bmw-e34-lp.glb`, logoPattern: /Emblem/i });
+await convertCar({ id: 'vw-t3', src: `${SRC}/modele-aut/vw-t3/vw-transporter-t3.glb`, logoPattern: null, plateMaterial: null }); // no logo/plate node in this model (single material)
