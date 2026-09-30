@@ -9,6 +9,15 @@ Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
   zasięgu sieci tej sesji, patrz docs).
 - Scalona gałąź `referencje-v08`: 118 zdjęć referencyjnych (`docs/referencje/`), modele aut (`assets-src/modele-aut/`).
 
+## v0.8j – cz. 9: testy końcowe
+- `scripts/e2e-noc.cjs` – cała noc na żywej grze: 4 zakończenia klawiaturą, jedno dotykiem, jedno padem, wszystkie
+  bez błędów, kasa zawsze zgodna z macierzą plan §5.
+- Nowe testy: `test/e34.test.mjs`, `test/chodzenie.test.mjs`, rozszerzony `test/camera.test.mjs` (closeZoom).
+  `npm test` 99/99.
+- Zrzuty ekranu: wylotówka (6 miejsc), Park (nowa nawierzchnia), rozmowa (pasy + zbliżenie kamery), mapa.
+- ROADMAP.md: v0.8 zrobione, nowy wiersz v0.9 (domknięcie bez podglądu wizualnego + dawne dopracowanie mechanik).
+- `docs/wdrozenie-fabuly.md` §15, RAPORT dla użytkownika.
+
 ## v0.8i – cz. 8: Golf II i Fiat 126p na ulicach
 - Skonwertowane (`convert-assets.mjs` `convertCar()`): `public/models/golf2/`, `public/models/fiat126p/`; 2 egzemplarze
   każdego jako zaparkowane auta w wolnych miejscach istniejącego rzędu (`osiedle.json` `objects`). Dalsze

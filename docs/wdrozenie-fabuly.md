@@ -417,3 +417,38 @@ Nic z tego nie blokuje całości. Pytania do autora i scenarzysty są w raporcie
 - **Sprawdzone:** `npm test` 93/93, headless Chromium – oba modele wczytują się bez błędu (`requestfailed` na
   `golf2`/`fiat126p` == brak), ekran „Autorzy” pokazuje treść. Nie sprawdzone wizualnie, czy auta stoją równo w
   liniach parkingowych (rozmiary `length` z realnych wymiarów, ale bez podglądu).
+
+## 15. Testy końcowe (v0.8 cz. 9)
+
+- **`scripts/e2e-noc.cjs` – cała noc na żywej grze:**
+
+  | Zakończenie | Urządzenie | Kasa przed świtem | Kasa na koniec | Zgodność z planem |
+  |---|---|---|---|---|
+  | NA STYK | klawiatura | 849 zł | 899 zł | ✓ |
+  | PRAWIE | klawiatura | 829 zł | 779 zł | ✓ |
+  | JUTRO | **pad** | 779 zł | 729 zł | ✓ |
+  | CZYSTO | klawiatura | 779 zł | 889 zł | ✓ |
+  | CZYSTO, z zakładem na beemkę i busa | klawiatura | 833 zł | 891 zł | ✓ |
+  | CZYSTO | **dotyk** | 779 zł | 889 zł | ✓ |
+
+  6 pełnych przejazdów nocy (4 zakończenia klawiaturą, jeden dotykiem, jeden padem), wszystkie bez błędów w konsoli,
+  kasa zawsze dokładnie zgodna z macierzą plan §5 – potwierdza, że fizyczna beemka/bus (część 1), nowa Park (część 5)
+  i reszta zmian nie naruszyły macierzy zwalidowanej w v0.7.
+- **Nowe testy jednostkowe:** `test/e34.test.mjs` (powertrain E34, patrz część 7/9 – rozbieżność z katalogiem
+  udokumentowana, nie ukryta szerszą tolerancją), `test/chodzenie.test.mjs` (cykl chodu), rozszerzony
+  `test/camera.test.mjs` (closeZoom, powrót do Dioramy), `test/mapa.test.mjs` (część 6). Mapa dotykiem/padem: bez
+  osobnego testu Node (canvas 2D wymaga prawdziwej przeglądarki – `getContext('2d')`, zdarzenia `pointerdown`), ale
+  sprawdzona wprost w headless Chromium (część 6: otwiera/zamyka się klawiszem M, ten sam kod obsługuje `pointerdown`/
+  `wheel` niezależnie od urządzenia i przycisk dotykowy/pad wywołują tę samą akcję `mapa.toggle()`).
+- **`npm test`:** 99/99 (93 z części 1–8 + 6 nowych w tej części: 2 E34, 3 chodzenie, 1 kamera), typecheck i build czyste przez cały czas.
+- **Zrzuty ekranu:** wylotówka w 6 miejscach (różne zakręty, lasy/łąki, nowe elementy przy drodze), Park (nawierzchnia
+  `plytyParku()` widoczna w świetle reflektorów), rozmowa z pasami i zbliżeniem kamery (część 3, wyraźnie widoczne
+  pasy u góry/dołu i bliższy kadr), mapa (część 6). **Nie udało się** w tej sesji zebrać czystego zrzutu z fizycznym
+  przejazdem beemki po słupkach (próby zestawiania krótkiego, samodzielnego skryptu przez cały początek sceny 0
+  gubiły się w rozgałęzieniach dialogu) – ten fragment zweryfikowany tylko przez logi `scripts/e2e-noc.cjs`
+  (kasa zgodna, `bieg` aktywne, bez błędów), nie zrzutem ekranu.
+- **Czas sprawnego przejścia:** bez zmian względem v0.7, ok. 27–29 min (`test/czas.mjs`) – cel 45–60 min zostaje do
+  kolejnej sesji (część 4, ROADMAP v0.9).
+- **FPS:** nie zmierzony liczbowo w tej sesji poza obserwacją, że headless Chromium trzyma 1–4 FPS niezależnie od
+  wersji (już opisane w raporcie v0.7) – nowe elementy (opony dynamiczne, dodatkowe auta, drugi/trzeci pojazd NPC)
+  nie zmieniły tego zauważalnie w testach e2e (czasy przejazdów tego samego rzędu co w v0.7).
