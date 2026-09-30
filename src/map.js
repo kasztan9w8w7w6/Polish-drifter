@@ -307,7 +307,7 @@ function clipSlab(poly, lo, hi) {
 }
 
 // Small things built from boxes (no model needed): returns the group, the collider half extents and its surface
-function prop(type, name = '') {
+export function prop(type, name = '') {
   const g = new THREE.Group();
   const mat = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.85 });
   const box = (w, h, d, x, y, z, m) => {

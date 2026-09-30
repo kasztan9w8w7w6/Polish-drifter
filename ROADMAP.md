@@ -28,14 +28,14 @@ Wersje po kolei. Szczegóły modułów: [`CLAUDE.md`](CLAUDE.md), zmiany w każd
 | v0.6e | 5G jako klimat przy masztach | zrobione |
 | v0.6f | nowa nazwa: Polish Drifter | zrobione |
 | — | sesja porządkowa: referencje (`docs/referencje/`), braki (`docs/BRAKI.md`), podział na sesje S2–S5 | zrobione |
-| v0.7 (S2) | jazda, dźwięk, orientacja | następne |
-| v0.8 (S3) | polski świat | planowane |
-| v0.9 (S4) | większa mapa | planowane |
-| S5 | fabuła | planowane |
-| później | trasa nad wodą; garaż i tuning (UI swapów silników, lakiery), uszkodzenia | planowane |
+| v0.7 | **fabuła MVP „W nocy robota” wdrożona** (docs/fabula/, docs/wdrozenie-fabuly.md): silnik fabuły, 12 scen, zakłady na 6 słupkach, 4 zakończenia, greybox mapy (Park, miasto, wylotówka, wieś) | zrobione |
+| v0.8 | grafika i polski świat (bloki, auta z epoki, postacie z modeli, światło ze zdjęć – docs/BRAKI.md) | następne |
+| v0.9 | dopracowanie mechanik po teście (próg 4/6, czytelność kursów, długość nocy, czekanie w sc. 6, jazda z ładunkiem) | planowane |
+| v0.10 | muzyka: 12 pastiszy na 4 stacje (docs/muzyka.md), dźwięk Poloneza | planowane |
+| później | większa mapa (S4), trasa nad wodą („Pralka. Nad wodę.”), garaż i tuning, kolejne noce | planowane |
 | v0.15 | dopracowanie sterowania mobilnego (po testach na telefonach) | planowane |
 
-## Sesje S2–S5
+## Sesje S2–S5 (plan sprzed fabuły; kolejność po v0.7 jest w tabeli)
 
 Co jest potrzebne do każdej sesji (zdjęcia, modele, dźwięki): [`docs/BRAKI.md`](docs/BRAKI.md).
 

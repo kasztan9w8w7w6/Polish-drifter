@@ -27,9 +27,11 @@ export const DEFAULT_KEYS = {
   camera: ['KeyC'],
   lights: ['KeyL'],
   talk: ['KeyE'],
+  radio: ['KeyQ'],
+  kartka: ['KeyK'],
   pause: ['Escape', 'KeyP'],
 };
-export const KEY_NAMES = { gas: 'Gaz', brake: 'Hamulec / wsteczny', left: 'Skręt w lewo', right: 'Skręt w prawo', handbrake: 'Ręczny', reset: 'Reset auta', camera: 'Kamera', lights: 'Długie światła', talk: 'Rozmowa / dalej', pause: 'Pauza / menu' };
+export const KEY_NAMES = { gas: 'Gaz', brake: 'Hamulec / wsteczny', left: 'Skręt w lewo', right: 'Skręt w prawo', handbrake: 'Ręczny', reset: 'Reset auta', camera: 'Kamera', lights: 'Długie światła', talk: 'Rozmowa / dalej', radio: 'Radio: następna stacja', kartka: 'Kartka od Zbycha', pause: 'Pauza / menu' };
 
 export function defaultSettings() {
   return {

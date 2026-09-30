@@ -1,0 +1,2935 @@
+{
+  "tytul": "W nocy robota",
+  "wersja": "MVP 4 · 29.09.2026",
+  "zrodlo": "scenariusz-mvp.md (nie edytuj JSON-a ręcznie)",
+  "ekonomia": {
+    "waluta": "zł",
+    "kasa_start": 699,
+    "cel": 889,
+    "kartka_zbycha": [
+      {
+        "pozycja": "badanie techniczne",
+        "kwota": 149
+      },
+      {
+        "pozycja": "łata na próg",
+        "kwota": 300
+      },
+      {
+        "pozycja": "tarcze i klocki przód",
+        "kwota": 170
+      },
+      {
+        "pozycja": "tłumik końcowy",
+        "kwota": 120
+      },
+      {
+        "pozycja": "robota Zbycha",
+        "kwota": 150
+      }
+    ],
+    "termin_dni": 21,
+    "paliwo": {
+      "cena_za_litr": 6.99,
+      "tankowanie_zl": 50,
+      "litry": 7.15,
+      "trasa_km": 70,
+      "spalanie_l_na_100km": 9.5
+    }
+  },
+  "zaklady": {
+    "zasady": {
+      "slupki": 6,
+      "prog_wygranej": 4,
+      "marza_trzymajacego": 0.1,
+      "mnoznik_pory": {
+        "noc": 1.2,
+        "rano": 1.0
+      },
+      "wzor_kursu": "round(0.9 / p_tlumu * mnoznik_pory, 1)",
+      "wyplata": "round(stawka * kurs)  (zysk = wyplata - stawka)"
+    },
+    "przejazdy": {
+      "NOC_BMW": {
+        "scena": 0,
+        "pora": "noc",
+        "kierowca": "NPC (beemka e34)",
+        "q_ukryte": 0.5,
+        "p_tlumu_tak": 0.6,
+        "strony": [
+          "tak",
+          "nie"
+        ],
+        "stawki": [
+          10,
+          20
+        ],
+        "trzyma": "FACET Z TERMOSEM",
+        "opcjonalny": true,
+        "kurs": {
+          "tak": 1.8,
+          "nie": 2.7
+        }
+      },
+      "RANO_BUS": {
+        "scena": 11,
+        "pora": "rano",
+        "kierowca": "NPC (Zdzichu, służbowy bus)",
+        "q_ukryte": 0.6,
+        "p_tlumu_tak": 0.5,
+        "strony": [
+          "tak",
+          "nie"
+        ],
+        "stawki": [
+          10,
+          20,
+          50
+        ],
+        "trzyma": "HENIO",
+        "opcjonalny": true,
+        "kurs": {
+          "tak": 1.8,
+          "nie": 1.8
+        }
+      },
+      "RANO_GRACZ": {
+        "scena": 11,
+        "pora": "rano",
+        "kierowca": "GRACZ",
+        "q_ukryte": null,
+        "p_tlumu_tak": 0.3,
+        "strony": [
+          "tak"
+        ],
+        "stawki": [
+          10,
+          20,
+          50
+        ],
+        "trzyma": "HENIO",
+        "opcjonalny": false,
+        "tlum": [
+          {
+            "kto": "HENIO",
+            "strona": "nie",
+            "stawka": 20
+          },
+          {
+            "kto": "ZDZICHU",
+            "strona": "nie",
+            "stawka": 20
+          },
+          {
+            "kto": "JUREK",
+            "strona": "tak",
+            "stawka": 20
+          }
+        ],
+        "dola_przy_sukcesie": 10,
+        "kurs": {
+          "tak": 3.0
+        }
+      }
+    }
+  },
+  "flagi": {
+    "PODJECHAL_DO_KOMBI": {
+      "wartosci": [
+        "nie",
+        "tak"
+      ]
+    },
+    "NOC_BMW": {
+      "wartosci": [
+        "bez_zakladu",
+        "przegrana",
+        "wygrana"
+      ]
+    },
+    "RANO_BUS": {
+      "wartosci": [
+        "bez_zakladu",
+        "przegrana",
+        "wygrana"
+      ]
+    },
+    "RANO_GRACZ": {
+      "wartosci": [
+        "porazka",
+        "sukces"
+      ]
+    },
+    "KAMIL_WIE": {
+      "wartosci": [
+        "nie",
+        "tak"
+      ]
+    },
+    "PRAWDA": {
+      "wartosci": [
+        "powiedzial",
+        "zmilczal"
+      ]
+    },
+    "PIWO": {
+      "wartosci": [
+        "dane",
+        "kiedys"
+      ]
+    }
+  },
+  "flagi_z_rozgrywki": {
+    "PODJECHAL_DO_KOMBI": {
+      "wartosci": [
+        "tak",
+        "nie"
+      ],
+      "domyslna": "nie",
+      "opis": "Gracz wjechał w strefę przy kombi w scenie 0."
+    }
+  },
+  "placeholdery_ekranu": {
+    "[KASA]": "aktualna kasa gracza w zł",
+    "[BRAK]": "max(0, cel - kasa) w zł"
+  },
+  "sceny": [
+    {
+      "id": 0,
+      "tytul": "PARK",
+      "wezly": [
+        {
+          "typ": "ekran",
+          "tekst": "Park · 23:35",
+          "linia": 38
+        },
+        {
+          "typ": "opis",
+          "tekst": "Płyta jest większa, niż pamiętasz. Zawsze jest większa, kiedy nikt na niej nie stoi — a przecież ktoś stoi. Latarnie rosną co czterdzieści metrów i każda oświetla własny kawałek asfaltu, jakby nie wiedziała o pozostałych. Za zbiornikami szumi woda, która dokądś płynie w środku nocy i nikt nie wie po co. Tiry śpią w rzędzie z zasłoniętymi szybami. Z betonu unosi się mgła, cienka jak oddech.",
+          "pokaz": false,
+          "linia": 40
+        },
+        {
+          "typ": "opis",
+          "tekst": "Nie jesteś tu sam. Facet w starym kombi siedzi przy otwartych drzwiach, pije z termosu i je kanapkę, patrząc w nic. Dwoje na rolkach robi wielkie, powolne koło wokół słupka. Na dalekim końcu ktoś w starym BMW, w e trzydzieści cztery, smaży gumę — krótko, bez przekonania, jakby sprawdzał, czy jeszcze może. Nikt na nikogo nie patrzy. Tak tu jest: przyjeżdża się nie po to, żeby być razem, tylko żeby nie być nigdzie.",
+          "pokaz": false,
+          "linia": 42
+        },
+        {
+          "typ": "dzwiek",
+          "tekst": "Techno, cichy bas, jeden motyw powtarzany jak cierpliwość.",
+          "linia": 44
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Kasa: 699 zł",
+          "linia": 46
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Kartka od Zbycha: badanie 149 · łata na próg 300 · tarcze i klocki 170 · tłumik 120 · robota 150 · RAZEM 889 zł",
+          "linia": 47
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Termin: 21 dni",
+          "linia": 48
+        },
+        {
+          "typ": "opis",
+          "tekst": "Nic nie musisz. Możesz pojeździć: zakręt, wolna prosta, kółko wokół słupka. Polonez brzmi tak, jakby ktoś w środku przestawiał meble. Możesz też podjechać do kombi. Nikt cię nie woła.",
+          "pokaz": false,
+          "linia": 50
+        },
+        {
+          "typ": "opis",
+          "tekst": "Facet z termosem nie wstaje. Kiwa głową w stronę BMW, jak ktoś, kto pokazuje pogodę.",
+          "pokaz": false,
+          "warunek": {
+            "PODJECHAL_DO_KOMBI": "tak"
+          },
+          "linia": 54
+        },
+        {
+          "typ": "kwestia",
+          "kto": "FACET Z TERMOSEM",
+          "tekst": "Ten w beemce zaraz jedzie. Sześć słupków.",
+          "warunek": {
+            "PODJECHAL_DO_KOMBI": "tak"
+          },
+          "linia": 56
+        },
+        {
+          "typ": "kwestia",
+          "kto": "FACET Z TERMOSEM",
+          "tekst": "Cztery czyste i wygrywa, kto stawiał, że wygra.",
+          "warunek": {
+            "PODJECHAL_DO_KOMBI": "tak"
+          },
+          "linia": 58
+        },
+        {
+          "typ": "kwestia",
+          "kto": "FACET Z TERMOSEM",
+          "tekst": "Ja tu tylko trzymam.",
+          "warunek": {
+            "PODJECHAL_DO_KOMBI": "tak"
+          },
+          "linia": 60
+        },
+        {
+          "typ": "kwestia",
+          "kto": "FACET Z TERMOSEM",
+          "tekst": "Na tak — jeden osiem. Na nie — dwa siedem.",
+          "warunek": {
+            "PODJECHAL_DO_KOMBI": "tak"
+          },
+          "linia": 62
+        },
+        {
+          "typ": "kwestia",
+          "kto": "FACET Z TERMOSEM",
+          "tekst": "Kurs nocy jest inny.",
+          "warunek": {
+            "PODJECHAL_DO_KOMBI": "tak"
+          },
+          "linia": 64
+        },
+        {
+          "typ": "wybor",
+          "opcje": [
+            {
+              "id": "1",
+              "tekst": "Czemu inny?",
+              "odpowiedz": {
+                "kto": "FACET Z TERMOSEM",
+                "tekst": "Bo ciemno. W ciemno się inaczej stawia."
+              }
+            },
+            {
+              "id": "2",
+              "tekst": "Skąd te liczby?",
+              "odpowiedz": {
+                "kto": "FACET Z TERMOSEM",
+                "tekst": "Na oko. Mam jedno dobre."
+              }
+            },
+            {
+              "id": "3",
+              "tekst": "Ile można?",
+              "odpowiedz": {
+                "kto": "FACET Z TERMOSEM",
+                "tekst": "Dycha albo dwie. Dycha. Kiedyś to było sto tysięcy."
+              }
+            }
+          ],
+          "warunek": {
+            "PODJECHAL_DO_KOMBI": "tak"
+          },
+          "linia": 66
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "zaklad",
+          "argumenty": [
+            "NOC_BMW"
+          ],
+          "warunek": {
+            "PODJECHAL_DO_KOMBI": "tak"
+          },
+          "linia": 70
+        },
+        {
+          "typ": "opis",
+          "tekst": "Beemka rusza. Tył wychodzi, wraca, wychodzi. Słupki mijają ją jak znajomi, którym nie chce się zatrzymać.",
+          "pokaz": false,
+          "warunek": {
+            "PODJECHAL_DO_KOMBI": "tak"
+          },
+          "linia": 72
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "przejazd",
+          "argumenty": [
+            "NOC_BMW"
+          ],
+          "warunek": {
+            "PODJECHAL_DO_KOMBI": "tak"
+          },
+          "linia": 74
+        },
+        {
+          "typ": "kwestia",
+          "kto": "FACET Z TERMOSEM",
+          "tekst": "No. Szczęście w nocy też jest inne.",
+          "warunek": {
+            "NOC_BMW": "wygrana"
+          },
+          "linia": 78
+        },
+        {
+          "typ": "kwestia",
+          "kto": "FACET Z TERMOSEM",
+          "tekst": "Pieniądz w nocy lekki. Odlatuje.",
+          "warunek": {
+            "NOC_BMW": "przegrana"
+          },
+          "linia": 82
+        },
+        {
+          "typ": "kwestia",
+          "kto": "FACET Z TERMOSEM",
+          "tekst": "Nie stawiasz. Też dobrze. Ktoś musi patrzeć.",
+          "warunek": {
+            "NOC_BMW": "bez_zakladu"
+          },
+          "linia": 86
+        },
+        {
+          "typ": "opis",
+          "tekst": "Po chwili telefon zaczyna drgać w uchwycie.",
+          "pokaz": false,
+          "linia": 90
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "telefon",
+          "argumenty": [
+            "ROZMOWA",
+            "MIREK"
+          ],
+          "linia": 92
+        },
+        {
+          "typ": "ekran",
+          "tekst": "MIREK",
+          "linia": 94
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Jesteś na Parku?",
+          "linia": 96
+        },
+        {
+          "typ": "wybor",
+          "opcje": [
+            {
+              "id": "1",
+              "tekst": "Jestem."
+            }
+          ],
+          "linia": 98
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Wiedziałem.",
+          "linia": 100
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Jest robota. Dzisiaj.",
+          "linia": 102
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Cztery felgi. Na wioskę.",
+          "linia": 104
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Przyjedź, to opowiem. Blikiem, tej nocy.",
+          "linia": 106
+        },
+        {
+          "typ": "hak",
+          "tekst": "Odkładasz telefon. Suma na kartce Zbycha nie mruga i nie ponagla. Po prostu jest, jak tablica z nazwą miejscowości.",
+          "pokaz": false,
+          "linia": 108
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "tytul": "PODWÓRKO MIRKA",
+      "wezly": [
+        {
+          "typ": "ekran",
+          "tekst": "Miasto · 23:58",
+          "linia": 113
+        },
+        {
+          "typ": "opis",
+          "tekst": "Miasto o tej porze wygląda jak dekoracja po spektaklu: światła zmieniają się dla nikogo, Żabka świeci jak akwarium, a pod wiaduktem wilgoć ma własny kolor. Mirek mieszka i handluje w tym samym miejscu, na podwórku za halą z roletami. Pod wiatą stoją rzeczy, których pochodzenia lepiej nie zgłębiać: dwa agregaty, zgrzewarka, pralka z niemiecką naklejką i fotel, który kiedyś należał do dentysty.",
+          "pokaz": false,
+          "linia": 115
+        },
+        {
+          "typ": "opis",
+          "tekst": "Mirek stoi z kubkiem w kurtce z napisem, którego nigdy nie tłumaczył. Za nim, oparte o siebie jak zmęczeni ludzie, czekają cztery felgi.",
+          "pokaz": false,
+          "linia": 117
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "No jesteś.",
+          "linia": 119
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Cztery felgi. Szesnastki. Do golfa. Ale nie do każdego golfa.",
+          "linia": 121
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Do trójki. Do czwórki nie pasują.",
+          "linia": 123
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Mają inne dziury. Nie wiem czemu, tak zrobili.",
+          "linia": 125
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Do tego opony. Zimowe.",
+          "linia": 127
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Felgi: dwie dobre, dwie takie sobie. Nie pamiętam, które.",
+          "linia": 129
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Jedziesz na wioskę. Za lasem. Znaczy przed lasem. Zależy, z której strony.",
+          "linia": 131
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Facet czeka. Nie odbiera telefonu, ale czeka.",
+          "linia": 133
+        },
+        {
+          "typ": "wybor",
+          "opcje": [
+            {
+              "id": "1",
+              "tekst": "Nie odbiera?",
+              "odpowiedz": {
+                "kto": "MIREK",
+                "tekst": "Nie lubi. Ale czeka. Zawsze czekał."
+              }
+            },
+            {
+              "id": "2",
+              "tekst": "Ile?",
+              "odpowiedz": {
+                "kto": "MIREK",
+                "tekst": "Zaraz, zaraz."
+              }
+            },
+            {
+              "id": "3",
+              "tekst": "Okej.",
+              "odpowiedz": {
+                "kto": "MIREK",
+                "tekst": "No."
+              }
+            }
+          ],
+          "linia": 135
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Dwie stówy.",
+          "linia": 139
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "W dzień dałbym stówę. Kurs nocy jest inny.",
+          "linia": 141
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Jak to mówią: w nocy robota dla kurwy i kota.",
+          "linia": 143
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Kotem to ty nie jesteś.",
+          "linia": 145
+        },
+        {
+          "typ": "opis",
+          "tekst": "Mówi to bez uśmiechu, jak prognozę. Nie ma w tym złośliwości. Mirek po prostu nie słyszy, co powiedział.",
+          "pokaz": false,
+          "linia": 147
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Blikiem, jak zrobisz. Ten sam numer?",
+          "linia": 149
+        },
+        {
+          "typ": "wybor",
+          "opcje": [
+            {
+              "id": "1",
+              "tekst": "Ten sam."
+            }
+          ],
+          "linia": 151
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "To dobrze. Bo nie pamiętam.",
+          "linia": 153
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "A jeszcze jedno.",
+          "linia": 155
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Wiesz, czemu w moim kombi świeci lampka w bagażniku?",
+          "linia": 157
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "W dzień. Cały czas.",
+          "linia": 159
+        },
+        {
+          "typ": "wybor",
+          "opcje": [
+            {
+              "id": "1",
+              "tekst": "Nie wiem.",
+              "odpowiedz": {
+                "kto": "MIREK",
+                "tekst": "Ja też nie."
+              }
+            },
+            {
+              "id": "2",
+              "tekst": "Może styk.",
+              "odpowiedz": {
+                "kto": "MIREK",
+                "tekst": "Styk. Może. Styk brzmi mądrze."
+              }
+            },
+            {
+              "id": "3",
+              "tekst": "Długo jeszcze?",
+              "odpowiedz": {
+                "kto": "MIREK",
+                "tekst": "Krótko. To jest minuta."
+              }
+            }
+          ],
+          "linia": 161
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Ja myślę, że to masa. Ale nie wiem, czyja.",
+          "linia": 165
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "No. Ładuj.",
+          "linia": 167
+        },
+        {
+          "typ": "hak",
+          "tekst": "Podchodzisz do felg. Są cięższe, niż wyglądają. Wszystko jest cięższe, niż wygląda, kiedy ktoś na to patrzy.",
+          "pokaz": false,
+          "linia": 169
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "tytul": "ZAŁADUNEK",
+      "wezly": [
+        {
+          "typ": "ekran",
+          "tekst": "00:06",
+          "linia": 174
+        },
+        {
+          "typ": "opis",
+          "tekst": "Otwierasz klapę Poloneza. Z bagażnika wypada zapach, którego nie potrafisz nazwać: coś między gumą, benzyną i starym psem, którego nigdy nie miałeś. Mirek zagląda do środka jak ktoś, kto ocenia głębokość studni.",
+          "pokaz": false,
+          "linia": 176
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Ludzie nie umieją ładować.",
+          "linia": 178
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Jeden włożył mi lodówkę na leżąco. I się kurwa dziwił, że cieknie.",
+          "linia": 180
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Jeden włożył szafę i nie zamknął. I się dziwił, że pada.",
+          "linia": 182
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Jeden powiedział, że się zmieści. Nie zmieściło się. I się dziwił.",
+          "linia": 184
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "No. Bierz tę pod spód.",
+          "linia": 186
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Nie tę. Tę z lewej. Ze swojej lewej.",
+          "linia": 188
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Kołem do dołu. Do dołu, nie do siebie.",
+          "linia": 190
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Nie na bok, bo się turlają. O. Widzisz.",
+          "linia": 192
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Trzy wchodzą. Czwarta... no na siedzenie.",
+          "linia": 194
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Co się nie mieści, to jedzie z tyłu.",
+          "linia": 196
+        },
+        {
+          "typ": "opis",
+          "tekst": "Czwarta felga ląduje na tylnej kanapie, oparta o zagłówek jak pasażer, który postanowił się nie odzywać.",
+          "pokaz": false,
+          "linia": 198
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Zapnij ją pasem.",
+          "linia": 200
+        },
+        {
+          "typ": "wybor",
+          "opcje": [
+            {
+              "id": "1",
+              "tekst": "Pasem?",
+              "odpowiedz": {
+                "kto": "MIREK",
+                "tekst": "Żeby się nie ruszała. Jak człowiek."
+              }
+            },
+            {
+              "id": "2",
+              "tekst": "Zasłania lusterko.",
+              "odpowiedz": {
+                "kto": "MIREK",
+                "tekst": "Trochę. Na prosto nie potrzeba."
+              }
+            },
+            {
+              "id": "3",
+              "akcja": "Wsiadasz bez słowa."
+            }
+          ],
+          "linia": 202
+        },
+        {
+          "typ": "opis",
+          "tekst": "Mirek zamyka klapę, otwiera ją znowu, zamyka. Jak ktoś, kto sprawdza, czy w domu ktoś jest.",
+          "pokaz": false,
+          "linia": 206
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "U ciebie się w ogóle nie świeci. W bagażniku.",
+          "linia": 208
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "U mnie świeci cały czas, u ciebie wcale. Nie wiem, co lepsze.",
+          "linia": 210
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Ładunek: 4 felgi z oponami. Masa +70 kg.",
+          "linia": 212
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "ladunek",
+          "argumenty": [
+            "FELGI"
+          ],
+          "linia": 214
+        },
+        {
+          "typ": "hak",
+          "tekst": "Zamykasz drzwi. Coś za tobą przesuwa się i opiera z westchnieniem. Zanim dojedziesz do skrzyżowania, telefon zaczyna dzwonić.",
+          "pokaz": false,
+          "linia": 216
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "tytul": "TELEFON I ORLEN",
+      "wezly": [
+        {
+          "typ": "ekran",
+          "tekst": "00:18",
+          "linia": 221
+        },
+        {
+          "typ": "opis",
+          "tekst": "Na ekranie: ŚLIMAK. Tak się nazywa. Kamil Ślimak. Czytane od tyłu też wychodzi coś, ale nikt jeszcze nie ustalił co.",
+          "pokaz": false,
+          "linia": 223
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "telefon",
+          "argumenty": [
+            "ROZMOWA",
+            "KAMIL"
+          ],
+          "linia": 225
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Ty, nie dojadę.",
+          "linia": 227
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Stanęło. Samo stanęło.",
+          "linia": 229
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Na wylotówce. Przy tym przystanku w polu. Tam, gdzie nic nie ma.",
+          "linia": 231
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Nie dzwoń po nikogo. Przyjedź. Proszę.",
+          "linia": 233
+        },
+        {
+          "typ": "opis",
+          "tekst": "Rozłącza się, zanim zdążysz cokolwiek powiedzieć. Zawsze tak robi. Uważa, że to oszczędza minuty.",
+          "pokaz": false,
+          "linia": 235
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Orlen · 00:31",
+          "linia": 237
+        },
+        {
+          "typ": "opis",
+          "tekst": "Orlen na wyjeździe z miasta świeci jak lądowisko. Poza tobą stoi tu jeden tir i człowiek za szybą, który patrzy w monitor na coś, co nie jest filmem. Wskaźnik od wtorku leży na rezerwie. Za pięć dych wejdzie tyle, żeby wrócić. Więcej nie wejdzie, bo więcej nie masz ochoty wydać.",
+          "pokaz": false,
+          "linia": 239
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Pb95 · 6,99 zł/l · 7,15 l · 50,00 zł",
+          "linia": 241
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "kasa",
+          "argumenty": [
+            "−50"
+          ],
+          "linia": 243
+        },
+        {
+          "typ": "hak",
+          "tekst": "Wylotówka zaczyna się tuż za ostatnią latarnią, jakby ktoś w mieście zdecydował, że dalej to już nie jego sprawa.",
+          "pokaz": false,
+          "linia": 245
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "tytul": "PRZYSTANEK W POLU",
+      "wezly": [
+        {
+          "typ": "ekran",
+          "tekst": "00:52",
+          "linia": 250
+        },
+        {
+          "typ": "opis",
+          "tekst": "Ciemność za miastem jest inna: gęsta, prawie miękka. Reflektory wyjmują z niej po kawałku: dziurę, kępę trawy, znak, który ostrzega przed czymś, co się skończyło. Przez całą drogę mijasz jedno auto z naprzeciwka. Kierowca unosi dwa palce znad kierownicy i ty przyjmujesz to jak przysługę.",
+          "pokaz": false,
+          "linia": 252
+        },
+        {
+          "typ": "opis",
+          "tekst": "Przystanek stoi w polu sam: blaszany daszek i ławka dla nikogo. Obok, z zapalonymi awaryjnymi, stoi auto Kamila. Mruga w rytmie serca kogoś bardzo spokojnego. Kamil siedzi na masce, ubrany jak na wyjście do sklepu.",
+          "pokaz": false,
+          "linia": 254
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Jesteś.",
+          "linia": 256
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Nie wiem, co mu jest.",
+          "linia": 258
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Może się zmęczył. Może się obraził.",
+          "linia": 260
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Jak mu dać chwilę, to czasem samo przechodzi.",
+          "linia": 262
+        },
+        {
+          "typ": "opis",
+          "tekst": "Kamil wsuwa głowę pod maskę i wpatruje się w silnik, jakby czekał, aż ten coś powie.",
+          "pokaz": false,
+          "linia": 264
+        },
+        {
+          "typ": "wybor",
+          "opcje": [
+            {
+              "id": "1",
+              "tekst": "Sprawdzałeś?",
+              "odpowiedz": {
+                "kto": "KAMIL",
+                "tekst": "Patrzyłem. Długo. Nic mi nie powiedział."
+              }
+            },
+            {
+              "id": "2",
+              "tekst": "Może świece?",
+              "odpowiedz": {
+                "kto": "KAMIL",
+                "tekst": "Może. Nie wiem, jak wyglądają świece. Widziałem w sklepie. Takie małe."
+              }
+            },
+            {
+              "id": "3",
+              "tekst": "Poświecić?",
+              "odpowiedz": {
+                "kto": "KAMIL",
+                "tekst": "No. Tu. Nie tu. Tu."
+              }
+            }
+          ],
+          "linia": 266
+        },
+        {
+          "typ": "opis",
+          "tekst": "Latarka telefonu ślizga się po metalu. Silnik wygląda jak silnik. Nic w nim nie kapie, nic nie iskrzy, nic nie tłumaczy.",
+          "pokaz": false,
+          "linia": 270
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Każde auto kiedyś się obrazi. Tata tak mówił.",
+          "linia": 272
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Zostawię go tu. Nikt go nie weźmie.",
+          "linia": 274
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Nawet ja bym go nie wziął, a ja go mam.",
+          "linia": 276
+        },
+        {
+          "typ": "opis",
+          "tekst": "Kamil klepie auto po dachu, jak konia.",
+          "pokaz": false,
+          "linia": 278
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Zostań tu. Wrócę po ciebie. Nie bój się.",
+          "linia": 280
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Awaryjne zostawiam. Żeby wiedział, że ktoś o nim pamięta.",
+          "linia": 282
+        },
+        {
+          "typ": "opis",
+          "tekst": "Zdejmuje z lusterka zielony kartonik zapachu — choinkę — i chowa do kieszeni.",
+          "pokaz": false,
+          "linia": 284
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Choinki nie zostawię. Ona nic nie zawiniła.",
+          "linia": 286
+        },
+        {
+          "typ": "opis",
+          "tekst": "Otwierasz mu drzwi. Wsiada, zapina pas i od razu odwraca głowę do tyłu.",
+          "pokaz": false,
+          "linia": 288
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "O. Jest felga.",
+          "linia": 290
+        },
+        {
+          "typ": "wybor",
+          "opcje": [
+            {
+              "id": "1",
+              "tekst": "Zapięta.",
+              "odpowiedz": {
+                "kto": "KAMIL",
+                "tekst": "No to dobrze. Niech się nie boi."
+              }
+            },
+            {
+              "id": "2",
+              "tekst": "Nie ruszaj jej.",
+              "odpowiedz": {
+                "kto": "KAMIL",
+                "tekst": "Nie ruszam. Patrzę."
+              }
+            }
+          ],
+          "linia": 292
+        },
+        {
+          "typ": "opis",
+          "tekst": "Kamil wiesza choinkę na twoim lusterku. Zapach przykrywa gumę, ale nie do końca.",
+          "pokaz": false,
+          "linia": 295
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "pasazer",
+          "argumenty": [
+            "KAMIL"
+          ],
+          "linia": 297
+        },
+        {
+          "typ": "dzwiek",
+          "tekst": "Radio ścisza się samo, jakby się zawstydziło.",
+          "linia": 299
+        },
+        {
+          "typ": "hak",
+          "tekst": "Ruszacie. Awaryjne w bocznym lusterku mrugają jeszcze długą chwilę. Kamil zdaje się liczyć ich mrugnięcia.",
+          "pokaz": false,
+          "linia": 301
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "tytul": "TRASA",
+      "wezly": [
+        {
+          "typ": "ekran",
+          "tekst": "00:58",
+          "linia": 306
+        },
+        {
+          "typ": "opis",
+          "tekst": "Do wsi jest dwadzieścia kilometrów prostej, dziurawej drogi bez latarni. Jedziesz wolniej, niż byś chciał, bo za plecami masz cztery cudze koła, a obok kogoś, kto lubi rozmawiać o pieniądzach.",
+          "pokaz": false,
+          "linia": 308
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Ja jadę za piwo. Wiesz.",
+          "linia": 310
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Ale ty nie jedziesz za piwo. Ty jedziesz na przegląd.",
+          "linia": 312
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Ile ci dał?",
+          "linia": 314
+        },
+        {
+          "typ": "wybor",
+          "opcje": [
+            {
+              "id": "1",
+              "tekst": "Dwie stówy."
+            }
+          ],
+          "linia": 316
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Dwie stówy.",
+          "linia": 318
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "To dużo czy mało? Ja nie wiem. Ja jestem od piwa.",
+          "linia": 320
+        },
+        {
+          "typ": "opis",
+          "tekst": "Prosta. Ciemno. Reflektory robią w nocy dziurę dokładnie wielkości auta.",
+          "pokaz": false,
+          "linia": 322
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Ile poszło na paliwo?",
+          "linia": 324
+        },
+        {
+          "typ": "wybor",
+          "opcje": [
+            {
+              "id": "1",
+              "tekst": "Pięć dych."
+            }
+          ],
+          "linia": 326
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Pięć dych. To już nie dwie stówy, tylko sto pięćdziesiąt.",
+          "linia": 328
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Tak jest: coś dostajesz i zaraz tego trochę mniej.",
+          "linia": 330
+        },
+        {
+          "typ": "opis",
+          "tekst": "Polonez szarpie w bok. Z tyłu felga stuka o zagłówek — raz, jak ktoś pukający do drzwi.",
+          "pokaz": false,
+          "linia": 332
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "O, kurwa. Dziura.",
+          "linia": 334
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "To też kosztuje.",
+          "linia": 336
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Zawieszenie się męczy. Jak się męczy, trzeba mu dać odpocząć.",
+          "linia": 338
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Odpoczynek kosztuje. Sto trzydzieści dziewięć. Tak myślę.",
+          "linia": 340
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "W sklepach zawsze jest dziewięć na końcu.",
+          "linia": 342
+        },
+        {
+          "typ": "opis",
+          "tekst": "Próbujesz zadzwonić do odbiorcy po raz trzeci.",
+          "pokaz": false,
+          "linia": 344
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Abonent nie odbiera.",
+          "linia": 346
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Nie odbiera?",
+          "linia": 348
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Ludzie, co nie odbierają, zwykle stoją i czekają.",
+          "linia": 350
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Ja też tak mam.",
+          "linia": 352
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "A czas? Pięć godzin. Może więcej.",
+          "linia": 354
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Godzina to chyba z trzydzieści złotych. Tyle płacą w Biedronce. Słyszałem.",
+          "linia": 356
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Pięć godzin to sto pięćdziesiąt.",
+          "linia": 358
+        },
+        {
+          "typ": "opis",
+          "tekst": "Na horyzoncie pojawia się jedno światło. Jedno. Jak ktoś, kto został po zmianie.",
+          "pokaz": false,
+          "linia": 360
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "No i jeszcze ryzyko.",
+          "linia": 362
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Cudze felgi to jak pełna szklanka.",
+          "linia": 364
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Ktoś ci mówi: nie rozlej.",
+          "linia": 366
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Jak rozbijesz, płacisz za cztery. Cztery felgi to chyba z pięć stów.",
+          "linia": 368
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Plus pięć dych za to, że ciemno.",
+          "linia": 370
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Policzę. Pięćdziesiąt i sto trzydzieści dziewięć. Sto osiemdziesiąt dziewięć.",
+          "linia": 372
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Plus sto pięćdziesiąt. Trzysta trzydzieści dziewięć.",
+          "linia": 374
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Plus pięćset pięćdziesiąt. Osiemset osiemdziesiąt dziewięć.",
+          "linia": 376
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Wychodzi osiemset osiemdziesiąt dziewięć.",
+          "linia": 378
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Sam się zdziwiłem. Przypadek.",
+          "linia": 380
+        },
+        {
+          "typ": "opis",
+          "tekst": "Kamil patrzy w okno tak uważnie, jak patrzy się, kiedy się kłamie na niby. Osiemset osiemdziesiąt dziewięć to liczba z kartki Zbycha. Pokazywałeś mu ją w zeszłym tygodniu. Raz.",
+          "pokaz": false,
+          "linia": 382
+        },
+        {
+          "typ": "wybor",
+          "opcje": [
+            {
+              "id": "1",
+              "tekst": "Dostaję dwie stówy.",
+              "odpowiedz": {
+                "kto": "KAMIL",
+                "tekst": "No właśnie."
+              },
+              "ustawia": {
+                "KAMIL_WIE": "nie"
+              }
+            },
+            {
+              "id": "2",
+              "tekst": "Przypadek?",
+              "odpowiedz": {
+                "kto": "KAMIL",
+                "tekst": "No. Przypadek."
+              },
+              "ustawia": {
+                "KAMIL_WIE": "tak"
+              }
+            }
+          ],
+          "linia": 384
+        },
+        {
+          "typ": "hak",
+          "tekst": "Wieś zaczyna się od psa. Potem jest płot, potem drugi płot, potem lampa. Jedna. Stoi na środku podwórka jak ostatni pracownik zmiany.",
+          "pokaz": false,
+          "linia": 387
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "tytul": "WIEŚ: CZEKANIE",
+      "wezly": [
+        {
+          "typ": "ekran",
+          "tekst": "Wieś · 01:38",
+          "linia": 392
+        },
+        {
+          "typ": "opis",
+          "tekst": "Przy kurniku nikogo nie ma. Jest podwórko, dom z zasłoniętym oknem, w którym telewizor przesuwa po suficie kolorowe cienie, i lampa, która świeci na nic.",
+          "pokaz": false,
+          "linia": 394
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Abonent nie odbiera.",
+          "linia": 396
+        },
+        {
+          "typ": "opis",
+          "tekst": "Próbujesz jeszcze raz. Potem jeszcze. Potem gasisz silnik, bo stanie na jałowym kosztuje, a ty już wiesz, ile co kosztuje.",
+          "pokaz": false,
+          "linia": 398
+        },
+        {
+          "typ": "opis",
+          "tekst": "Robi się cicho tak, jak cicho bywa tylko na wsi: coś skrzypnie, coś się zakołysze, gdzieś daleko pies powie coś psu.",
+          "pokaz": false,
+          "linia": 400
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Poczekamy.",
+          "linia": 402
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "On zawsze czeka. Mirek mówił.",
+          "linia": 404
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Skoro czeka, to pewnie jest. Tylko jeszcze go nie widać.",
+          "linia": 406
+        },
+        {
+          "typ": "opis",
+          "tekst": "Kamil, nie pytając, przełącza radio na stację, na której ktoś stary i smutny śpiewa o niedzielach. Zauważa, że zauważyłeś.",
+          "pokaz": false,
+          "linia": 408
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "radio",
+          "argumenty": [
+            "DAD_ROCK"
+          ],
+          "linia": 410
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Mogę?",
+          "linia": 412
+        },
+        {
+          "typ": "opis",
+          "tekst": "Już jest.",
+          "pokaz": false,
+          "linia": 414
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Mirek mówi: w nocy robota dla kurwy i kota.",
+          "linia": 416
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "To my kim jesteśmy?",
+          "linia": 418
+        },
+        {
+          "typ": "opis",
+          "tekst": "Myśli nad tym dłużej niż nad silnikiem.",
+          "pokaz": false,
+          "linia": 420
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Ja chyba kot.",
+          "linia": 422
+        },
+        {
+          "typ": "opis",
+          "tekst": "Odchyla siedzenie, poprawia choinkę na lusterku i patrzy w dach.",
+          "pokaz": false,
+          "linia": 424
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Ty byś stąd wyjechał?",
+          "linia": 426
+        },
+        {
+          "typ": "opis",
+          "tekst": "Nie odpowiadasz. Cisza trwa dwie sekundy dłużej, niż powinna.",
+          "pokaz": false,
+          "linia": 428
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "No. Tak mi się powiedziało.",
+          "linia": 430
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Ja bym chyba nie. Ale nie wiem. Jeszcze nie próbowałem.",
+          "linia": 432
+        },
+        {
+          "typ": "opis",
+          "tekst": "Po chwili jego oddech robi się długi. Kamil zasnął tak, jak zasypia się w cudzych autach: nagle i zupełnie.",
+          "pokaz": false,
+          "linia": 434
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "skok_czasu",
+          "argumenty": [
+            "02:40"
+          ],
+          "linia": 436
+        },
+        {
+          "typ": "opis",
+          "tekst": "Czekasz. Świat za szybą robi to, co świat robi w nocy: nic, ale coraz staranniej. Kot przechodzi przez podwórko tak, jakby miał tu meldunek.",
+          "pokaz": false,
+          "linia": 438
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "skok_czasu",
+          "argumenty": [
+            "03:25"
+          ],
+          "linia": 440
+        },
+        {
+          "typ": "dzwiek",
+          "tekst": "Z radia sączy się kawałek dad rocka o facecie, który w niedzielę odwozi dzieci i wraca do pustego domu, do którego wszedł kiedyś z kartonami. Kamil pochrapuje w rytmie refrenu.",
+          "linia": 442
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "skok_czasu",
+          "argumenty": [
+            "04:05"
+          ],
+          "linia": 444
+        },
+        {
+          "typ": "opis",
+          "tekst": "I wtedy widzisz go pod lampą. Stoi z rękami w kieszeniach, w zimowej kurtce zapiętej pod szyję, jakby czekał na autobus, który kursuje tu od zawsze i jeszcze się nie spóźnił. Nie ma w tym nic niezwykłego, poza tym, że nie wiesz, skąd się wziął.",
+          "pokaz": false,
+          "linia": 446
+        },
+        {
+          "typ": "hak",
+          "tekst": "Kamil otwiera oczy. Pierwsze, co robi, to sprawdza choinkę.",
+          "pokaz": false,
+          "linia": 448
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "tytul": "ODBIORCA",
+      "wezly": [
+        {
+          "typ": "ekran",
+          "tekst": "04:08",
+          "linia": 453
+        },
+        {
+          "typ": "kwestia",
+          "kto": "ODBIORCA",
+          "tekst": "O. Są.",
+          "linia": 455
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Długo pan tu stoi?",
+          "linia": 457
+        },
+        {
+          "typ": "kwestia",
+          "kto": "ODBIORCA",
+          "tekst": "Nie. Dopiero.",
+          "linia": 459
+        },
+        {
+          "typ": "kwestia",
+          "kto": "ODBIORCA",
+          "tekst": "Ja tu tylko tak stoję.",
+          "linia": 461
+        },
+        {
+          "typ": "kwestia",
+          "kto": "ODBIORCA",
+          "tekst": "Kto czeka, ten się doczeka. Ja czekam od zawsze.",
+          "linia": 463
+        },
+        {
+          "typ": "kwestia",
+          "kto": "ODBIORCA",
+          "tekst": "Postawcie przy kurniku. Tam gdzie zawsze.",
+          "linia": 465
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Przy kurniku. Jasne.",
+          "linia": 467
+        },
+        {
+          "typ": "opis",
+          "tekst": "Nikt nie pyta, skąd „zawsze”. Otwierasz klapę. Trzy pierwsze felgi wyjmujecie razem z Kamilem i ustawiacie w rządku pod kurnikiem, gdzie ziemia jest sucha. Potem Kamil idzie do furtki i pyta odbiorcę o psa.",
+          "pokaz": false,
+          "linia": 469
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Ugryzie?",
+          "linia": 471
+        },
+        {
+          "typ": "kwestia",
+          "kto": "ODBIORCA",
+          "tekst": "Nie wiem. Nie mój.",
+          "linia": 473
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "To czyj?",
+          "linia": 475
+        },
+        {
+          "typ": "kwestia",
+          "kto": "ODBIORCA",
+          "tekst": "Też nie wiem. Tu zawsze był.",
+          "linia": 477
+        },
+        {
+          "typ": "opis",
+          "tekst": "Czwartą felgę wyjmujesz z tylnej kanapy sam. Kładziesz ją na ziemi, żeby przetoczyć pod kurnik — i widzisz, jak toczy się krzywo. Nie mocno. Tylko tyle, żeby dało się zauważyć, jeśli się patrzy. A jeśli się nie patrzy — nie.",
+          "pokaz": false,
+          "linia": 479
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "scenka",
+          "argumenty": [
+            "FELGA_BICIE"
+          ],
+          "linia": 481
+        },
+        {
+          "typ": "opis",
+          "tekst": "Przystajesz. Toczysz ją jeszcze raz, wolniej. Ta sama krzywizna, jak drobny uśmiech, którego nie da się cofnąć.",
+          "pokaz": false,
+          "linia": 483
+        },
+        {
+          "typ": "opis",
+          "tekst": "Bicie. Od transportu? Od dziury, którą złapałeś jednym kołem? Od tego, co Mirek nazwał „takie sobie”? Albo była taka od zawsze?",
+          "pokaz": false,
+          "linia": 485
+        },
+        {
+          "typ": "opis",
+          "tekst": "Nie ma nikogo, kogo możesz zapytać. Kamil przy furtce dowiaduje się, że pies lubi kości, ale nie wiadomo, czyje. Odbiorca patrzy w niebo, jakby też na coś czekał.",
+          "pokaz": false,
+          "linia": 487
+        },
+        {
+          "typ": "opis",
+          "tekst": "Stawiasz felgę przy kurniku, na końcu rządka. Wygląda jak pozostałe. To najgorsze, co można o niej powiedzieć.",
+          "pokaz": false,
+          "linia": 489
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "ladunek",
+          "argumenty": [
+            "BRAK"
+          ],
+          "linia": 491
+        },
+        {
+          "typ": "kwestia",
+          "kto": "ODBIORCA",
+          "tekst": "No. Dobra.",
+          "linia": 493
+        },
+        {
+          "typ": "kwestia",
+          "kto": "ODBIORCA",
+          "tekst": "Mirkowi powiedzcie, że dobra.",
+          "linia": 495
+        },
+        {
+          "typ": "opis",
+          "tekst": "Odbiorca odchodzi w stronę domu wolnym krokiem człowieka, który nigdy w życiu się nie spieszył i nie zamierza zaczynać. Lampa gaśnie za nim. Światło robi się szare od dołu.",
+          "pokaz": false,
+          "linia": 497
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Idziemy?",
+          "linia": 499
+        },
+        {
+          "typ": "opis",
+          "tekst": "Kamil wraca zaspany, z odciśniętym na policzku szwem rękawa.",
+          "pokaz": false,
+          "linia": 501
+        },
+        {
+          "typ": "hak",
+          "tekst": "W aucie nikt nic nie mówi. Radio, które przez całą noc mieszkało cicho pod rozmową, podnosi głos, jakby ktoś je o to poprosił.",
+          "pokaz": false,
+          "linia": 503
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "tytul": "TELEFON MIRKA",
+      "wezly": [
+        {
+          "typ": "ekran",
+          "tekst": "04:31",
+          "linia": 508
+        },
+        {
+          "typ": "opis",
+          "tekst": "Wyjeżdżacie ze wsi. Lusterko po raz pierwszy od załadunku pokazuje coś poza kanapą: pustą drogę, którą przed chwilą jechaliście. Nie wiesz, co z tym zrobić. Przyzwyczaiłeś się do braku.",
+          "pokaz": false,
+          "linia": 510
+        },
+        {
+          "typ": "opis",
+          "tekst": "Kamil zasnął, zanim skończył się las. Głowa oparta o szybę, usta lekko otwarte, choinka kiwa się nad nim jak wahadło.",
+          "pokaz": false,
+          "linia": 512
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "pasazer_spi",
+          "argumenty": [
+            "KAMIL"
+          ],
+          "linia": 514
+        },
+        {
+          "typ": "opis",
+          "tekst": "Telefon zaczyna drgać w uchwycie. Kamil nie budzi się. Odbierasz cicho.",
+          "pokaz": false,
+          "linia": 516
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "telefon",
+          "argumenty": [
+            "ROZMOWA",
+            "MIREK"
+          ],
+          "linia": 518
+        },
+        {
+          "typ": "ekran",
+          "tekst": "MIREK · 04:31",
+          "linia": 520
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "I jak?",
+          "linia": 522
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Wszystko poszło gładko?",
+          "linia": 524
+        },
+        {
+          "typ": "wybor",
+          "opcje": [
+            {
+              "id": "A",
+              "tekst": "Jedna felga ma bicie. Nie wiem od czego.",
+              "ustawia": {
+                "PRAWDA": "powiedzial"
+              }
+            },
+            {
+              "id": "B",
+              "tekst": "Gładko.",
+              "ustawia": {
+                "PRAWDA": "zmilczal"
+              }
+            }
+          ],
+          "linia": 526
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Bicie.",
+          "warunek": {
+            "PRAWDA": "powiedzial"
+          },
+          "linia": 531
+        },
+        {
+          "typ": "opis",
+          "tekst": "W słuchawce coś skrzypi: krzesło albo Mirek.",
+          "pokaz": false,
+          "warunek": {
+            "PRAWDA": "powiedzial"
+          },
+          "linia": 533
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Od czego?",
+          "warunek": {
+            "PRAWDA": "powiedzial"
+          },
+          "linia": 535
+        },
+        {
+          "typ": "wybor",
+          "opcje": [
+            {
+              "id": "1",
+              "tekst": "Nie wiem."
+            }
+          ],
+          "warunek": {
+            "PRAWDA": "powiedzial"
+          },
+          "linia": 537
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Ja też nie wiem. Mówiłem, że dwie takie sobie.",
+          "warunek": {
+            "PRAWDA": "powiedzial"
+          },
+          "linia": 539
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Pięć dych mniej. Nie że ci nie wierzę. Tak się robi.",
+          "warunek": {
+            "PRAWDA": "powiedzial"
+          },
+          "linia": 541
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Ale że powiedziałeś — to się liczy. Ludzie nie mówią.",
+          "warunek": {
+            "PRAWDA": "powiedzial"
+          },
+          "linia": 543
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Sto pięćdziesiąt. Wysyłam.",
+          "warunek": {
+            "PRAWDA": "powiedzial"
+          },
+          "linia": 545
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "kasa",
+          "argumenty": [
+            "+150"
+          ],
+          "warunek": {
+            "PRAWDA": "powiedzial"
+          },
+          "linia": 547
+        },
+        {
+          "typ": "ekran",
+          "tekst": "BLIK: +150 zł",
+          "warunek": {
+            "PRAWDA": "powiedzial"
+          },
+          "linia": 549
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Zadzwonię jeszcze.",
+          "warunek": {
+            "PRAWDA": "powiedzial"
+          },
+          "linia": 551
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "No i dobrze.",
+          "warunek": {
+            "PRAWDA": "zmilczal"
+          },
+          "linia": 555
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Dwie stówy. Wysyłam.",
+          "warunek": {
+            "PRAWDA": "zmilczal"
+          },
+          "linia": 557
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "kasa",
+          "argumenty": [
+            "+200"
+          ],
+          "warunek": {
+            "PRAWDA": "zmilczal"
+          },
+          "linia": 559
+        },
+        {
+          "typ": "ekran",
+          "tekst": "BLIK: +200 zł",
+          "warunek": {
+            "PRAWDA": "zmilczal"
+          },
+          "linia": 561
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Na pewno gładko?",
+          "warunek": {
+            "PRAWDA": "zmilczal"
+          },
+          "linia": 563
+        },
+        {
+          "typ": "wybor",
+          "opcje": [
+            {
+              "id": "1",
+              "tekst": "Tak."
+            }
+          ],
+          "warunek": {
+            "PRAWDA": "zmilczal"
+          },
+          "linia": 565
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "No.",
+          "warunek": {
+            "PRAWDA": "zmilczal"
+          },
+          "linia": 567
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "A ta lampka w moim bagażniku. Myślisz, że masa?",
+          "linia": 571
+        },
+        {
+          "typ": "wybor",
+          "opcje": [
+            {
+              "id": "1",
+              "tekst": "Może."
+            }
+          ],
+          "linia": 573
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "No. Może.",
+          "linia": 575
+        },
+        {
+          "typ": "hak",
+          "tekst": "Odkładasz telefon. Droga do miasta jest jedna i wszystkie jej dziury znasz już z imienia.",
+          "pokaz": false,
+          "linia": 577
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "tytul": "PRZYSTANEK PO RAZ DRUGI",
+      "wezly": [
+        {
+          "typ": "ekran",
+          "tekst": "05:12",
+          "linia": 582
+        },
+        {
+          "typ": "opis",
+          "tekst": "Przystanek wyłania się z ciemności później, niż powinien, bo ciemność jest już inna: cieńsza, jak pończocha. Auto Kamila stoi tam, gdzie je zostawiliście. Awaryjne mrugają dalej. Słabiej. Ale mrugają.",
+          "pokaz": false,
+          "linia": 584
+        },
+        {
+          "typ": "opis",
+          "tekst": "Kamil budzi się nie wiadomo od czego. Może od zmiany rytmu opon.",
+          "pokaz": false,
+          "linia": 586
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "pasazer_budzi",
+          "argumenty": [
+            "KAMIL"
+          ],
+          "linia": 588
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Mruga jeszcze.",
+          "linia": 590
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Nie boi się.",
+          "linia": 592
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Wrócę po niego jutro. Albo pojutrze. Zależy, czy będzie chciał.",
+          "linia": 594
+        },
+        {
+          "typ": "opis",
+          "tekst": "Kamil zamyka oczy, ale tylko dla ozdoby.",
+          "pokaz": false,
+          "linia": 596
+        },
+        {
+          "typ": "hak",
+          "tekst": "Awaryjne znikają za zakrętem. Zostaje po nich to, że mrugały.",
+          "pokaz": false,
+          "linia": 598
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "tytul": "POD BLOKIEM KAMILA",
+      "wezly": [
+        {
+          "typ": "ekran",
+          "tekst": "05:41",
+          "linia": 603
+        },
+        {
+          "typ": "opis",
+          "tekst": "Kamil mieszka w bloku, który wygląda jak wszystkie bloki: pudełko, w którym każde okno ma inną zasłonę i tę samą historię. Zatrzymujesz się przy śmietniku, jedynym miejscu z wolnym miejscem.",
+          "pokaz": false,
+          "linia": 605
+        },
+        {
+          "typ": "opis",
+          "tekst": "Kamil odpina pas, ziewa, zdejmuje z lusterka choinkę, a po sekundzie wiesza z powrotem.",
+          "pokaz": false,
+          "linia": 607
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Niech ci pachnie.",
+          "linia": 609
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Piwo mi dasz kiedyś. Nie teraz. Teraz jest rano.",
+          "linia": 611
+        },
+        {
+          "typ": "opis",
+          "tekst": "Masz w kieszeni dwie dyszki. Jedyne papierowe pieniądze tej nocy.",
+          "pokaz": false,
+          "linia": 613
+        },
+        {
+          "typ": "wybor",
+          "opcje": [
+            {
+              "id": "1",
+              "tekst": "Masz. Na browary.",
+              "ustawia": {
+                "PIWO": "dane"
+              }
+            },
+            {
+              "id": "2",
+              "tekst": "Kiedyś.",
+              "ustawia": {
+                "PIWO": "kiedys"
+              }
+            }
+          ],
+          "linia": 615
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "kasa",
+          "argumenty": [
+            "−20"
+          ],
+          "warunek": {
+            "PIWO": "dane"
+          },
+          "linia": 620
+        },
+        {
+          "typ": "opis",
+          "tekst": "Kamil patrzy na banknoty tak, jak patrzył na silnik: długo, i nic mu nie mówią.",
+          "pokaz": false,
+          "warunek": {
+            "PIWO": "dane"
+          },
+          "linia": 622
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Dwadzieścia.",
+          "warunek": {
+            "PIWO": "dane"
+          },
+          "linia": 624
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "To ci teraz brakuje więcej.",
+          "warunek": {
+            "PIWO": "dane"
+          },
+          "linia": 626
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "No... dobra. Bo jak nie wezmę, to wyjdzie, że liczyłem.",
+          "warunek": {
+            "PIWO": "dane"
+          },
+          "linia": 628
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "No. Kiedyś.",
+          "warunek": {
+            "PIWO": "kiedys"
+          },
+          "linia": 632
+        },
+        {
+          "typ": "opis",
+          "tekst": "Otwiera drzwi. Zatrzymuje się z ręką na klamce.",
+          "pokaz": false,
+          "linia": 636
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Osiemset osiemdziesiąt dziewięć.",
+          "linia": 638
+        },
+        {
+          "typ": "kwestia",
+          "kto": "KAMIL",
+          "tekst": "Nie przypadek.",
+          "warunek": {
+            "KAMIL_WIE": "tak"
+          },
+          "linia": 642
+        },
+        {
+          "typ": "opis",
+          "tekst": "Zamyka drzwi tak, jak się zamyka coś, co ma się nie obudzić.",
+          "pokaz": false,
+          "linia": 646
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "pasazer",
+          "argumenty": [
+            "BRAK"
+          ],
+          "linia": 648
+        },
+        {
+          "typ": "hak",
+          "tekst": "Zostaje jeszcze Park. Miejsce, do którego się jedzie, kiedy nie ma dokąd.",
+          "pokaz": false,
+          "linia": 650
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "tytul": "PARK O ŚWICIE",
+      "wezly": [
+        {
+          "typ": "ekran",
+          "tekst": "Park · 06:04",
+          "linia": 655
+        },
+        {
+          "typ": "opis",
+          "tekst": "Wracasz na płytę, kiedy niebo nad zbiornikami przestało być czarne, a jeszcze nie stało się niczym innym. Latarnie palą się nadal, choć nie są już potrzebne, jak ludzie, którzy nie zauważyli końca imprezy. Kombi z termosem zniknęło. Beemka zniknęła. Rolkarze zniknęli. Został papierowy kubek na słupku, ustawiony tak starannie, że nikt nie ośmieli się go wyrzucić.",
+          "pokaz": false,
+          "linia": 657
+        },
+        {
+          "typ": "opis",
+          "tekst": "Radio wciąż gra dad rocka. Przełączasz na techno. Palec sam wie, gdzie.",
+          "pokaz": false,
+          "linia": 659
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "radio",
+          "argumenty": [
+            "TECHNO"
+          ],
+          "linia": 661
+        },
+        {
+          "typ": "dzwiek",
+          "tekst": "Ten sam motyw, ten sam cichy bas.",
+          "linia": 663
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Kasa: [KASA]. Kartka od Zbycha: 889 zł. Brakuje: [BRAK].",
+          "linia": 665
+        },
+        {
+          "typ": "opis",
+          "tekst": "Parkujesz tam, skąd wyjechałeś. Wszystko jest tak samo jak wtedy, tylko teraz wiesz, ile co kosztuje.",
+          "pokaz": false,
+          "linia": 667
+        },
+        {
+          "typ": "ekran",
+          "tekst": "06:12",
+          "linia": 669
+        },
+        {
+          "typ": "opis",
+          "tekst": "Potem Park zaczyna się budzić, bo Park nie jest twój. Na płytę wjeżdża pierwsze auto porannej zmiany, potem drugie, potem służbowy bus. Pod halą staje trzech facetów w odblaskowych kamizelkach, z kubkami. Mają niecałe pół godziny do syreny i nic do roboty. Jeden z nich trzyma w ręku banknoty i gumkę recepturkę.",
+          "pokaz": false,
+          "linia": 671
+        },
+        {
+          "typ": "kwestia",
+          "kto": "HENIO",
+          "tekst": "Ty. To twój polonez?",
+          "linia": 673
+        },
+        {
+          "typ": "kwestia",
+          "kto": "HENIO",
+          "tekst": "Tyłem pójdzie?",
+          "linia": 675
+        },
+        {
+          "typ": "kwestia",
+          "kto": "HENIO",
+          "tekst": "Polonez bokiem to jak szafa na lodzie. Da się, ale po co.",
+          "linia": 677
+        },
+        {
+          "typ": "kwestia",
+          "kto": "HENIO",
+          "tekst": "Zdzichu jedzie busem. Potem ty, jak chcesz. Sześć słupków, cztery czyste.",
+          "linia": 679
+        },
+        {
+          "typ": "kwestia",
+          "kto": "HENIO",
+          "tekst": "Ja trzymam, bo ja nie piję przed zmianą.",
+          "linia": 681
+        },
+        {
+          "typ": "kwestia",
+          "kto": "HENIO",
+          "tekst": "Na Zdzicha: jeden osiem, w obie strony. Rano kurs jest normalny.",
+          "linia": 683
+        },
+        {
+          "typ": "wybor",
+          "opcje": [
+            {
+              "id": "1",
+              "tekst": "Rano normalny, a w nocy?",
+              "odpowiedz": {
+                "kto": "HENIO",
+                "tekst": "W nocy nie wiem. W nocy śpię."
+              }
+            },
+            {
+              "id": "2",
+              "tekst": "Dawaj."
+            }
+          ],
+          "linia": 685
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "zaklad",
+          "argumenty": [
+            "RANO_BUS"
+          ],
+          "linia": 688
+        },
+        {
+          "typ": "opis",
+          "tekst": "Służbowy bus rusza z gracją lodówki, którą ktoś wypchnął z ciężarówki. Zdzichu trzyma kierownicę tak, jakby się z nią kłócił.",
+          "pokaz": false,
+          "linia": 690
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "przejazd",
+          "argumenty": [
+            "RANO_BUS"
+          ],
+          "linia": 692
+        },
+        {
+          "typ": "kwestia",
+          "kto": "HENIO",
+          "tekst": "Masz. Zdzichu, ty mi się nie odzywaj.",
+          "warunek": {
+            "RANO_BUS": "wygrana"
+          },
+          "linia": 696
+        },
+        {
+          "typ": "kwestia",
+          "kto": "HENIO",
+          "tekst": "No. Zdzichu dziś nie jest sobą. Zdzichu rzadko jest sobą.",
+          "warunek": {
+            "RANO_BUS": "przegrana"
+          },
+          "linia": 700
+        },
+        {
+          "typ": "kwestia",
+          "kto": "HENIO",
+          "tekst": "Nie stawiałeś. Mądry albo biedny.",
+          "warunek": {
+            "RANO_BUS": "bez_zakladu"
+          },
+          "linia": 704
+        },
+        {
+          "typ": "kwestia",
+          "kto": "HENIO",
+          "tekst": "No. To teraz ty.",
+          "linia": 708
+        },
+        {
+          "typ": "kwestia",
+          "kto": "HENIO",
+          "tekst": "Ja nie wiem, czy umiesz. Ja stawiam, że nie. To co innego.",
+          "linia": 710
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "tlum",
+          "argumenty": [
+            "RANO_GRACZ"
+          ],
+          "linia": 712
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Henio: 20 zł na NIE · Zdzichu: 20 zł na NIE · Jurek: 20 zł na TAK",
+          "linia": 714
+        },
+        {
+          "typ": "kwestia",
+          "kto": "JUREK",
+          "tekst": "Ja mówię, że chyba umiesz. Jak wygram, dycha twoja.",
+          "linia": 716
+        },
+        {
+          "typ": "kwestia",
+          "kto": "HENIO",
+          "tekst": "Na ciebie trzy zero. Stawiasz na siebie?",
+          "linia": 718
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "zaklad",
+          "argumenty": [
+            "RANO_GRACZ"
+          ],
+          "linia": 720
+        },
+        {
+          "typ": "opis",
+          "tekst": "Ostatni raz tej nocy robisz coś, na czym się znasz. Albo na czym myślałeś, że się znasz.",
+          "pokaz": false,
+          "linia": 722
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "przejazd",
+          "argumenty": [
+            "RANO_GRACZ"
+          ],
+          "linia": 724
+        },
+        {
+          "typ": "kwestia",
+          "kto": "JUREK",
+          "tekst": "No! Mówiłem, że chyba.",
+          "warunek": {
+            "RANO_GRACZ": "sukces"
+          },
+          "linia": 728
+        },
+        {
+          "typ": "kwestia",
+          "kto": "JUREK",
+          "tekst": "Dycha twoja.",
+          "warunek": {
+            "RANO_GRACZ": "sukces"
+          },
+          "linia": 730
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "kasa",
+          "argumenty": [
+            "+10"
+          ],
+          "warunek": {
+            "RANO_GRACZ": "sukces"
+          },
+          "linia": 732
+        },
+        {
+          "typ": "kwestia",
+          "kto": "HENIO",
+          "tekst": "Szafa na lodzie. A jednak.",
+          "warunek": {
+            "RANO_GRACZ": "sukces"
+          },
+          "linia": 734
+        },
+        {
+          "typ": "kwestia",
+          "kto": "HENIO",
+          "tekst": "No. Polonez.",
+          "warunek": {
+            "RANO_GRACZ": "porazka"
+          },
+          "linia": 738
+        },
+        {
+          "typ": "kwestia",
+          "kto": "JUREK",
+          "tekst": "Ja i tak mówię, że chyba umiesz.",
+          "warunek": {
+            "RANO_GRACZ": "porazka"
+          },
+          "linia": 740
+        },
+        {
+          "typ": "ekran",
+          "tekst": "06:40 · syrena",
+          "linia": 744
+        },
+        {
+          "typ": "opis",
+          "tekst": "Faceci wyrzucają kubki do kosza i idą do hali. Henio chowa banknoty pod gumkę. Park znowu należy do kogoś innego.",
+          "pokaz": false,
+          "linia": 746
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "zakonczenie",
+          "argumenty": [],
+          "linia": 748
+        }
+      ]
+    }
+  ],
+  "zakonczenia": [
+    {
+      "id": 1,
+      "nazwa": "NA STYK",
+      "warunek": {
+        "PRAWDA": "zmilczal",
+        "kasa": {
+          "op": ">=",
+          "wartosc": 889
+        }
+      },
+      "wezly": [
+        {
+          "typ": "ekran",
+          "tekst": "Kasa: [KASA]. Kartka od Zbycha: 889 zł. Brakuje: 0 zł.",
+          "linia": 759
+        },
+        {
+          "typ": "opis",
+          "tekst": "Liczba, którą nosiłeś przez całą noc, znika. Nie ma fanfar. Jest cisza i silnik, który stygnie z cichym tykaniem, jakby liczył dalej sam.",
+          "pokaz": false,
+          "linia": 761
+        },
+        {
+          "typ": "opis",
+          "tekst": "Choinka się kołysze. Nie wysiadasz.",
+          "pokaz": false,
+          "linia": 763
+        },
+        {
+          "typ": "dzwiek",
+          "tekst": "Radio gra do końca utworu.",
+          "linia": 765
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Trzy dni później",
+          "linia": 767
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Badanie techniczne: pozytywne.",
+          "linia": 768
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "telefon",
+          "argumenty": [
+            "SMS",
+            "MIREK"
+          ],
+          "linia": 770
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Facet dzwonił. Jedna bije.",
+          "linia": 772
+        },
+        {
+          "typ": "opis",
+          "tekst": "To SMS. Czekasz na drugi. Nie przychodzi.",
+          "pokaz": false,
+          "linia": 774
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Mirek · ostatnio aktywny: 3 dni temu",
+          "linia": 776
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "nazwa": "PRAWIE",
+      "warunek": {
+        "PRAWDA": "zmilczal",
+        "kasa": {
+          "op": "<",
+          "wartosc": 889
+        }
+      },
+      "wezly": [
+        {
+          "typ": "ekran",
+          "tekst": "Kasa: [KASA]. Kartka od Zbycha: 889 zł. Brakuje: [BRAK].",
+          "linia": 781
+        },
+        {
+          "typ": "opis",
+          "tekst": "Zabrakło jednego słupka. Albo odwagi, żeby postawić więcej. Henio zdążył zapomnieć, jak wyglądasz.",
+          "pokaz": false,
+          "linia": 783
+        },
+        {
+          "typ": "opis",
+          "tekst": "Silnik gaśnie sam. Choinka kołysze się jeszcze przez chwilę, potem przestaje. Nie wysiadasz.",
+          "pokaz": false,
+          "linia": 785
+        },
+        {
+          "typ": "dzwiek",
+          "tekst": "Radio gra do końca utworu.",
+          "linia": 787
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Trzy dni później",
+          "linia": 789
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Termin badania: 18 dni.",
+          "linia": 790
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "telefon",
+          "argumenty": [
+            "SMS",
+            "MIREK"
+          ],
+          "linia": 792
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Facet dzwonił. Jedna bije.",
+          "linia": 794
+        },
+        {
+          "typ": "opis",
+          "tekst": "To SMS. Czekasz na drugi. Nie przychodzi.",
+          "pokaz": false,
+          "linia": 796
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Mirek · ostatnio aktywny: 3 dni temu",
+          "linia": 798
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "nazwa": "JUTRO",
+      "warunek": {
+        "PRAWDA": "powiedzial",
+        "kasa": {
+          "op": "<",
+          "wartosc": 889
+        }
+      },
+      "wezly": [
+        {
+          "typ": "ekran",
+          "tekst": "Kasa: [KASA]. Kartka od Zbycha: 889 zł. Brakuje: [BRAK].",
+          "linia": 803
+        },
+        {
+          "typ": "opis",
+          "tekst": "Brakuje. Postawiłeś albo nie postawiłeś, i tak wyszło za mało. Ale nikt cię nie szuka i nikt do ciebie nie pisze krótkich wiadomości.",
+          "pokaz": false,
+          "linia": 805
+        },
+        {
+          "typ": "opis",
+          "tekst": "Silnik gaśnie sam. Choinka kołysze się jeszcze przez chwilę. Nie wysiadasz.",
+          "pokaz": false,
+          "linia": 807
+        },
+        {
+          "typ": "dzwiek",
+          "tekst": "Radio gra do końca utworu.",
+          "linia": 809
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Trzy dni później",
+          "linia": 811
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Termin badania: 18 dni.",
+          "linia": 812
+        },
+        {
+          "typ": "opis",
+          "tekst": "Telefon dzwoni. Nie wiadomość. Dzwoni.",
+          "pokaz": false,
+          "linia": 814
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "telefon",
+          "argumenty": [
+            "ROZMOWA",
+            "MIREK"
+          ],
+          "linia": 816
+        },
+        {
+          "typ": "ekran",
+          "tekst": "MIREK",
+          "linia": 818
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Jest robota.",
+          "linia": 820
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Pralka. Nad wodę.",
+          "linia": 822
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Ten sam numer. Pamiętam.",
+          "linia": 824
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Nowe zlecenie: nad wodę.",
+          "linia": 826
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "nazwa": "CZYSTO",
+      "warunek": {
+        "PRAWDA": "powiedzial",
+        "kasa": {
+          "op": ">=",
+          "wartosc": 889
+        }
+      },
+      "wezly": [
+        {
+          "typ": "ekran",
+          "tekst": "Kasa: [KASA]. Kartka od Zbycha: 889 zł. Brakuje: 0 zł.",
+          "linia": 831
+        },
+        {
+          "typ": "opis",
+          "tekst": "Postawiłeś wszystko, co mogłeś postawić, na rzecz, na którą nikt nie stawiał. Liczba znika. Nikt tego nie widział poza Jurkiem, a Jurek już jest w hali.",
+          "pokaz": false,
+          "linia": 833
+        },
+        {
+          "typ": "opis",
+          "tekst": "Choinka się kołysze. Nie wysiadasz. Nie musisz nigdzie jechać, a pierwszy raz tej nocy to jest dobra wiadomość.",
+          "pokaz": false,
+          "linia": 835
+        },
+        {
+          "typ": "dzwiek",
+          "tekst": "Radio gra do końca utworu.",
+          "linia": 837
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Trzy dni później",
+          "linia": 839
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Badanie techniczne: pozytywne.",
+          "linia": 840
+        },
+        {
+          "typ": "opis",
+          "tekst": "Telefon dzwoni.",
+          "pokaz": false,
+          "linia": 842
+        },
+        {
+          "typ": "mechanika",
+          "polecenie": "telefon",
+          "argumenty": [
+            "ROZMOWA",
+            "MIREK"
+          ],
+          "linia": 844
+        },
+        {
+          "typ": "ekran",
+          "tekst": "MIREK",
+          "linia": 846
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Jest robota.",
+          "linia": 848
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Pralka. Nad wodę.",
+          "linia": 850
+        },
+        {
+          "typ": "kwestia",
+          "kto": "MIREK",
+          "tekst": "Ten sam numer. Pamiętam.",
+          "linia": 852
+        },
+        {
+          "typ": "ekran",
+          "tekst": "Nowe zlecenie: nad wodę.",
+          "linia": 854
+        }
+      ]
+    }
+  ],
+  "epilog": [
+    {
+      "typ": "ekran",
+      "tekst": "Tydzień później",
+      "linia": 860
+    },
+    {
+      "typ": "mechanika",
+      "polecenie": "telefon",
+      "argumenty": [
+        "SMS",
+        "KAMIL"
+      ],
+      "linia": 862
+    },
+    {
+      "typ": "kwestia",
+      "kto": "KAMIL",
+      "tekst": "Wypiłem za ciebie. Auto odpaliło samo. Mówiłem, że się obraziło.",
+      "warunek": {
+        "PIWO": "dane"
+      },
+      "linia": 866
+    },
+    {
+      "typ": "kwestia",
+      "kto": "KAMIL",
+      "tekst": "Auto odpaliło samo. Mówiłem, że się obraziło. Piwo dalej wisi.",
+      "warunek": {
+        "PIWO": "kiedys"
+      },
+      "linia": 870
+    },
+    {
+      "typ": "koniec",
+      "linia": 874
+    }
+  ],
+  "symulacja": {
+    "sciezek": 7488,
+    "zakonczenia": {
+      "JUTRO": 3420,
+      "CZYSTO": 324,
+      "PRAWIE": 2810,
+      "NA STYK": 934
+    },
+    "macierz_bazowa": [
+      {
+        "PRAWDA": "zmilczal",
+        "PIWO": "kiedys",
+        "kasa_przed_switem": 849,
+        "min_stawka_na_siebie": 20,
+        "po_sukcesie": 899
+      },
+      {
+        "PRAWDA": "zmilczal",
+        "PIWO": "dane",
+        "kasa_przed_switem": 829,
+        "min_stawka_na_siebie": 50,
+        "po_sukcesie": 939
+      },
+      {
+        "PRAWDA": "powiedzial",
+        "PIWO": "kiedys",
+        "kasa_przed_switem": 799,
+        "min_stawka_na_siebie": 50,
+        "po_sukcesie": 909
+      },
+      {
+        "PRAWDA": "powiedzial",
+        "PIWO": "dane",
+        "kasa_przed_switem": 779,
+        "min_stawka_na_siebie": 50,
+        "po_sukcesie": 889
+      }
+    ],
+    "kasa_min": 659,
+    "kasa_max": 1033
+  }
+}

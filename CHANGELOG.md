@@ -3,6 +3,107 @@
 Wersje do v0.4c mają lokalne tagi w git (serwer odrzuca wypychanie tagów); od v0.5 wersję znajdziesz po commicie „v0.5a – …”.
 Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
 
+## v0.7e – fabuła, cz. 4: testy
+- **Automat całej nocy na prawdziwej grze** (`scripts/e2e-noc.cjs`):
+  - obsługa jednym urządzeniem: klawiaturą, samym dotykiem (CDP) albo samym padem;
+  - wybory i wyniki przejazdów są skryptowane, a przejazdy między miejscami to teleport;
+  - opcja `zapis`: przeładowanie strony w scenie 5 i „Kontynuuj”.
+- **Wynik: każde z 4 zakończeń, kasa zgodna z macierzą plan §5:**
+
+  | Zakończenie | Kasa przed świtem | Kasa na koniec |
+  |---|---|---|
+  | NA STYK | 849 | 899 |
+  | PRAWIE | 829 | 779 |
+  | JUTRO | 779 | 729 |
+  | CZYSTO | 779 | 889 |
+  | zakłady nocne i na busa (CZYSTO) | 833 | 891 |
+
+- **Testy w Node:**
+  - `test/fabula.test.mjs` (silnik);
+  - `test/slupki.test.mjs`: czyste wejścia, animacja NPC zgodna z wynikiem, trudność z autopilotem na prawdziwym aucie (`test/autopilot.mjs`, preset Normalny, 60 prób na poziom): dobry 100%, średni 58%, słaby 3% prób z ≥ 4/6.
+- `test/czas.mjs`: szacowany czas sprawnej nocy to ok. 27–29 min (cel planu 45–60, patrz raport).
+- Stare `e2e-dotyk` / `e2e-pad` sprawdzają teraz prototyp (`?stare`).
+- **Poprawka dotyku:** okienko telefonu wchodziło na pedały i stuknięcie w odpowiedź trafiało w przycisk. Teraz telefon i tablica zakładów są u góry, a okna fabuły leżą nad przyciskami dotykowymi.
+
+## v0.7d – fabuła, cz. 3: mapa i postacie (greybox)
+- `src/fabula/swiat.js`, `src/fabula/mapa.json` – układ z docs/wdrozenie-fabuly.md §2:
+  - **Park** (dawny plac):
+    - zbiorniki za płotem, 4 tiry, latarnie co ok. 35–40 m;
+    - kombi z facetem z termosem, BMW e34, rolkarze krążący wokół słupka;
+    - trasa 6 słupków z łukami po stronie mijania i linią startu;
+    - poranna zmiana (Henio, Zdzichu, Jurek) i bus od 06:12.
+  - **Miasto:**
+    - podwórko Mirka: wiata, agregaty, pralka, fotel, 4 felgi, kombi ze świecącym bagażnikiem;
+    - sygnalizacja na skrzyżowaniu, wiadukt nad główną;
+    - sklep „NOCNY 24h” zamiast szyldu z marką, stacja Kometa;
+    - blok Kamila.
+  - **Wylotówka:** przerwa w płocie na zachodzie i 2,5 km starej drogi bez latarni:
+    - słupki drogowe, las i łąki, 34 dziury (wstrząs, stuk felgi);
+    - przystanek „Zielone Pole” z autem Kamila na awaryjnych (od sc. 9 słabszych).
+  - **Wieś:** podwórko z lampą (gaśnie po sc. 7), kurnik, dom z migającym telewizorem, płot z furtką, pies; odbiorca od 04:05.
+  - **Kierunek na zalew:** bariera i przekreślony znak „SZCZECIN · ZALEW” na wschodnim końcu głównej.
+  - Kamil siedzi na miejscu pasażera (głowa opada, kiedy śpi), felgi leżą w bagażniku i na tylnej kanapie.
+- Wyłączone na mapie w trybie fabuły: maszty 5G, stare postacie, zaparkowane auta na starcie słupków.
+
+## v0.7c – fabuła, cz. 1–2: interfejs, telefon, zapis i mechaniki
+- **Interfejs fabuły** (`src/fabula/ui.js`), bez narratora:
+  - tekst techniczny w płaskim, urzędowym stylu;
+  - rozmowy na postoju w oknie z portretem (auto stoi);
+  - rozmowy w trakcie jazdy w pasku (auto jedzie, pasek przewija się sam);
+  - stary telefon: rozmowa i SMS, ekrany w trakcie rozmowy jako status, drganie przy dzwonieniu;
+  - wybory klawiszami 1–4, Tab, dotykiem i padem.
+- **Klej** `src/fabula/gra.js` i flagi `src/config.js`:
+  - wyłączone: szacun, sklep i energetyk, maszty 5G, wyścig, pchanie i holowanie, narrator, stare misje i postacie, kasa za drift;
+  - `?stare` przywraca prototyp.
+- **Zegar** na HUD:
+  - w jeździe ×3, nigdy nie przeskakuje następnej godziny ze scenariusza;
+  - scena zaczynająca się później to krótkie zaciemnienie, `skok_czasu` też z zaciemnieniem;
+  - świt w sc. 11: niebo, mgła i światło od 06:04 do 06:40.
+- **Kasa** jako jedna pula (start 699), na HUD „brakuje do 889”; kartka od Zbycha w pozycjach pod K, padem ↓ i przyciskiem.
+- **Ekonomia** z `dane-mvp.json`:
+  - tankowanie w sc. 3 „za pięć dych” (7,15 l);
+  - paliwo liczone od przejechanej drogi (cała noc ok. 6,7 l), start na rezerwie, bez pustego baku.
+- **Zakłady:**
+  - tablica z kursem „na oko”, stawkami i możliwą wygraną w złotówkach oraz „nie stawiam”;
+  - jawne zakłady tłumu (Henio, Zdzichu, Jurek) i twoja stawka na tablicy;
+  - przejazd NPC (BMW, bus Zdzicha): animacja po trasie z wynikiem losowanym z q, kamera na aucie, werdykt przy każdym słupku.
+- **Przejazd gracza:** 6 słupków, licznik czystych wejść, werdykty (CZYSTE / BEZ POŚLIZGU / POTRĄCONY / ZŁA STRONA / ZA DALEKO), legenda „czyste”; rozliczenie.
+- **Ładunek FELGI:**
+  - +70 kg w kuli i w napędzie (`engine.js` `cargoKg`);
+  - przesuwanie w zakrętach lekko ciągnie kierownicę i stuka;
+  - lusterko zasłonięte felgą.
+- **Pasażer:** Kamil w aucie i na HUD (śpi / budzi się); radio samo się ścisza, gdy pasażer rozmawia, a gra głośniej, gdy śpi.
+- **Radio:** 4 stacje (Q, pad Back, ♪):
+  - na razie ciche tło z Web Audio w stylu stacji;
+  - gotowe na utwory z `public/muzyka/lista.json` (docs/muzyka.md).
+- **Scenka FELGA_BICIE:** auto stoi, kamera na kurniku, felga toczy się krzywo, tekst techniczny, powrót.
+- **Zakończenie** wg warunków z danych, epilog Kamila wg PIWO, ekran końcowy z podsumowaniem nocy („Nowa noc” / „Menu”).
+- **Zapis nocy** na początku każdej sceny (`pd-noc`: stan, miejsce auta, paliwo); „Kontynuuj” w menu.
+
+## v0.7b – fabuła, cz. 1: silnik fabuły
+- `src/fabula/silnik.js` (bez DOM, testy w Node):
+  - czyta `docs/fabula/dane-mvp.json` i przechodzi sceny węzeł po węźle;
+  - opisy i haki nie trafiają do gry;
+  - obsługuje warunki „jeśli FLAGA”, flagi z wyborów, bram i zakładów;
+  - wykonuje wszystkie polecenia ⚙ z plan-mvp §8a;
+  - wypełnia placeholdery [KASA] i [BRAK], a nazwy podmienia słownikiem (`slownik.json`: Orlen → Kometa…);
+  - na początku każdej sceny zapisuje stan nocy do wczytania.
+- `src/fabula/inscenizacja.json`: gdzie dzieje się scena, tryb (postój / jazda) i bramy (dojazd, jazda N m, strefa kombi →
+  PODJECHAL_DO_KOMBI, czas, tankowanie) – warstwa gry, scenariusz bez zmian.
+- `src/fabula/postacie.json`: imiona i wygląd postaci z §7.
+- Testy (`test/fabula.test.mjs`):
+  - wszystkie 7488 ścieżek nocy dają te same zakończenia i kasę min–max co symulacja scenarzysty;
+  - macierz z plan §5: kasa przed świtem 849 / 829 / 799 / 779 zł, minimalne stawki 20 / 50 / 50 / 50;
+  - kursy ze wzoru §4 zgadzają się z danymi;
+  - każde polecenie zmienia stan;
+  - rozmowa przez telefon i SMS, słownik nazw, zapis nocy.
+
+## v0.7a – fabuła MVP „W nocy robota”: analiza wdrożenia
+- Pliki od scenarzysty w `docs/fabula/` (scenariusz, dane, plan, projekt, biblia stylu, audyt) – jedyne źródło prawdy o fabule.
+- `docs/wdrozenie-fabuly.md`: sceny → miejsca → polecenia ⚙ → mechaniki (istnieje / zmiana / nowa, koszt), układ mapy MVP
+  (Park, Miasto, Wylotówka, Wieś, droga zamknięta na zalew), co wyłączam flagami, słownik nazw (Orlen → Kometa, Żabka →
+  Nocny 24h, Biedronka → dyskont), 16 rozstrzygniętych niejasności, definicja „czystego wejścia” na słupek.
+
 ## Sesja porządkowa (bez zmian w grze)
 - `docs/referencje/README.md`: jak wgrać zdjęcia, drony, eksporty OSM i screeny (foldery, `opis.txt`, nazwy plików).
 - `scripts/referencje.py`: HEIC → JPG, zmniejszenie do 2000 px, obrót z EXIF, usunięcie metadanych (GPS), zmiana nazw z pliku, paleta kolorów.

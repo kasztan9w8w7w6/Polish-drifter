@@ -1,4 +1,4 @@
-// E2E (dotyk): `npm run build && npx vite preview --port 4175`, then `node scripts/e2e-dotyk.cjs` (Playwright + Chromium).
+// E2E (dotyk, stary prototyp: misje 1→2→3, ?stare). Fabuła: scripts/e2e-noc.cjs dotyk. `npm run build && npx vite preview --port 4175`, then `node scripts/e2e-dotyk.cjs` (Playwright + Chromium).
 // Missions 1→2→3 with every UI interaction by touch (CDP touch events). Driving between targets: teleport (debug).
 const { chromium } = require(process.env.PLAYWRIGHT ?? 'playwright');
 (async () => {
@@ -30,7 +30,7 @@ const { chromium } = require(process.env.PLAYWRIGHT ?? 'playwright');
       else await tap('#dialogue .d-main');
     }
   }
-  await p.goto('http://localhost:4175/?debug&touch=1');
+  await p.goto('http://localhost:4175/?debug&touch=1&stare'); // (the old prototype's missions: ?stare)
   await p.waitForSelector('[data-go=play]', { timeout: 90000 });
   await tap('[data-go=play]');
   await wait(1000);

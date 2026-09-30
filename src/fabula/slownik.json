@@ -1,0 +1,10 @@
+{
+  "_help": "Słownik nazw: w świecie gry nie ma prawdziwych szyldów ani marek. Scenariusz zostaje bez zmian, gra podmienia przy wyświetlaniu (docs/wdrozenie-fabuly.md §4). Klucz = dokładny fragment tekstu (z odmianą), wartość = co pokazać.",
+  "nazwy": {
+    "Orlen": "Kometa",
+    "Orlenie": "Komecie",
+    "Żabka": "Nocny 24h",
+    "Żabce": "Nocnym 24h",
+    "w Biedronce": "w dyskoncie"
+  }
+}

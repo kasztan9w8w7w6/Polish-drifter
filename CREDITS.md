@@ -73,3 +73,11 @@ są zrobione na potrzeby gry – bez zewnętrznych assetów. `BufferGeometryUtil
 Dane techniczne Poloneza Caro i silników (`src/cars/polonez.json`, `src/engines/*.json`) pochodzą z publicznych katalogów
 i forów (AutoCentrum.pl, automobile-catalog.com, automotyw.com, elektroda.pl, fora FSO), a kody lakierów z forów miłośników
 FSO. Źródła są wpisane w plikach (`_source`). Kolory RGB lakierów to przybliżenia dobrane na oko, nie próbki lakieru.
+
+## Fabuła „W nocy robota” (v0.7)
+
+- **Scenariusz, dane, plan, biblia stylu** (`docs/fabula/`): autor gry i scenarzysta, materiał własny.
+- **Świat fabuły** (`src/fabula/swiat.js`) jest zbudowany w kodzie, bez nowych zewnętrznych assetów:
+  - zbiorniki, słupki, wiata i rzeczy Mirka, sygnalizacja, wiadukt, bariera i znak, droga (tekstura malowana na kanwie), las, wieś, felgi;
+  - tiry, kombi, BMW, bus i auta Kamila i Mirka to modele z Kenney Car Kit (CC0, wpisane wyżej).
+- **Radio** (`src/fabula/radio.js`): tło stacji generowane w Web Audio, bez plików. Utwory do podpięcia opisuje `docs/muzyka.md`; każdy trzeba tu dopisać.
