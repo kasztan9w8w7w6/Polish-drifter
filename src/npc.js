@@ -123,7 +123,7 @@ export function createPeople(scene, physics, placements, people, { base = import
 }
 
 // ---------- The figure ----------
-function figure(look) {
+export function figure(look) {
   const L = {
     skora: '#e0b08a', gora: '#2a3a7a', paski: null, dol: '#2a3a7a', buty: '#e8e8e8', wlosy: '#2a1c10',
     czapka: null, czapkaKolor: '#111111', brzuch: 0, wzrost: 1, dodatek: null, ...look,

@@ -3,6 +3,26 @@
 Wersje do v0.4c mają lokalne tagi w git (serwer odrzuca wypychanie tagów); od v0.5 wersję znajdziesz po commicie „v0.5a – …”.
 Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
 
+## v0.7d – fabuła, cz. 3: mapa i postacie (greybox)
+- `src/fabula/swiat.js`, `src/fabula/mapa.json` – układ z docs/wdrozenie-fabuly.md §2:
+  - **Park** (dawny plac):
+    - zbiorniki za płotem, 4 tiry, latarnie co ok. 35–40 m;
+    - kombi z facetem z termosem, BMW e34, rolkarze krążący wokół słupka;
+    - trasa 6 słupków z łukami po stronie mijania i linią startu;
+    - poranna zmiana (Henio, Zdzichu, Jurek) i bus od 06:12.
+  - **Miasto:**
+    - podwórko Mirka: wiata, agregaty, pralka, fotel, 4 felgi, kombi ze świecącym bagażnikiem;
+    - sygnalizacja na skrzyżowaniu, wiadukt nad główną;
+    - sklep „NOCNY 24h” zamiast szyldu z marką, stacja Kometa;
+    - blok Kamila.
+  - **Wylotówka:** przerwa w płocie na zachodzie i 2,5 km starej drogi bez latarni:
+    - słupki drogowe, las i łąki, 34 dziury (wstrząs, stuk felgi);
+    - przystanek „Zielone Pole” z autem Kamila na awaryjnych (od sc. 9 słabszych).
+  - **Wieś:** podwórko z lampą (gaśnie po sc. 7), kurnik, dom z migającym telewizorem, płot z furtką, pies; odbiorca od 04:05.
+  - **Kierunek na zalew:** bariera i przekreślony znak „SZCZECIN · ZALEW” na wschodnim końcu głównej.
+  - Kamil siedzi na miejscu pasażera (głowa opada, kiedy śpi), felgi leżą w bagażniku i na tylnej kanapie.
+- Wyłączone na mapie w trybie fabuły: maszty 5G, stare postacie, zaparkowane auta na starcie słupków.
+
 ## v0.7b – fabuła, cz. 1: silnik fabuły
 - `src/fabula/silnik.js` (bez DOM, testy w Node):
   - czyta `docs/fabula/dane-mvp.json` i przechodzi sceny węzeł po węźle;

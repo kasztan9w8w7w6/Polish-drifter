@@ -1,0 +1,52 @@
+{
+  "_help": "Mapa fabuły MVP (docs/wdrozenie-fabuly.md §2) – dodatki do osiedla (src/maps/osiedle.json) w trybie fabuły. Współrzędne jak w mapie osiedla: x = wschód, z = południe, yaw postaci w stopniach (0 = twarzą na południe), heading auta: 0 = na wschód, 90 = na północ. punkty: cele bram z src/fabula/inscenizacja.json (r = promień). slupki: trasa przejazdu (start = linia startu, heading = kierunek jazdy, 6 słupków co slupkiSettings.odstep, pierwszy mijany po prawej). wylotowka: oś drogi na zachód od miasta (punkty łamanej, szerokość), dziury, las (odcinki x), przystanek. wies: podwórko z lampą. postacie: gdzie kto stoi (klucze z src/fabula/postacie.json). auta: modele Kenneya (Car Kit) jako bryły tła i auta NPC.",
+  "szyldy": { "Żappka 24h": "NOCNY 24h" },
+  "start": { "x": 60, "z": 44, "heading": 90, "label": "Park" },
+  "punkty": {
+    "kombi": { "x": 51.5, "z": -9, "r": 7, "label": "Kombi z termosem" },
+    "mirek": { "x": -50, "z": -70.5, "r": 6, "heading": 0, "label": "Podwórko Mirka" },
+    "stacja": { "x": 76, "z": 87.4, "r": 4, "heading": 0, "label": "Kometa, dystrybutor" },
+    "przystanek": { "x": -600, "z": 72, "r": 9, "heading": 180, "label": "Przystanek w polu" },
+    "wies": { "x": -2604, "z": 72, "r": 10, "heading": 180, "label": "Wieś" },
+    "blokKamila": { "x": -22, "z": 58.5, "r": 6, "heading": 0, "label": "Pod blokiem Kamila" },
+    "parkStart": { "x": 60, "z": 44, "r": 14, "heading": 90, "label": "Park" },
+    "henio": { "x": 84, "z": -56, "r": 8, "label": "Pod halą" }
+  },
+  "slupki": { "x": 68, "z": -66, "heading": -90, "pierwsza": 1 },
+  "postacie": [
+    { "id": "FACET Z TERMOSEM", "x": 50.2, "z": -6.8, "yaw": 90, "kiedy": "noc" },
+    { "id": "ROLKARZ1", "x": 88, "z": 30, "yaw": 0, "kiedy": "noc", "krazy": { "x": 84, "z": 30, "r": 6, "v": 0.45 } },
+    { "id": "ROLKARZ2", "x": 80, "z": 30, "yaw": 0, "kiedy": "noc", "krazy": { "x": 84, "z": 30, "r": 6, "v": 0.45, "faza": 3.14 } },
+    { "id": "MIREK", "x": -47.5, "z": -75, "yaw": 0 },
+    { "id": "KAMIL", "x": -596.5, "z": 78.2, "yaw": 0, "kiedy": "przystanek" },
+    { "id": "ODBIORCA", "x": -2624, "z": 64.5, "yaw": 90, "kiedy": "odbiorca" },
+    { "id": "HENIO", "x": 86, "z": -61, "yaw": 200, "kiedy": "rano" },
+    { "id": "ZDZICHU", "x": 89, "z": -59.5, "yaw": 230, "kiedy": "rano" },
+    { "id": "JUREK", "x": 83, "z": -60, "yaw": 170, "kiedy": "rano" }
+  ],
+  "auta": {
+    "kombi": { "model": "cars/suv", "x": 48, "z": -9, "heading": 90, "tint": 0.55, "kiedy": "noc" },
+    "bmw": { "model": "cars/sedan-sports", "x": 80, "z": -52, "heading": 180, "tint": 0.35, "kiedy": "noc" },
+    "bus": { "model": "cars/van", "x": 92, "z": -48, "heading": 90, "tint": 1, "kiedy": "rano" },
+    "kamila": { "model": "cars/sedan", "x": -590, "z": 78, "heading": 180, "tint": 0.7, "awaryjne": true, "kiedy": "kamila" },
+    "mirka": { "model": "cars/suv", "x": -40, "z": -71, "heading": 90, "tint": 0.8, "bagaznik": true },
+    "tir1": { "model": "cars/truck", "x": 92, "z": -38, "heading": 90, "length": 12, "tint": 0.8 },
+    "tir2": { "model": "cars/truck", "x": 92, "z": -22, "heading": 90, "length": 12, "tint": 0.7 },
+    "tir3": { "model": "cars/truck", "x": 92, "z": -6, "heading": 90, "length": 12, "tint": 0.9 },
+    "tir4": { "model": "cars/truck", "x": 92, "z": 10, "heading": 90, "length": 12, "tint": 0.6 }
+  },
+  "zbiorniki": [[114, -40, 9], [116, -12, 8], [115, 14, 9]],
+  "podworkoMirka": { "wiata": [-44, -77.5], "felgi": [-44.5, -73.2] },
+  "sygnalizacja": [[35.5, 65.5, 90], [24.5, 78.5, -90]],
+  "wiadukt": { "x": -80, "z": 72, "dlugosc": 34, "wysokosc": 6.5 },
+  "zamknieta": { "x": 96, "z": 72, "napis": "SZCZECIN · ZALEW" },
+  "wylotowka": {
+    "szerokosc": 7,
+    "os": [[-104, 72], [-560, 72], [-760, 60], [-1200, 44], [-1700, 44], [-2150, 64], [-2560, 72], [-2604, 72]],
+    "korytarz": [0, 100, -2690],
+    "las": [[-700, -1150], [-1500, -1850], [-2250, -2480]],
+    "dziury": 34
+  },
+  "przystanekWPolu": { "x": -600, "z": 80.2, "yaw": 180, "nazwa": "Zielone Pole" },
+  "wies": { "x": -2626, "z": 72, "lampa": [-2624, 66.5], "kurnik": [-2638, 60], "dom": [-2645, 84], "plot": [[-2612, 56], [-2660, 56], [-2660, 96], [-2612, 96]] }
+}
