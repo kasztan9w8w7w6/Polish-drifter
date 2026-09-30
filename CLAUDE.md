@@ -32,11 +32,34 @@ braki do nich: `docs/BRAKI.md`, referencje: `docs/referencje/`.
 6. **Stała zasada: po każdej wersji otwórz PR do `main` i scal go, jeśli testy przechodzą** (`npm test`, `npm run typecheck`,
    build). Potem kolejna praca zaczyna się od świeżego `main`.
 7. Wszystko musi działać bez klawiatury: dotyk (przyciski / „dotknij”) i pad. Wybory = panel.js (przyciski), sprawdzenie:
-   `scripts/e2e-dotyk.cjs` (misje 1→2→3 samym dotykiem) i `scripts/e2e-pad.cjs`.
+   `scripts/e2e-noc.cjs dotyk|pad|klawiatura <strategia> [zapis]` (cała noc fabuły jednym urządzeniem); stary prototyp
+   (`?stare`): `scripts/e2e-dotyk.cjs`, `scripts/e2e-pad.cjs`.
+8. **Fabuła:** jedyne źródło prawdy to `docs/fabula/` (scenariusz, dane, plan). Nie edytuj `dane-mvp.json` ręcznie (po zmianie
+   scenariusza: `python3 docs/fabula/generuj_dane.py`). Co scenariusz pomija (miejsca, bramy, tryby), jest w
+   `src/fabula/inscenizacja.json`, a podmiany marek w `src/fabula/slownik.json` (docs/wdrozenie-fabuly.md).
 
-## Architektura (v0.3)
+## Architektura (v0.3; fabuła v0.7)
 
 ```
+src/config.js   – flagi `features`: fabuła MVP włączona, systemy prototypu wyłączone (szacun, sklep, 5G, wyścig, pchanie,
+                  narrator, stare misje i postacie, kasa za drift); `?stare` w adresie przywraca prototyp
+src/fabula/silnik.js – silnik fabuły (bez DOM, testy): dane-mvp.json węzeł po węźle → akcje (brama, ekran, kwestia, wybór,
+                  polecenie ⚙, dźwięk, koniec); flagi, warunki, polecenia §8a, kursy i wypłaty §4, zakończenia, słownik,
+                  [KASA]/[BRAK], zapis na początku sceny (checkpoint)
+src/fabula/inscenizacja.json – gdzie jest scena, tryb (postój / jazda) i bramy (dojazd, jazda N m, obok, strefa kombi,
+                  czas, tankowanie); scenki (FELGA_BICIE)
+src/fabula/gra.js – klej: akcje silnika → UI, świat i auto (blokada auta na postoju, kamera na przejeździe NPC / scence),
+                  zegar (×3, nie przeskakuje godzin ze scenariusza, skoki z zaciemnieniem), świt, paliwo od drogi, ładunek
+                  (+70 kg, przesuwanie), dziury, tablica zakładów, przejazdy, zakończenie, zapis `pd-noc`; fabulaSettings
+src/fabula/ui.js – ekran fabuły: tekst techniczny, okno z portretem (postój), pasek (jazda), stary telefon (rozmowa/SMS),
+                  zegar, kasa/brakuje, pasażer, lusterko (felga), kartka Zbycha (K), cel, słupki, tablica zakładów
+src/fabula/slupki.js – 6 słupków bez DOM: trasa, „czyste wejście” (strona, okno, kąt ≥ minKat, bez dotknięcia), animacja
+                  przejazdu NPC zgodna z wynikiem; test/autopilot.mjs stroi trudność (średni gracz ≥4/6 w ok. 55%)
+src/fabula/radio.js – 4 stacje (TECHNO, RAP, DISCO_POLO, DAD_ROCK): tło z Web Audio albo utwory z public/muzyka (docs/muzyka.md)
+src/fabula/swiat.js – świat MVP (greybox): przygotujMape (bez masztów i marek, wyjazd na zachód), Park (zbiorniki, tiry,
+                  kombi, BMW, rolkarze, słupki), podwórko Mirka, sygnalizacja, wiadukt, zamknięta droga, wylotówka (droga,
+                  las, dziury, przystanek, auto Kamila), wieś (lampa, kurnik, dom z TV), postacie, felgi i Kamil w aucie
+src/fabula/mapa.json, postacie.json, slownik.json – punkty i rozstawienie, postacie §7, podmiany nazw
 src/physics.js  – jedyne miejsce z Rapierem poza vehicle.ts: świat, stały krok 60 Hz, przeszkody (`surface` → SURFACES), debugRender
 src/vehicle.ts  – auto arcade (port Kenney Starter Kit Racing, vehicle.gd): toczona KULA r = 1 m + drift na wierzchu.
                   Wejście: { throttle, brake, steer (+ = lewo), handbrake } 0..1 / -1..1
@@ -113,7 +136,15 @@ test/           – testy scenariuszy jazdy (`npm test`, node:test, bez przeglą
 TypeScript tylko przez usuwanie typów (bez enumów itp.), importy z rozszerzeniem `.ts`; `npm run typecheck` = `tsc`.
 Osie auta: +X przód, +Y góra, +Z prawo. `slipAngle` > 0 = wektor prędkości na lewo od maski (drift w lewo daje ujemny).
 
-## Paliwo, kasa, szacun i misje (skrót)
+## Fabuła MVP „W nocy robota” (v0.7, skrót)
+
+- Noc 23:35–06:40, 12 scen, 4 zakończenia (plan-mvp §5); jedna pula „Kasa” (start 699, cel 889).
+- Sterowanie: E / Enter / pad B (jazda) lub A (postój) / dotyk = dalej; 1–4 wybór; Q / pad Back / ♪ = radio; K / pad ↓ = kartka.
+- Czyste wejście na słupek: patrz slupki.js; parametry w lil-gui „Słupki”, tempo i czasy w „Fabuła”.
+- Testy: `npm test` (silnik: 7488 ścieżek = symulacja scenarzysty, macierz §5; słupki z autopilotem), `node test/czas.mjs`
+  (szacowany czas nocy), `scripts/e2e-noc.cjs` (cała noc w przeglądarce).
+
+## Paliwo, kasa, szacun i misje (prototyp, `?stare`; skrót)
 
 - **Paliwo** (v0.6d, zamiast baterii):
   - bak z profilu auta (45 l);

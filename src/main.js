@@ -42,6 +42,13 @@ import { loadSettings, saveSettings, pixelSizeFor, loadProgress, saveProgress, k
 import { createDashboard } from './dashboard.js';
 import { createMenu } from './menu.js';
 import { createTurntable } from './turntable.js';
+import { features } from './config.js';
+import fabMapa from './fabula/mapa.json';
+import fabPostacie from './fabula/postacie.json';
+import { createSwiat, przygotujMape } from './fabula/swiat.js';
+import { createFabula, fabulaSettings } from './fabula/gra.js';
+import { slupkiSettings } from './fabula/slupki.js';
+import { radioSettings } from './fabula/radio.js';
 
 // ---------- Renderer / scene: night on the estate ----------
 installRadialFog(); // before any material compiles
@@ -92,11 +99,11 @@ applyCar(tuning, profile);
 // ---------- Physics ----------
 await initPhysics();
 const physics = createPhysics();
-const map = osiedle;
+const map = features.fabula ? przygotujMape(osiedle, fabMapa) : osiedle; // (the story's town: fabula/swiat.js)
 const track = createTrack(scene, physics, map);
 // ?spawn=x,z,yawDeg – start somewhere else (handy for screenshots and testing a spot)
 const spawnArg = new URLSearchParams(location.search).get('spawn')?.split(',').map(Number);
-const home = map.points.spawn;
+const home = features.fabula ? fabMapa.start : map.points.spawn;
 const [sx, sz, sh] = spawnArg?.length === 3 ? spawnArg : [home.x, home.z, home.heading];
 const car = createVehicle(physics, { spawn: { x: sx, y: 1, z: sz }, spawnYaw: (sh * Math.PI) / 180, drivetrain });
 const carView = await createCarView(scene, profile);
@@ -113,7 +120,7 @@ const MISSIONS = Object.fromEntries(Object.values(import.meta.glob('./missions/*
 const DIALOGS = Object.fromEntries(Object.values(import.meta.glob('./story/dialogi/*.json', { eager: true, import: 'default' })).map((d) => [d.id, d]));
 const PEOPLE = postacie.postacie;
 const campaign = createCampaign(kampania, MISSIONS);
-const people = createPeople(scene, physics, map.npcs ?? [], PEOPLE);
+const people = createPeople(scene, physics, features.starePostacie ? map.npcs ?? [] : [], PEOPLE);
 await people.ready;
 // Mission targets: map points and the people's spots ("npc:seba"; kept up to date when someone moves)
 const points = { ...map.points };
@@ -121,7 +128,7 @@ const syncPoint = (n) => (points[`npc:${n.id}`] = { x: n.root.position.x, z: n.r
 people.list.forEach(syncPoint);
 // The neighbour's car: parked at the start of its race route until the race (rival.js, race.js)
 const rivalSpec = Object.entries(PEOPLE).find(([, p]) => p.auto);
-const rival = rivalSpec ? await createRival(scene, physics, rivalSpec[1].auto) : null;
+const rival = rivalSpec && features.wyscig ? await createRival(scene, physics, rivalSpec[1].auto) : null;
 const parkRival = () => {
   const r = map.routes?.petla;
   if (!rival || !r) return;
@@ -130,6 +137,8 @@ const parkRival = () => {
   rival.set(p.x + rx * 1.8, p.z + rz * 1.8, Math.atan2(-p.dz, p.dx));
 };
 parkRival();
+// The story's world: the Park, Mirek's yard, the road out, the village, its people and cars (before pixelizeScene)
+const swiat = features.fabula ? await createSwiat({ scene, physics, map, fab: fabMapa, postacie: fabPostacie.postacie }) : null;
 pixelizeScene(scene);
 const markers = createMarkers(scene); // (after pixelizeScene: unlit, keeps its own materials)
 const occlusion = createOcclusion();
@@ -160,7 +169,7 @@ let bankedTotal = 0;
 function banked(s) {
   const pts = s.total - bankedTotal;
   bankedTotal = s.total;
-  if (pts <= 0) return;
+  if (pts <= 0 || !features.kasaZaDrift) return;
   const pos = car.state.position;
   const nearPeople = people.list.some((n) => n.visible && Math.hypot(n.root.position.x - pos.x, n.root.position.z - pos.z) < economySettings.crowdRadius);
   const got = economy.drift(pts, { mission: mission.state.running, show: mission.state.step?.type === 'score', nearPeople });
@@ -189,8 +198,9 @@ let pushing = false; // empty tank: the player pushes the car
 let pending = null; // the next mission, waiting for enough respect
 const storyFlags = {}; // flags set in conversations (dialogue choices `set`), for later conditions
 let offerTimer = 0;
-const fiveg = createFiveG(mastsOf(map)); // 5G as atmosphere near the masts (fiveg.js)
+const fiveg = features.maszty5g ? createFiveG(mastsOf(map)) : { update: () => ({ throttle: 1, lights: 1, noise: 0, crackle: 0, glitch: 0, say: false }) }; // 5G as atmosphere near the masts (fiveg.js)
 const narrator = createNarrator();
+if (!features.narrator) narrator.say = () => {}; // (projekt §5: no narrator)
 let mission = createMission(mdef, points, teksty);
 const dialogue = createDialogueUI({ people: PEOPLE, texts: teksty.rozmowa });
 const choice = createPanel();
@@ -593,9 +603,11 @@ const actions = {
     lightsState.high = !lightsState.high;
     toast(lightsState.high ? 'Długie światła (bateria szybciej schodzi)' : 'Krótkie światła');
   },
-  mission: () => startMission(mdef.id),
+  mission: () => (fabula ? fabula.radioNext() : startMission(mdef.id)),
   confirm: () => {},
-  talk: () => !choice.open && startTalk(),
+  talk: () => !choice.open && (fabula ? fabula.naprzod() : startTalk()),
+  radio: () => fabula?.radioNext(),
+  kartka: () => fabula && !fabula.ui.aktywne && fabula.kartka(),
 };
 const input = createInput(actions, () => settings.keys);
 const touchControls = TOUCH ? createTouchControls({ actions }) : null;
@@ -674,11 +686,11 @@ const menu = createMenu({
   settings,
   paints: profile.look.paints,
   hooks: {
-    play: () => (startMission(campaign.first, false, true), setPaused(false)),
-    continue: () => (continueGame(), setPaused(false)),
-    hasProgress: () => !!loadProgress(),
+    play: () => (fabula ? fabula.nowaNoc() : startMission(campaign.first, false, true), setPaused(false)),
+    continue: () => (fabula ? fabula.wczytaj() : continueGame(), setPaused(false)),
+    hasProgress: () => (fabula ? fabula.hasSave() : !!loadProgress()),
     resume: () => setPaused(false),
-    restart: () => (startMission(mdef.id), setPaused(false)),
+    restart: () => (fabula ? fabula.nowaNoc() : startMission(mdef.id), setPaused(false)),
     toMenu: () => (storeProgress(), setPaused(true)),
     garage: (open) => {
       garage = open;
@@ -701,7 +713,28 @@ const menu = createMenu({
   },
 });
 applySettings(settings);
-if (new URLSearchParams(location.search).has('debug')) window.agro = { economy, points, fiveg, scorer, choice, get mission() { return mission; }, people, dialogue, get race() { return race; }, startMission, narrator, car, menu, settings, perf: () => perf, paused: () => paused, resume: () => setPaused(false), tt: () => turntable, carYaw: () => { const f = new THREE.Vector3(1, 0, 0).applyQuaternion(carView.root.quaternion); return Math.atan2(-f.z, f.x); } }; // for testing from the console
+// ---------- The story (fabula/gra.js) ----------
+const fabula = features.fabula
+  ? createFabula({ swiat, fab: fabMapa, car, carView, economy, audio, rig, choice, toast: (t) => toast(t), drivetrain, tuning, sky: { scene, ambient, moon, night }, keys: settings.keys, keyLabel, onMenu: () => (setPaused(true), menu.openMain()) })
+  : null;
+if (fabula) {
+  const sz = gui.addFolder('Fabuła (W nocy robota)').close();
+  sz.add(fabulaSettings, 'zegarTempo', 0, 30, 0.5).name('zegar: tempo (×)');
+  sz.add(fabulaSettings, 'sc0Limit', 10, 600, 5).name('sc. 0: jazda do telefonu (s)');
+  sz.add(fabulaSettings, 'sc0Telefon', 1, 60, 1).name('sc. 0: telefon po beemce (s)');
+  sz.add(fabulaSettings, 'kolysanie', 0, 1, 0.01).name('ładunek: ciągnie kierownicę');
+  sz.add(fabulaSettings, 'tempoTestu', 1, 20, 1).name('przyspieszenie (testy)');
+  sz.add(radioSettings, 'glosnosc', 0, 1, 0.01).name('radio: głośność');
+  sz.add(radioSettings, 'sciszenie', 0, 1, 0.01).name('radio przy rozmowie');
+  const sl = gui.addFolder('Słupki (6, próg 4 czyste)').close();
+  sl.add(slupkiSettings, 'minKat', 5, 45, 1).name('czyste: kąt min. (°)');
+  sl.add(slupkiSettings, 'okno', 2, 15, 0.5).name('czyste: okno (m)');
+  sl.add(slupkiSettings, 'dotyk', 0, 1, 0.05).name('potrącenie: odległość (m)');
+  sl.add(slupkiSettings, 'katZasieg', 1, 10, 0.5).name('kąt liczony ± (m)');
+  sl.add(slupkiSettings, 'limitCzasu', 10, 120, 1).name('limit czasu (s)');
+  if (new URLSearchParams(location.search).has('szybko')) fabulaSettings.tempoTestu = 8;
+}
+if (new URLSearchParams(location.search).has('debug')) window.agro = { fabula, fabulaSettings, rig, economy, points, fiveg, scorer, choice, get mission() { return mission; }, people, dialogue, get race() { return race; }, startMission, narrator, car, menu, settings, perf: () => perf, paused: () => paused, resume: () => setPaused(false), tt: () => turntable, carYaw: () => { const f = new THREE.Vector3(1, 0, 0).applyQuaternion(carView.root.quaternion); return Math.atan2(-f.z, f.x); } }; // for testing from the console
 // ?plan – the whole map from straight above, lit like daytime (docs/mapa.md screenshot, checking the layout)
 const PLAN = new URLSearchParams(location.search).has('plan');
 if (PLAN) {
@@ -726,7 +759,7 @@ if (PLAN) {
   throw new Error('plan view'); // (stop here: no game loop, no menu)
 }
 // ?spawn=… or ?graj skips the menu (testing); otherwise the game starts in the main menu, the world paused behind it
-if (spawnArg?.length === 3 || new URLSearchParams(location.search).has('graj')) startMission(campaign.first, spawnArg?.length === 3);
+if (spawnArg?.length === 3 || new URLSearchParams(location.search).has('graj')) fabula ? fabula.nowaNoc() : startMission(campaign.first, spawnArg?.length === 3);
 else {
   setPaused(true);
   menu.openMain();
@@ -739,6 +772,7 @@ if (fuelArg !== null) economy.restore({ fuel: Number(fuelArg) });
 const timer = new THREE.Timer();
 let lastUnstuck = 0;
 let lastSpins = 0;
+let fabulaOut = { lock: false, cam: null, steer: 0 };
 
 function tick(time) {
   timer.update(time);
@@ -775,6 +809,8 @@ function tick(time) {
     return;
   }
   const controls = input.read(dt);
+  if (fabulaOut.lock) Object.assign(controls, { throttle: 0, steer: 0, handbrake: 0, brake: car.state.forwardSpeed > 0.3 ? 1 : 0 }); // (the story: the car stands)
+  controls.steer = Math.max(-1, Math.min(1, controls.steer + fabulaOut.steer)); // (the rims sliding in the back)
   if (choice.open) Object.assign(controls, { throttle: 0, steer: 0, handbrake: 0, brake: car.state.forwardSpeed > 0.5 ? 1 : 0 }); // (a choice on screen: the car stops)
   if (race && race.countdown > 0) controls.throttle = 0; // no jump start
   const pushIt = economy.state.empty && pushing && controls.throttle > 0.1 && !choice.open;
@@ -814,8 +850,8 @@ function tick(time) {
   audio.hit(state.crash);
   scorer.update(dt, fwd, v, state.grounded);
 
-  // Fuel (economy.js: burned from the real rpm and load), the reserve, an empty tank
-  for (const e of economy.update(dt, { rpm: state.rpm, load: state.load, drifting: scorer.state.drifting, running: !economy.state.empty })) {
+  // Fuel (economy.js: burned from the real rpm and load), the reserve, an empty tank (the story burns by distance)
+  if (!fabula) for (const e of economy.update(dt, { rpm: state.rpm, load: state.load, drifting: scorer.state.drifting, running: !economy.state.empty })) {
     handleMission(mission.notify(e));
     if (e === 'rezerwa') audio.beep();
     if (e === 'pusty') {
@@ -826,7 +862,7 @@ function tick(time) {
     }
   }
   // stuck with an empty tank (pushing, not at the station): offer the tow again after a while
-  if (economy.state.empty && !choice.open && !atStation && state.speed < 0.3) {
+  if (features.pchanie && economy.state.empty && !choice.open && !atStation && state.speed < 0.3) {
     if ((stuckTimer += dt) > 8) (stuckTimer = 0), emptyPanel();
   } else stuckTimer = 0;
   if (towTimer > 0 && (towTimer -= dt) <= 0) {
@@ -837,13 +873,13 @@ function tick(time) {
   // Station: stop next to a pump → the fuel panel (once per stop)
   const nearPoint = (p, r) => p && Math.hypot(state.position.x - p.x, state.position.z - p.z) < r;
   const stopped = state.speed < 1;
-  if (nearPoint(points.stacja, 4) && stopped && !choice.open && !dialogue.open) {
+  if (!fabula && nearPoint(points.stacja, 4) && stopped && !choice.open && !dialogue.open) {
     if (!atStation) (atStation = true), stationPanel();
   } else if (!nearPoint(points.stacja, 6)) atStation = false;
   // Żappka: stop on the glowing pad → saved, and the shop
   const pad = map.shop.pad;
   const onPad = Math.abs(state.position.x - pad.x) < pad.w / 2 && Math.abs(state.position.z - pad.z) < pad.d / 2;
-  if (onPad && stopped && !choice.open && !dialogue.open) {
+  if (features.sklep && onPad && stopped && !choice.open && !dialogue.open) {
     if (!atShop) {
       atShop = true;
       save = { x: pad.x, z: pad.z, heading: headingOf(state.quaternion) };
@@ -893,10 +929,15 @@ function tick(time) {
   }
   if (raceRetry > 0 && (raceRetry -= dt) <= 0 && raceStep) setupRace(raceStep);
 
+  // The story (fabula/gra.js), or the old missions
+  if (fabula) {
+    fabulaOut = fabula.update(dt, state, timer.getElapsed());
+    target = fabula.target;
+  }
   // Mission, target marker, narrator
-  handleMission(mission.update(dt, { x: state.position.x, z: state.position.z, speed: state.speed, money: economy.state.money, fuelPct: (100 * economy.state.fuel) / TANK, score: score(), talk: talkResult, race: raceResult }));
+  if (!fabula) handleMission(mission.update(dt, { x: state.position.x, z: state.position.z, speed: state.speed, money: economy.state.money, fuelPct: (100 * economy.state.fuel) / TANK, score: score(), talk: talkResult, race: raceResult }));
   talkResult = null;
-  target ??= mission.target();
+  if (!fabula) target ??= mission.target();
   const dist = markers.update(timer.getElapsed(), target, state.position);
   const show = mission.state.show;
   const step = mission.state.step;
@@ -904,7 +945,7 @@ function tick(time) {
   hudBat.goal.innerHTML = mission.goal ? `Cel: ${mission.goal}${showInfo}${raceInfo}${target && !raceInfo ? ` <small>${Math.round(dist)} m</small>` : ''}` : '';
   // The lads by the drift lot react (crowd.js) – loud during the show
   const zone = step?.type === 'score' ? points[step.point] : points.lot;
-  if (zone) {
+  if (zone && !fabula) {
     const inZone = Math.hypot(state.position.x - zone.x, state.position.z - zone.z) < (zone.r ?? 20) + 4;
     const kind = crowd.update(dt, { inZone, drifting: scorer.state.drifting, angle: scorer.state.angle, speed: state.speed, crash: state.crash }, !!show);
     if (kind) {
@@ -918,7 +959,7 @@ function tick(time) {
     }
   }
   // Talk prompt: stopped next to someone
-  const near = !dialogue.open && state.speed < 1.5 ? people.near(state.position) : null;
+  const near = !fabula && !dialogue.open && state.speed < 1.5 ? people.near(state.position) : null;
   const hint = near ? `<b>${keyLabel(settings.keys.talk?.[0] ?? 'KeyE')}</b> ${teksty.rozmowa.podpowiedz}: ${near.who.imie}` : '';
   if (hudBat.talk.innerHTML !== hint) hudBat.talk.innerHTML = hint;
   document.body.classList.toggle('can-talk', !!near);
@@ -968,7 +1009,7 @@ function tick(time) {
   smoke.update(dt);
 
   const px = Math.max(1, Math.round(pixelArt.pixelSize));
-  const cam = rig.update(dt, state, { pixelsWide: Math.floor(innerWidth / px), pixelsHigh: Math.floor(innerHeight / px) });
+  const cam = rig.update(dt, fabulaOut.cam ?? state, { pixelsWide: Math.floor(innerWidth / px), pixelsHigh: Math.floor(innerHeight / px) });
   setCamera(cam);
   fill.position.copy(state.position).y += 5;
   occlusion.update(cam, state.position, state.quaternion);

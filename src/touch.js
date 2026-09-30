@@ -19,13 +19,15 @@ export function createTouchControls({ actions = {} } = {}) {
       <button data-b="brake" class="brake">hamulec<br><small>wsteczny</small></button>
       <button data-b="gas" class="gas">gaz</button>
     </div>
-    <button id="t-talk" data-a="talk">rozmowa</button>
+    <button id="t-talk" data-a="talk">dalej</button>
     <div id="t-top">
       <button data-a="fullscreen" title="Pełny ekran">⛶</button>
       <button data-a="pause" title="Pauza">❚❚</button>
       <button data-a="reset" title="Reset">R</button>
       <button data-a="camera" title="Kamera">C</button>
       <button data-a="lights" title="Długie światła">L</button>
+      <button data-a="radio" title="Radio">♪</button>
+      <button data-a="kartka" title="Kartka od Zbycha">₪</button>
       <button data-a="gui" title="Panel">G</button>
     </div>`;
   document.body.appendChild(root);

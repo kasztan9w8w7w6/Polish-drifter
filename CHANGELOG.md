@@ -23,6 +23,41 @@ Plan dalszych wersji: [`ROADMAP.md`](ROADMAP.md).
   - Kamil siedzi na miejscu pasażera (głowa opada, kiedy śpi), felgi leżą w bagażniku i na tylnej kanapie.
 - Wyłączone na mapie w trybie fabuły: maszty 5G, stare postacie, zaparkowane auta na starcie słupków.
 
+## v0.7c – fabuła, cz. 1–2: interfejs, telefon, zapis i mechaniki
+- **Interfejs fabuły** (`src/fabula/ui.js`), bez narratora:
+  - tekst techniczny w płaskim, urzędowym stylu;
+  - rozmowy na postoju w oknie z portretem (auto stoi);
+  - rozmowy w trakcie jazdy w pasku (auto jedzie, pasek przewija się sam);
+  - stary telefon: rozmowa i SMS, ekrany w trakcie rozmowy jako status, drganie przy dzwonieniu;
+  - wybory klawiszami 1–4, Tab, dotykiem i padem.
+- **Klej** `src/fabula/gra.js` i flagi `src/config.js`:
+  - wyłączone: szacun, sklep i energetyk, maszty 5G, wyścig, pchanie i holowanie, narrator, stare misje i postacie, kasa za drift;
+  - `?stare` przywraca prototyp.
+- **Zegar** na HUD:
+  - w jeździe ×3, nigdy nie przeskakuje następnej godziny ze scenariusza;
+  - scena zaczynająca się później to krótkie zaciemnienie, `skok_czasu` też z zaciemnieniem;
+  - świt w sc. 11: niebo, mgła i światło od 06:04 do 06:40.
+- **Kasa** jako jedna pula (start 699), na HUD „brakuje do 889”; kartka od Zbycha w pozycjach pod K, padem ↓ i przyciskiem.
+- **Ekonomia** z `dane-mvp.json`:
+  - tankowanie w sc. 3 „za pięć dych” (7,15 l);
+  - paliwo liczone od przejechanej drogi (cała noc ok. 6,7 l), start na rezerwie, bez pustego baku.
+- **Zakłady:**
+  - tablica z kursem „na oko”, stawkami i możliwą wygraną w złotówkach oraz „nie stawiam”;
+  - jawne zakłady tłumu (Henio, Zdzichu, Jurek) i twoja stawka na tablicy;
+  - przejazd NPC (BMW, bus Zdzicha): animacja po trasie z wynikiem losowanym z q, kamera na aucie, werdykt przy każdym słupku.
+- **Przejazd gracza:** 6 słupków, licznik czystych wejść, werdykty (CZYSTE / BEZ POŚLIZGU / POTRĄCONY / ZŁA STRONA / ZA DALEKO), legenda „czyste”; rozliczenie.
+- **Ładunek FELGI:**
+  - +70 kg w kuli i w napędzie (`engine.js` `cargoKg`);
+  - przesuwanie w zakrętach lekko ciągnie kierownicę i stuka;
+  - lusterko zasłonięte felgą.
+- **Pasażer:** Kamil w aucie i na HUD (śpi / budzi się); radio samo się ścisza, gdy pasażer rozmawia, a gra głośniej, gdy śpi.
+- **Radio:** 4 stacje (Q, pad Back, ♪):
+  - na razie ciche tło z Web Audio w stylu stacji;
+  - gotowe na utwory z `public/muzyka/lista.json` (docs/muzyka.md).
+- **Scenka FELGA_BICIE:** auto stoi, kamera na kurniku, felga toczy się krzywo, tekst techniczny, powrót.
+- **Zakończenie** wg warunków z danych, epilog Kamila wg PIWO, ekran końcowy z podsumowaniem nocy („Nowa noc” / „Menu”).
+- **Zapis nocy** na początku każdej sceny (`pd-noc`: stan, miejsce auta, paliwo); „Kontynuuj” w menu.
+
 ## v0.7b – fabuła, cz. 1: silnik fabuły
 - `src/fabula/silnik.js` (bez DOM, testy w Node):
   - czyta `docs/fabula/dane-mvp.json` i przechodzi sceny węzeł po węźle;

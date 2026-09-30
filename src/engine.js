@@ -62,6 +62,7 @@ export function createDrivetrain(car, engine, settings = driveSettings) {
   const cda = (car.cd ?? 0.42) * (car.frontalArea ?? 1.95);
   const crr = car.crr ?? 0.014;
   const mass = car.massKg + (car.driverKg ?? 75);
+  let extraKg = 0; // cargo (the story's four rims: +70 kg), set through `cargoKg`
   const curve = torqueCurve(engine);
   const tPeak = Math.max(...curve.map((p) => p[1]));
   const rpmPerMs = (ratio) => (ratio * fd * 60) / (2 * Math.PI * r); // engine rpm per 1 m/s of wheel speed
@@ -78,7 +79,7 @@ export function createDrivetrain(car, engine, settings = driveSettings) {
   const st = { gear: 1, rpm: engine.idleRpm, shift: 0, force: 0, load: 0, reverse: false };
 
   function resistance(v) {
-    return 0.5 * RHO * cda * v * Math.abs(v) + (Math.abs(v) > 0.05 ? Math.sign(v) * crr * mass * G : 0);
+    return 0.5 * RHO * cda * v * Math.abs(v) + (Math.abs(v) > 0.05 ? Math.sign(v) * crr * (mass + extraKg) * G : 0);
   }
   // Top speed in top gear (drive = resistance), searched numerically
   function topSpeed() {
@@ -124,7 +125,7 @@ export function createDrivetrain(car, engine, settings = driveSettings) {
     st.force = force;
     st.load = Math.max(0, Math.min(1, (torqueAt(curve, st.rpm) * pedal) / tPeak));
     const delta = 1.04 + 0.0025 * (ratio * fd) ** 2; // rotating masses
-    return { accel: (force * settings.fun) / (mass * delta), rpm: st.rpm, gear: st.reverse ? -1 : st.gear, load: st.load };
+    return { accel: (force * settings.fun) / ((mass + extraKg) * delta), rpm: st.rpm, gear: st.reverse ? -1 : st.gear, load: st.load };
   }
 
   return {
@@ -133,6 +134,12 @@ export function createDrivetrain(car, engine, settings = driveSettings) {
     curve,
     radius: r,
     mass,
+    get cargoKg() {
+      return extraKg;
+    },
+    set cargoKg(kg) {
+      extraKg = kg;
+    },
     upAt,
     topSpeed,
     resistance,
